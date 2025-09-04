@@ -121,7 +121,7 @@ export function UnidadesPage() {
       flex: 2,
       minWidth: 200,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', justifyContent: 'center' }}>
           <Building2 size={16} color={theme.palette.primary.main} />
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
             {params.value}
@@ -135,7 +135,7 @@ export function UnidadesPage() {
       flex: 1,
       minWidth: 120,
       renderCell: (params) => (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
           {params.value || '-'}
         </Typography>
       ),
@@ -163,7 +163,7 @@ export function UnidadesPage() {
       flex: 1,
       minWidth: 130,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', justifyContent: 'center' }}>
           {params.value && <Phone size={14} color={theme.palette.text.secondary} />}
           <Typography variant="body2" color="text.secondary">
             {params.value || '-'}
@@ -177,7 +177,7 @@ export function UnidadesPage() {
       flex: 1,
       minWidth: 100,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', justifyContent: 'center' }}>
           {params.value && <MapPin size={14} color={theme.palette.text.secondary} />}
           <Typography variant="body2" color="text.secondary">
             {params.value || '-'}
@@ -192,7 +192,7 @@ export function UnidadesPage() {
       minWidth: 60,
       maxWidth: 80,
       renderCell: (params) => (
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, textAlign: 'center', width: '100%' }}>
           {params.value || '-'}
         </Typography>
       ),
@@ -533,6 +533,9 @@ export function UnidadesPage() {
                 minWidth: 0,
                 padding: theme.spacing(2, 1.5), // Aumenta o padding das células
                 fontSize: '1rem', // Aumenta ainda mais o tamanho da fonte das células
+                display: 'flex',
+                alignItems: 'center', // Centraliza verticalmente
+                justifyContent: 'center', // Centraliza horizontalmente
                 '& .MuiTypography-root': {
                   fontSize: '1rem !important', // Força o tamanho da fonte para todos os Typography
                 },
@@ -547,6 +550,10 @@ export function UnidadesPage() {
                   padding: theme.spacing(1.5, 1.5), // Padding para headers
                   fontSize: '1rem', // Aumenta ainda mais o tamanho da fonte dos headers
                   fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center', // Centraliza headers
+                  textAlign: 'center',
                 }
               },
               '& .MuiDataGrid-virtualScroller': {
