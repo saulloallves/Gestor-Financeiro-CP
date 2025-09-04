@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '../pages/LoginPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { UnidadesPage } from '../pages/UnidadesPage';
 import { MainLayout } from '../components/layout/MainLayout';
 import { ProtectedRoute, UnauthorizedPage } from '../components/auth/ProtectedRoute';
 
@@ -24,6 +25,14 @@ export const router = createBrowserRouter([
       {
         path: 'dashboard',
         element: <DashboardPage />,
+      },
+      {
+        path: 'unidades',
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <UnidadesPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'admin',

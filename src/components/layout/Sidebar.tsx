@@ -59,25 +59,28 @@ const menuItems: MenuItem[] = [
     path: '/dashboard',
   },
   {
+    id: 'unidades',
+    title: 'Unidades',
+    icon: Building,
+    path: '/unidades',
+  },
+  {
     id: 'cobrancas',
     title: 'Cobranças',
     icon: CreditCard,
     path: '/cobrancas',
-    badge: { value: 12, color: 'error' as const },
     children: [
       {
         id: 'cobrancas-pendentes',
         title: 'Pendentes',
         icon: Clock,
         path: '/cobrancas/pendentes',
-        badge: { value: 8, color: 'warning' as const },
       },
       {
         id: 'cobrancas-vencidas',
         title: 'Vencidas',
         icon: AlertCircle,
         path: '/cobrancas/vencidas',
-        badge: { value: 4, color: 'error' as const },
       },
       {
         id: 'cobrancas-pagas',
@@ -92,20 +95,6 @@ const menuItems: MenuItem[] = [
     title: 'Franqueados',
     icon: Users,
     path: '/franqueados',
-    children: [
-      {
-        id: 'franqueados-lista',
-        title: 'Todos os Franqueados',
-        icon: Users,
-        path: '/franqueados/lista',
-      },
-      {
-        id: 'franqueados-unidades',
-        title: 'Unidades',
-        icon: Building,
-        path: '/franqueados/unidades',
-      },
-    ],
   },
   {
     id: 'relatorios',

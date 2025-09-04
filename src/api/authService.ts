@@ -48,7 +48,6 @@ export class AuthService {
 
       // 3. Usa função customizada que bypassa RLS
       const { data: userData, error: userError } = await supabase
-        // @ts-expect-error - Função RPC customizada não reconhecida pelos tipos gerados
         .rpc('get_internal_user_data', { user_uuid: authData.user.id }) as { 
           data: UsuarioInternoData[] | null, 
           error: Error | null
@@ -105,7 +104,6 @@ export class AuthService {
 
       // 3. Busca dados completos do franqueado usando função que bypassa RLS
       const { data: franqueadoData, error: franqueadoError } = await supabase
-        // @ts-expect-error - Função RPC customizada não reconhecida pelos tipos gerados
         .rpc('get_franchisee_data', { user_uuid: authData.user.id }) as { 
           data: FranqueadoData[] | null, 
           error: Error | null
@@ -194,7 +192,6 @@ export class AuthService {
 
       // Primeiro tenta buscar como usuário interno usando função que bypassa RLS
       const { data: userData, error: userError } = await supabase
-        // @ts-expect-error - Função RPC customizada não reconhecida pelos tipos gerados
         .rpc('get_internal_user_data', { user_uuid: session.user.id }) as { 
           data: UsuarioInternoData[] | null, 
           error: Error | null
@@ -212,7 +209,6 @@ export class AuthService {
 
       // Se não for usuário interno, tenta buscar como franqueado
       const { data: franqueadoData, error: franqueadoError } = await supabase
-        // @ts-expect-error - Função RPC customizada não reconhecida pelos tipos gerados
         .rpc('get_franchisee_data', { user_uuid: session.user.id }) as { 
           data: FranqueadoData[] | null, 
           error: Error | null
