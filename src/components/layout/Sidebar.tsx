@@ -24,11 +24,12 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  Building
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useLocation, useNavigate } from 'react-router-dom';
-import logoImage from '../../assets/logo-principal.png';
+import logoImage from '../../assets/logo cresci-header.png';
 
 interface MenuItem {
   id: string;
@@ -101,7 +102,7 @@ const menuItems: MenuItem[] = [
       {
         id: 'franqueados-unidades',
         title: 'Unidades',
-        icon: LayoutDashboard,
+        icon: Building,
         path: '/franqueados/unidades',
       },
     ],
@@ -276,9 +277,10 @@ export function Sidebar({ open, onClose, width, variant }: SidebarProps) {
       {/* Logo Section */}
       <Box
         sx={{
-          p: theme.spacing(3, 2, 2, 2),
+          p: theme.spacing(2, 0, 1.5, 0),
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: 2,
           borderBottom: `1px solid ${theme.palette.divider}`,
         }}
@@ -288,33 +290,11 @@ export function Sidebar({ open, onClose, width, variant }: SidebarProps) {
           src={logoImage}
           alt="Logo"
           sx={{
-            width: 40,
-            height: 40,
-            objectFit: 'contain',
+            width: 150,
+            height: 'auto',
+            containerFit: 'contain',
           }}
         />
-        <Box>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              fontSize: '1.1rem',
-              color: 'primary.main',
-              lineHeight: 1.2,
-            }}
-          >
-            Central Financeira
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              fontSize: '0.75rem',
-            }}
-          >
-            Gestão Autônoma com IA
-          </Typography>
-        </Box>
       </Box>
 
       {/* Main Menu */}

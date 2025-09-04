@@ -103,11 +103,10 @@ export function Header({ onMenuClick, sidebarWidth, sidebarOpen }: HeaderProps) 
             component="h1"
             sx={{
               fontWeight: 600,
-              color: 'primary.main',
               display: { xs: 'none', sm: 'block' },
             }}
           >
-            Central Financeira
+            Gestor Financeiro CP
           </Typography>
         </Box>
 
