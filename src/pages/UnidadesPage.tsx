@@ -12,7 +12,6 @@ import {
   Chip,
   TextField,
   MenuItem,
-  Paper,
   Tooltip,
   CircularProgress,
   Dialog,
@@ -30,7 +29,11 @@ import {
   Building2,
   Phone,
   MapPin,
-  X
+  X,
+  Building,
+  CheckCircle,
+  Clock,
+  XCircle
 } from 'lucide-react';
 import { useUnidadesPage } from '../hooks/useUnidades';
 import { UnidadeForm } from '../components/UnidadeForm';
@@ -350,42 +353,149 @@ export function UnidadesPage() {
       {/* Estatísticas Rápidas */}
       <Box sx={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: 2, 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+        gap: 3, 
         marginBottom: theme.spacing(3) 
       }}>
-        <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: 'primary.light' }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.dark' }}>
-            {totalUnidades}
-          </Typography>
-          <Typography variant="body2" color="primary.dark">
-            Total de Unidades
-          </Typography>
-        </Paper>
-        <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: 'success.light' }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.dark' }}>
-            {unidades.filter(u => u.status === 'ativo').length}
-          </Typography>
-          <Typography variant="body2" color="success.dark">
-            Ativas
-          </Typography>
-        </Paper>
-        <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: 'warning.light' }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'warning.dark' }}>
-            {unidades.filter(u => u.status === 'em_implantacao').length}
-          </Typography>
-          <Typography variant="body2" color="warning.dark">
-            Em Implantação
-          </Typography>
-        </Paper>
-        <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: 'error.light' }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: 'error.dark' }}>
-            {unidades.filter(u => u.status === 'cancelado').length}
-          </Typography>
-          <Typography variant="body2" color="error.dark">
-            Canceladas
-          </Typography>
-        </Paper>
+        {/* Total de Unidades */}
+        <Card sx={{ 
+          p: 3, 
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.25)',
+          transition: 'transform 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 25px rgba(102, 126, 234, 0.35)',
+          }
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {totalUnidades}
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                Total de Unidades
+              </Typography>
+            </Box>
+            <Box sx={{ 
+              backgroundColor: 'rgba(255,255,255,0.2)', 
+              borderRadius: 2, 
+              p: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Building size={32} />
+            </Box>
+          </Box>
+        </Card>
+
+        {/* Unidades Ativas */}
+        <Card sx={{ 
+          p: 3, 
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+          color: 'white',
+          boxShadow: '0 4px 20px rgba(17, 153, 142, 0.25)',
+          transition: 'transform 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 25px rgba(17, 153, 142, 0.35)',
+          }
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {unidades.filter(u => u.status === 'ativo').length}
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                Ativas
+              </Typography>
+            </Box>
+            <Box sx={{ 
+              backgroundColor: 'rgba(255,255,255,0.2)', 
+              borderRadius: 2, 
+              p: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <CheckCircle size={32} />
+            </Box>
+          </Box>
+        </Card>
+
+        {/* Em Implantação */}
+        <Card sx={{ 
+          p: 3, 
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #ff9a56 0%, #ff6b6b 100%)',
+          color: 'white',
+          boxShadow: '0 4px 20px rgba(255, 154, 86, 0.25)',
+          transition: 'transform 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 25px rgba(255, 154, 86, 0.35)',
+          }
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {unidades.filter(u => u.status === 'em_implantacao').length}
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                Em Implantação
+              </Typography>
+            </Box>
+            <Box sx={{ 
+              backgroundColor: 'rgba(255,255,255,0.2)', 
+              borderRadius: 2, 
+              p: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Clock size={32} />
+            </Box>
+          </Box>
+        </Card>
+
+        {/* Canceladas */}
+        <Card sx={{ 
+          p: 3, 
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%)',
+          color: 'white',
+          boxShadow: '0 4px 20px rgba(252, 74, 26, 0.25)',
+          transition: 'transform 0.2s ease-in-out',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 25px rgba(252, 74, 26, 0.35)',
+          }
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {unidades.filter(u => u.status === 'cancelado').length}
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                Canceladas
+              </Typography>
+            </Box>
+            <Box sx={{ 
+              backgroundColor: 'rgba(255,255,255,0.2)', 
+              borderRadius: 2, 
+              p: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <XCircle size={32} />
+            </Box>
+          </Box>
+        </Card>
       </Box>
 
       {/* Tabela de Unidades */}
