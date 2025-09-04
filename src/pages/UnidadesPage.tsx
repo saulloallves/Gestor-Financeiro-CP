@@ -7,6 +7,7 @@ import {
   Chip, TextField, MenuItem, Tooltip, CircularProgress, Dialog, DialogTitle, DialogContent
 } from '@mui/material';
 import { DataGrid, type GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
+import { ptBR } from '@mui/x-data-grid/locales';
 import { useTheme } from '@mui/material/styles';
 import {
   Plus, Search, Filter, Download, Edit,
@@ -22,7 +23,6 @@ export function UnidadesPage() {
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusUnidade | ''>('');
-  const [showFilters, setShowFilters] = useState(false);
   
   // Estados do modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -266,18 +266,74 @@ export function UnidadesPage() {
       </Box>
 
       {/* Filtros e Busca */}
-      <Card sx={{ marginBottom: theme.spacing(3), width: '100%' }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+      <Card sx={{ 
+        marginBottom: theme.spacing(3), 
+        width: '100%',
+        borderRadius: 3,
+        backgroundColor: 'background.paper',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderLeft: '6px solid',
+        borderLeftColor: 'primary.main',
+      }}>
+        <CardContent sx={{ p: 3 }}>
+          {/* Cabeçalho da seção de filtros */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            mb: 3 
+          }}>
+            <Box sx={{ 
+              backgroundColor: 'primary.main', 
+              borderRadius: 3, 
+              p: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Filter size={24} color="white" />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ 
+                fontWeight: 600, 
+                color: 'text.primary',
+                mb: 0.5
+              }}>
+                Filtros de Pesquisa
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Use os filtros para encontrar unidades específicas
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Campos de filtro */}
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2, 
+            flexWrap: 'wrap', 
+            alignItems: 'flex-end' 
+          }}>
             <TextField
               placeholder="Buscar por nome da unidade..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
-                startAdornment: <Search size={20} color={theme.palette.text.secondary} />,
+                startAdornment: (
+                  <Box sx={{ marginRight: 1, display: 'flex', alignItems: 'center' }}>
+                    <Search size={20} color={theme.palette.text.secondary} />
+                  </Box>
+                ),
               }}
               size="small"
-              sx={{ flex: '1 1 300px' }}
+              sx={{ 
+                flex: '1 1 300px',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                }
+              }}
             />
             
             <TextField
@@ -286,7 +342,12 @@ export function UnidadesPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusUnidade | '')}
               size="small"
-              sx={{ minWidth: 150 }}
+              sx={{ 
+                minWidth: 150,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                }
+              }}
             >
               <MenuItem value="">Todos os status</MenuItem>
               <MenuItem value="ativo">Ativo</MenuItem>
@@ -295,34 +356,34 @@ export function UnidadesPage() {
               <MenuItem value="cancelado">Cancelado</MenuItem>
             </TextField>
 
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
               <Button
                 variant="contained"
                 startIcon={<Search size={16} />}
                 onClick={handleSearch}
-                size="small"
+                size="medium"
+                sx={{ 
+                  borderRadius: 2,
+                  px: 3,
+                  fontWeight: 500,
+                  textTransform: 'none'
+                }}
               >
                 Buscar
               </Button>
               <Button
                 variant="outlined"
                 onClick={handleClearFilters}
-                size="small"
+                size="medium"
+                sx={{ 
+                  borderRadius: 2,
+                  px: 3,
+                  fontWeight: 500,
+                  textTransform: 'none'
+                }}
               >
                 Limpar
               </Button>
-              <IconButton
-                onClick={() => setShowFilters(!showFilters)}
-                sx={{ 
-                  border: 1, 
-                  borderColor: 'divider',
-                  backgroundColor: showFilters ? 'primary.main' : 'transparent',
-                  color: showFilters ? 'primary.contrastText' : 'text.secondary'
-                }}
-                size="small"
-              >
-                <Filter size={16} />
-              </IconButton>
             </Box>
           </Box>
         </CardContent>
@@ -512,6 +573,7 @@ export function UnidadesPage() {
                 paginationModel: { pageSize: 20 },
               },
             }}
+            localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
             sx={{
               border: 'none',
               width: '100%',
