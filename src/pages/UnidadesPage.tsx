@@ -27,7 +27,6 @@ import {
   Filter,
   Download,
   Edit,
-  Eye,
   Building2,
   Phone,
   MapPin,
@@ -55,12 +54,6 @@ export function UnidadesPage() {
   };
 
   const handleEditUnidade = (unidade: Unidade) => {
-    setSelectedUnidade(unidade);
-    setIsEditModalOpen(true);
-  };
-
-  const handleViewUnidade = (unidade: Unidade) => {
-    // Por enquanto, vamos abrir o modal de edição em modo visualização
     setSelectedUnidade(unidade);
     setIsEditModalOpen(true);
   };
@@ -198,18 +191,8 @@ export function UnidadesPage() {
       field: 'actions',
       type: 'actions',
       headerName: 'Ações',
-      width: 120,
+      width: 80,
       getActions: (params) => [
-        <GridActionsCellItem
-          key="view"
-          icon={
-            <Tooltip title="Visualizar">
-              <Eye size={16} />
-            </Tooltip>
-          }
-          label="Visualizar"
-          onClick={() => handleViewUnidade(params.row)}
-        />,
         <GridActionsCellItem
           key="edit"
           icon={
