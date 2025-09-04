@@ -12,7 +12,8 @@ import type {
   UnidadeSort,
   UnidadePagination,
   UnidadeListResponse,
-  FranqueadoPrincipal
+  FranqueadoPrincipal,
+  FranqueadoVinculado
 } from '../types/unidades';
 
 class UnidadesService {
@@ -168,8 +169,8 @@ class UnidadesService {
    */
   async createUnidade(unidadeData: CreateUnidadeData): Promise<Unidade> {
     try {
-      // Gerar código automaticamente
-      const codigo = await this.generateNextCode();
+      // Usar código fornecido ou gerar automaticamente com a função RPC do Supabase
+      const codigo = unidadeData.codigo_unidade || await this.generateNextCode();
 
       const { data, error } = await supabase
         .from('unidades')
@@ -320,6 +321,59 @@ class UnidadesService {
       return (data || []) as FranqueadoPrincipal[];
     } catch (error) {
       console.error('Erro no UnidadesService.getFranqueados:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Buscar franqueados vinculados a uma unidade específica
+   */
+  async getFranqueadosVinculados(unidadeId: string): Promise<FranqueadoVinculado[]> {
+    try {
+      const { data, error } = await supabase
+        .from('franqueados_unidades')
+        .select(`
+          id,
+          franqueado_id,
+          unidade_id,
+          data_vinculo,
+          ativo,
+          franqueado:franqueados(
+            id,
+            nome,
+            cpf,
+            telefone,
+            email,
+            tipo,
+            status
+          )
+        `)
+        .eq('unidade_id', unidadeId)
+        .eq('ativo', true)
+        .order('data_vinculo', { ascending: false });
+
+      if (error) {
+        throw new Error(`Erro ao buscar franqueados vinculados: ${error.message}`);
+      }
+
+      return (data || []).map((vinculo: any) => ({
+        id: vinculo.id,
+        franqueado_id: vinculo.franqueado_id,
+        unidade_id: vinculo.unidade_id,
+        data_vinculo: vinculo.data_vinculo,
+        ativo: vinculo.ativo,
+        franqueado: {
+          id: vinculo.franqueado.id,
+          nome: vinculo.franqueado.nome,
+          cpf: vinculo.franqueado.cpf,
+          telefone: vinculo.franqueado.telefone,
+          email: vinculo.franqueado.email,
+          tipo: vinculo.franqueado.tipo,
+          status: vinculo.franqueado.status
+        }
+      }));
+    } catch (error) {
+      console.error('Erro no UnidadesService.getFranqueadosVinculados:', error);
       throw error;
     }
   }

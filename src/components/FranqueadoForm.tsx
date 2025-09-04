@@ -7,7 +7,6 @@ import {
   Typography,
   Card,
   CardContent,
-  CardHeader,
   Button,
   TextField,
   MenuItem,
@@ -25,7 +24,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTheme } from '@mui/material/styles';
-import { Save, X, User, Phone, MapPin, Briefcase, Building2, DollarSign, Search, DonutIcon as IconButton } from 'lucide-react';
+import { Save, X, User, Phone, MapPin, Briefcase, Building2, DollarSign, Search  } from 'lucide-react';
 import { 
   useCreateFranqueado, 
   useUpdateFranqueado, 
@@ -42,9 +41,7 @@ import type {
   Franqueado, 
   CreateFranqueadoData, 
   UpdateFranqueadoData,
-  UnidadeParaVinculo,
-  TipoFranqueado,
-  DisponibilidadeFranqueado
+  UnidadeParaVinculo
 } from '../types/franqueados';
 
 // Schema de validação com Zod
@@ -84,12 +81,14 @@ const franqueadoSchema = z.object({
     }, {
       message: 'WhatsApp inválido'
     }),
-  email_pessoal: z.string().email('Email inválido').optional().or(z.literal('')),
+  email_pessoal: z.string()
+    .min(1, 'Email pessoal é obrigatório')
+    .email('Email inválido'),
   email_comercial: z.string().email('Email inválido').optional().or(z.literal('')),
   
   // Informações Contratuais
   tipo: z.enum(['principal', 'familiar', 'investidor', 'parceiro'] as const),
-  prolabore: z.number().min(0, 'Pró-labore deve ser positivo').optional(),
+  prolabore: z.number().min(0, 'Pró-labore deve ser positivo').nullable().optional(),
   contrato_social: z.boolean(),
   disponibilidade: z.enum(['integral', 'parcial', 'eventos'] as const),
   
@@ -167,7 +166,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
       email_pessoal: '',
       email_comercial: '',
       tipo: 'principal',
-      prolabore: undefined,
+      prolabore: null,
       contrato_social: true,
       disponibilidade: 'integral',
       profissao_anterior: '',
@@ -222,7 +221,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
         email_pessoal: franqueado.email_pessoal || '',
         email_comercial: franqueado.email_comercial || '',
         tipo: franqueado.tipo,
-        prolabore: franqueado.prolabore,
+        prolabore: franqueado.prolabore ?? null,
         contrato_social: franqueado.contrato_social,
         disponibilidade: franqueado.disponibilidade,
         profissao_anterior: franqueado.profissao_anterior || '',
@@ -507,6 +506,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       {...field}
                       label="E-mail Pessoal"
                       type="email"
+                      required
                       error={!!errors.email_pessoal}
                       helperText={errors.email_pessoal?.message}
                       fullWidth
@@ -551,7 +551,8 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       InputProps={{
                         endAdornment: (
                           <InputAdornment position="end">
-                            <IconButton
+                            <Box
+                              component={Button}
                               onClick={() => {
                                 const cep = (field.value || '').replace(/\D/g, '');
                                 if (cep.length === 8) {
@@ -559,6 +560,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                                 }
                               }}
                               disabled={loadingCep}
+                              sx={{ minWidth: 0, padding: 0 }}
                               size="small"
                             >
                               {loadingCep ? (
@@ -566,7 +568,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                               ) : (
                                 <Search size={20} />
                               )}
-                            </IconButton>
+                            </Box>
                           </InputAdornment>
                         )
                       }}
@@ -781,8 +783,13 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                           ),
                         }}
                         onChange={(e) => {
-                          const valor = parseFloat(e.target.value) || undefined;
-                          field.onChange(valor);
+                          const value = e.target.value;
+                          if (value === '' || value === null) {
+                            field.onChange(null);
+                          } else {
+                            const valor = parseFloat(value);
+                            field.onChange(isNaN(valor) ? null : valor);
+                          }
                         }}
                       />
                     )}

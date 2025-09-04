@@ -10,6 +10,7 @@ export interface Franqueado {
   
   // Dados Pessoais
   nome: string;
+  nome_completo?: string; // Campo adicional para nome completo
   cpf: string;
   nacionalidade?: string;
   data_nascimento?: string;
@@ -17,6 +18,7 @@ export interface Franqueado {
   // Endereço
   endereco_rua?: string;
   endereco_numero?: string;
+  endereco_complemento?: string; // Campo adicional
   endereco_bairro?: string;
   endereco_cidade?: string;
   endereco_estado?: string;
@@ -27,10 +29,11 @@ export interface Franqueado {
   whatsapp?: string;
   email_pessoal?: string;
   email_comercial?: string;
+  email?: string; // Campo calculado para busca
   
   // Informações Contratuais
   tipo: TipoFranqueado;
-  prolabore?: number;
+  prolabore?: number | null;
   contrato_social: boolean;
   disponibilidade: DisponibilidadeFranqueado;
   
@@ -76,12 +79,12 @@ export interface CreateFranqueadoData {
   // Contatos
   telefone?: string;
   whatsapp?: string;
-  email_pessoal?: string;
+  email_pessoal: string; // Obrigatório para criação de login
   email_comercial?: string;
   
   // Informações Contratuais
   tipo: TipoFranqueado;
-  prolabore?: number;
+  prolabore?: number | null;
   contrato_social?: boolean;
   disponibilidade: DisponibilidadeFranqueado;
   

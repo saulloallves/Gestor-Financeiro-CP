@@ -1,6 +1,3 @@
-// Formulário de Cadastro/Edição de Unidades - Módulo 2.1
-// Seguindo as diretrizes de design e arquitetura do projeto
-
 import { useState, useEffect } from 'react';
 import {
   Box,
@@ -17,27 +14,80 @@ import {
   CircularProgress,
   Autocomplete,
   InputAdornment,
-  IconButton
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTheme } from '@mui/material/styles';
-import { Save, X, Building2, User, MapPin, Clock, Search } from 'lucide-react';
+import { 
+  Save, 
+  X, 
+  Building2, 
+  User, 
+  MapPin, 
+  Clock, 
+  Search,
+  Info,
+  Users,
+  Link
+} from 'lucide-react';
 import { 
   useCreateUnidade, 
   useUpdateUnidade, 
-  useFranqueados 
+  useFranqueados,
+  useFranqueadosVinculados
 } from '../hooks/useUnidades';
-import { useEnderecoForm } from '../hooks/useEnderecoForm';
-import { validarCnpj, formatarCnpj, formatarTelefone, validarTelefone } from '../utils/validations';
-import CodigoUnidade from './CodigoUnidade';
+import { validarCnpj, formatarCnpj, formatarTelefone, validarTelefone, formatarCpf } from '../utils/validations';
+import { buscarCep } from '../api/viaCepService';
+import { CodigoUnidade } from './CodigoUnidade';
 import type { 
   Unidade, 
-  CreateUnidadeData, 
-  UpdateUnidadeData,
   FranqueadoPrincipal
 } from '../types/unidades';
+
+// Interface personalizada para as abas
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`unidade-tabpanel-${index}`}
+      aria-labelledby={`unidade-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
+
+function a11yProps(index: number) {
+  return {
+    id: `unidade-tab-${index}`,
+    'aria-controls': `unidade-tabpanel-${index}`,
+  };
+}
 
 // Schema de validação com Zod
 const unidadeSchema = z.object({
@@ -56,7 +106,7 @@ const unidadeSchema = z.object({
   telefone_comercial: z.string()
     .optional()
     .refine((telefone) => {
-      if (!telefone || telefone.trim() === '') return true; // Campo opcional
+      if (!telefone || telefone.trim() === '') return true;
       return validarTelefone(telefone);
     }, {
       message: 'Telefone inválido'
@@ -71,7 +121,6 @@ const unidadeSchema = z.object({
   endereco_bairro: z.string().optional(),
   endereco_cidade: z.string().optional(),
   endereco_estado: z.string().optional(),
-  endereco_uf: z.string().max(2, 'UF deve ter 2 caracteres').optional(),
   endereco_cep: z.string().optional(),
   
   // Horários
@@ -79,11 +128,9 @@ const unidadeSchema = z.object({
   horario_sabado: z.string().optional(),
   horario_domingo: z.string().optional(),
   
-  // Status e configurações
+  // Configurações
   status: z.enum(['ativo', 'em_implantacao', 'suspenso', 'cancelado'] as const),
   multifranqueado: z.boolean(),
-  
-  // Franqueado principal
   franqueado_principal_id: z.string().optional(),
 });
 
@@ -91,27 +138,37 @@ type UnidadeFormData = z.infer<typeof unidadeSchema>;
 
 interface UnidadeFormProps {
   unidade?: Unidade;
-  onSuccess?: (unidade: Unidade) => void;
-  onCancel?: () => void;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
 export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) {
   const theme = useTheme();
+  const [tabValue, setTabValue] = useState(0);
+  const [codigoUnidade, setCodigoUnidade] = useState('');
+  const [selectedFranqueado, setSelectedFranqueado] = useState<FranqueadoPrincipal | null>(null);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  
   const isEditing = !!unidade;
   
+  // Hooks para queries
+  const { data: franqueados = [], isLoading: franqueadosLoading } = useFranqueados();
+  const { data: franqueadosVinculados = [], isLoading: vinculosLoading } = useFranqueadosVinculados(
+    unidade?.id || ''
+  );
+  
+  // Mutations
   const createMutation = useCreateUnidade();
   const updateMutation = useUpdateUnidade();
-  const { data: franqueados = [], isLoading: isLoadingFranqueados } = useFranqueados();
-  
-  const [selectedFranqueado, setSelectedFranqueado] = useState<FranqueadoPrincipal | null>(null);
-  const [codigoUnidade, setCodigoUnidade] = useState<string>(unidade?.codigo_unidade || '');
 
+  // Configuração do formulário
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
     reset,
-    setValue
+    watch,
+    setValue,
+    formState: { errors, isSubmitting }
   } = useForm<UnidadeFormData>({
     resolver: zodResolver(unidadeSchema),
     defaultValues: {
@@ -127,41 +184,40 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
       endereco_bairro: '',
       endereco_cidade: '',
       endereco_estado: '',
-      endereco_uf: '',
       endereco_cep: '',
       horario_seg_sex: '',
       horario_sabado: '',
       horario_domingo: '',
       status: 'ativo',
       multifranqueado: false,
-      franqueado_principal_id: '',
-    },
+      franqueado_principal_id: undefined,
+    }
   });
 
-  // Hook para endereço com ViaCEP
-  const {
-    loading: loadingCep,
-    handleCepChange,
-    handleBuscarCep
-  } = useEnderecoForm({
-    setValue,
-    cepFieldName: 'endereco_cep',
-    ruaFieldName: 'endereco_rua',
-    bairroFieldName: 'endereco_bairro',
-    cidadeFieldName: 'endereco_cidade',
-    estadoFieldName: 'endereco_estado',
-    ufFieldName: 'endereco_uf',
-    complementoFieldName: 'endereco_complemento',
-  });
+  // Watch para valores que afetam a UI
+  const multifranqueado = watch('multifranqueado');
 
-  // Estados brasileiros
-  const estados = [
-    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
-    'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
-    'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
-  ];
+  // Função para buscar CEP
+  const handleBuscarCep = async (cep: string) => {
+    if (!cep || cep.length < 8) return;
+    
+    setBuscandoCep(true);
+    try {
+      const endereco = await buscarCep(cep);
+      if (endereco) {
+        setValue('endereco_rua', endereco.logradouro);
+        setValue('endereco_bairro', endereco.bairro);
+        setValue('endereco_cidade', endereco.cidade);
+        setValue('endereco_estado', endereco.estado);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+    } finally {
+      setBuscandoCep(false);
+    }
+  };
 
-  // Carregar dados da unidade para edição
+  // Inicializar formulário com dados da unidade (edição)
   useEffect(() => {
     if (unidade) {
       reset({
@@ -177,25 +233,23 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
         endereco_bairro: unidade.endereco_bairro || '',
         endereco_cidade: unidade.endereco_cidade || '',
         endereco_estado: unidade.endereco_estado || '',
-        endereco_uf: unidade.endereco_uf || '',
         endereco_cep: unidade.endereco_cep || '',
         horario_seg_sex: unidade.horario_seg_sex || '',
         horario_sabado: unidade.horario_sabado || '',
         horario_domingo: unidade.horario_domingo || '',
         status: unidade.status,
         multifranqueado: unidade.multifranqueado,
-        franqueado_principal_id: unidade.franqueado_principal_id || '',
+        franqueado_principal_id: unidade.franqueado_principal_id || undefined,
       });
 
       // Encontrar e selecionar o franqueado principal
-      if (unidade.franqueado_principal_id) {
+      if (unidade.franqueado_principal_id && franqueados.length > 0) {
         const franqueado = franqueados.find(f => f.id === unidade.franqueado_principal_id);
         if (franqueado) {
           setSelectedFranqueado(franqueado);
         }
       }
       
-      // Sincronizar o código da unidade
       setCodigoUnidade(unidade.codigo_unidade);
     }
   }, [unidade, franqueados, reset]);
@@ -207,385 +261,405 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
         ...data,
         email_comercial: data.email_comercial || undefined,
         franqueado_principal_id: data.franqueado_principal_id || undefined,
-        // Incluir código da unidade se foi especificado manualmente
         ...(codigoUnidade && { codigo_unidade: codigoUnidade }),
       };
 
       if (isEditing) {
-        const updatedUnidade = await updateMutation.mutateAsync({
+        await updateMutation.mutateAsync({
           id: unidade.id,
-          ...formData
-        } as UpdateUnidadeData);
-        onSuccess?.(updatedUnidade);
+          ...formData,
+        });
       } else {
-        const newUnidade = await createMutation.mutateAsync(formData as CreateUnidadeData);
-        onSuccess?.(newUnidade);
+        await createMutation.mutateAsync(formData);
       }
+
+      onSuccess();
     } catch (error) {
       console.error('Erro no formulário:', error);
     }
   };
 
-  const isLoading = isSubmitting || createMutation.isPending || updateMutation.isPending;
+  // Handler para mudança de aba
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  // Função para obter a cor do status
+  const getStatusColor = (status: string): "default" | "success" | "warning" | "error" => {
+    switch (status) {
+      case 'ativo': return 'success';
+      case 'em_implantacao': return 'warning';
+      case 'suspenso': return 'error';
+      case 'cancelado': return 'default';
+      default: return 'default';
+    }
+  };
 
   return (
-    <Box sx={{ padding: theme.spacing(3) }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: theme.spacing(3)
-      }}>
-        <Box>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-            {isEditing ? 'Editar Unidade' : 'Nova Unidade'}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            {isEditing 
-              ? `Código: ${unidade.codigo_unidade}` 
-              : 'Código será gerado automaticamente'
-            }
-          </Typography>
-        </Box>
-        
-        <Box sx={{ display: 'flex', gap: 2 }}>
+    <Card sx={{ maxWidth: 1200, margin: 'auto' }}>
+      <CardHeader
+        title={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Building2 color={theme.palette.primary.main} />
+            <Typography variant="h5" component="h1">
+              {isEditing ? 'Editar Unidade' : 'Nova Unidade'}
+            </Typography>
+          </Box>
+        }
+        action={
           <Button
             variant="outlined"
-            startIcon={<X size={20} />}
+            startIcon={<X />}
             onClick={onCancel}
-            disabled={isLoading}
+            sx={{ mr: 1 }}
           >
             Cancelar
           </Button>
-          <Button
-            variant="contained"
-            startIcon={isLoading ? <CircularProgress size={20} /> : <Save size={20} />}
-            onClick={handleSubmit(onSubmit)}
-            disabled={isLoading}
-          >
-            {isEditing ? 'Atualizar' : 'Salvar'}
-          </Button>
-        </Box>
-      </Box>
+        }
+      />
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        {/* Informações Básicas */}
-        <Card sx={{ marginBottom: theme.spacing(3) }}>
-          <CardHeader 
-            avatar={<Building2 color={theme.palette.primary.main} />}
-            title="Informações Básicas"
-            sx={{ backgroundColor: 'background.default' }}
-          />
-          <CardContent>
-            {/* Componente de Código da Unidade */}
-            <Box sx={{ marginBottom: theme.spacing(3), padding: theme.spacing(2), backgroundColor: 'background.default', borderRadius: 1 }}>
+      <CardContent>
+        {/* Exibir código da unidade se estiver editando */}
+        {isEditing && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              <strong>Código da Unidade:</strong> {unidade?.codigo_unidade}
+            </Typography>
+          </Alert>
+        )}
+
+        {/* Tabs de Navegação */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons="auto"
+            aria-label="Abas do formulário de unidade"
+          >
+            <Tab
+              icon={<Info size={16} />}
+              label="Informações Básicas"
+              {...a11yProps(0)}
+            />
+            <Tab
+              icon={<MapPin size={16} />}
+              label="Endereço"
+              {...a11yProps(1)}
+            />
+            <Tab
+              icon={<Clock size={16} />}
+              label="Horários"
+              {...a11yProps(2)}
+            />
+            <Tab
+              icon={<User size={16} />}
+              label="Franqueado Principal"
+              {...a11yProps(3)}
+            />
+            {isEditing && (
+              <Tab
+                icon={<Users size={16} />}
+                label="Vínculos"
+                {...a11yProps(4)}
+              />
+            )}
+          </Tabs>
+        </Box>
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Tab 1: Informações Básicas */}
+          <TabPanel value={tabValue} index={0}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Componente para geração/exibição do código da unidade */}
               <CodigoUnidade
                 codigo={codigoUnidade}
                 isEditing={isEditing}
                 onCodigoChange={setCodigoUnidade}
                 disabled={isSubmitting}
               />
-            </Box>
-            
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
-              <Controller
-                name="nome_grupo"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Nome do Grupo"
-                    error={!!errors.nome_grupo}
-                    helperText={errors.nome_grupo?.message}
-                    fullWidth
-                  />
-                )}
-              />
               
-              <Controller
-                name="nome_padrao"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Nome Padronizado da Unidade"
-                    required
-                    error={!!errors.nome_padrao}
-                    helperText={errors.nome_padrao?.message}
-                    fullWidth
-                  />
-                )}
-              />
-              
-              <Controller
-                name="cnpj"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="CNPJ"
-                    placeholder="00.000.000/0000-00"
-                    error={!!errors.cnpj}
-                    helperText={errors.cnpj?.message || 'Formato: 00.000.000/0000-00'}
-                    fullWidth
-                    onChange={(e) => {
-                      const valor = e.target.value;
-                      const cnpjFormatado = formatarCnpj(valor);
-                      field.onChange(cnpjFormatado);
-                    }}
-                  />
-                )}
-              />
-              
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    select
-                    label="Status da Unidade"
-                    error={!!errors.status}
-                    helperText={errors.status?.message}
-                    fullWidth
-                  >
-                    <MenuItem value="ativo">Ativo</MenuItem>
-                    <MenuItem value="em_implantacao">Em Implantação</MenuItem>
-                    <MenuItem value="suspenso">Suspenso</MenuItem>
-                    <MenuItem value="cancelado">Cancelado</MenuItem>
-                  </TextField>
-                )}
-              />
-            </Box>
-            
-            <Box sx={{ mt: 2 }}>
-              <Controller
-                name="multifranqueado"
-                control={control}
-                render={({ field }) => (
-                  <FormControlLabel
-                    control={<Switch {...field} checked={field.value} />}
-                    label="Multifranqueado"
-                  />
-                )}
-              />
-            </Box>
-          </CardContent>
-        </Card>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                <Controller
+                  name="nome_padrao"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Nome da Unidade"
+                      required
+                      error={!!errors.nome_padrao}
+                      helperText={errors.nome_padrao?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+                <Controller
+                  name="nome_grupo"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Nome do Grupo/Franqueado Principal"
+                      error={!!errors.nome_grupo}
+                      helperText={errors.nome_grupo?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+              </Box>
 
-        {/* Contato da Unidade */}
-        <Card sx={{ marginBottom: theme.spacing(3) }}>
-          <CardHeader 
-            title="Contato da Unidade"
-            sx={{ backgroundColor: 'background.default' }}
-          />
-          <CardContent>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
-              <Controller
-                name="telefone_comercial"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Telefone Comercial"
-                    placeholder="(11) 99999-9999"
-                    error={!!errors.telefone_comercial}
-                    helperText={errors.telefone_comercial?.message || 'Formato: (11) 99999-9999 ou (11) 9999-9999'}
-                    fullWidth
-                    onChange={(e) => {
-                      const valor = e.target.value;
-                      const telefoneFormatado = formatarTelefone(valor);
-                      field.onChange(telefoneFormatado);
-                    }}
-                  />
-                )}
-              />
-              
-              <Controller
-                name="email_comercial"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="E-mail Comercial"
-                    type="email"
-                    error={!!errors.email_comercial}
-                    helperText={errors.email_comercial?.message}
-                    fullWidth
-                  />
-                )}
-              />
-              
-              <Controller
-                name="instagram"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Instagram"
-                    error={!!errors.instagram}
-                    helperText={errors.instagram?.message}
-                    fullWidth
-                  />
-                )}
-              />
-            </Box>
-          </CardContent>
-        </Card>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                <Controller
+                  name="cnpj"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="CNPJ"
+                      error={!!errors.cnpj}
+                      helperText={errors.cnpj?.message}
+                      fullWidth
+                      onChange={(e) => {
+                        const cnpjFormatado = formatarCnpj(e.target.value);
+                        field.onChange(cnpjFormatado);
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="telefone_comercial"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Telefone Comercial"
+                      error={!!errors.telefone_comercial}
+                      helperText={errors.telefone_comercial?.message}
+                      fullWidth
+                      onChange={(e) => {
+                        const telefoneFormatado = formatarTelefone(e.target.value);
+                        field.onChange(telefoneFormatado);
+                      }}
+                    />
+                  )}
+                />
+              </Box>
 
-        {/* Endereço */}
-        <Card sx={{ marginBottom: theme.spacing(3) }}>
-          <CardHeader 
-            avatar={<MapPin color={theme.palette.primary.main} />}
-            title="Endereço"
-            sx={{ backgroundColor: 'background.default' }}
-          />
-          <CardContent>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2 }}>
-              <Controller
-                name="endereco_rua"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Rua"
-                    error={!!errors.endereco_rua}
-                    helperText={errors.endereco_rua?.message}
-                    fullWidth
-                    sx={{ gridColumn: 'span 2' }}
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                <Controller
+                  name="email_comercial"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Email Comercial"
+                      type="email"
+                      error={!!errors.email_comercial}
+                      helperText={errors.email_comercial?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+                <Controller
+                  name="instagram"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Instagram"
+                      error={!!errors.instagram}
+                      helperText={errors.instagram?.message}
+                      fullWidth
+                      placeholder="@usuario_instagram"
+                    />
+                  )}
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Status"
+                      select
+                      required
+                      error={!!errors.status}
+                      helperText={errors.status?.message}
+                      fullWidth
+                    >
+                      <MenuItem value="ativo">Ativo</MenuItem>
+                      <MenuItem value="em_implantacao">Em Implantação</MenuItem>
+                      <MenuItem value="suspenso">Suspenso</MenuItem>
+                      <MenuItem value="cancelado">Cancelado</MenuItem>
+                    </TextField>
+                  )}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', minWidth: { md: '50%' } }}>
+                  <Controller
+                    name="multifranqueado"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={field.value}
+                            onChange={field.onChange}
+                          />
+                        }
+                        label="Unidade Multifranqueado"
+                      />
+                    )}
                   />
-                )}
-              />
-              
-              <Controller
-                name="endereco_numero"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Número"
-                    error={!!errors.endereco_numero}
-                    helperText={errors.endereco_numero?.message}
-                    fullWidth
-                  />
-                )}
-              />
-              
-              <Controller
-                name="endereco_complemento"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Complemento"
-                    error={!!errors.endereco_complemento}
-                    helperText={errors.endereco_complemento?.message}
-                    fullWidth
-                  />
-                )}
-              />
-              
-              <Controller
-                name="endereco_bairro"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Bairro"
-                    error={!!errors.endereco_bairro}
-                    helperText={errors.endereco_bairro?.message}
-                    fullWidth
-                  />
-                )}
-              />
-              
-              <Controller
-                name="endereco_cidade"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Cidade"
-                    error={!!errors.endereco_cidade}
-                    helperText={errors.endereco_cidade?.message}
-                    fullWidth
-                  />
-                )}
-              />
-              
-              <Controller
-                name="endereco_uf"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    select
-                    label="UF"
-                    error={!!errors.endereco_uf}
-                    helperText={errors.endereco_uf?.message}
-                    fullWidth
-                  >
-                    {estados.map((uf) => (
-                      <MenuItem key={uf} value={uf}>
-                        {uf}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
-              
-              <Controller
-                name="endereco_cep"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="CEP"
-                    placeholder="00000-000"
-                    error={!!errors.endereco_cep}
-                    helperText={errors.endereco_cep?.message || 'Digite o CEP para buscar automaticamente o endereço'}
-                    fullWidth
-                    onChange={(e) => {
-                      handleCepChange(e.target.value, field.onChange);
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => {
-                              const cep = (field.value || '').replace(/\D/g, '');
-                              if (cep.length === 8) {
-                                handleBuscarCep(cep);
-                              }
-                            }}
-                            disabled={loadingCep}
-                            size="small"
-                          >
-                            {loadingCep ? (
+                </Box>
+              </Box>
+            </Box>
+          </TabPanel>
+
+          {/* Tab 2: Endereço */}
+          <TabPanel value={tabValue} index={1}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                <Controller
+                  name="endereco_cep"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="CEP"
+                      error={!!errors.endereco_cep}
+                      helperText={errors.endereco_cep?.message}
+                      fullWidth
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            {buscandoCep ? (
                               <CircularProgress size={20} />
                             ) : (
-                              <Search size={20} />
+                              <Button
+                                onClick={() => handleBuscarCep(field.value || '')}
+                                startIcon={<Search />}
+                                size="small"
+                              >
+                                Buscar
+                              </Button>
                             )}
-                          </IconButton>
-                        </InputAdornment>
-                      )
-                    }}
-                  />
-                )}
-              />
-            </Box>
-          </CardContent>
-        </Card>
+                          </InputAdornment>
+                        ),
+                      }}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                        if (e.target.value.length === 9) {
+                          handleBuscarCep(e.target.value);
+                        }
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="endereco_rua"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Rua/Logradouro"
+                      error={!!errors.endereco_rua}
+                      helperText={errors.endereco_rua?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+              </Box>
 
-        {/* Horários de Funcionamento */}
-        <Card sx={{ marginBottom: theme.spacing(3) }}>
-          <CardHeader 
-            avatar={<Clock color={theme.palette.primary.main} />}
-            title="Horários de Funcionamento"
-            sx={{ backgroundColor: 'background.default' }}
-          />
-          <CardContent>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Controller
+                    name="endereco_numero"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Número"
+                        error={!!errors.endereco_numero}
+                        helperText={errors.endereco_numero?.message}
+                        fullWidth
+                      />
+                    )}
+                  />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Controller
+                    name="endereco_complemento"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Complemento"
+                        error={!!errors.endereco_complemento}
+                        helperText={errors.endereco_complemento?.message}
+                        fullWidth
+                      />
+                    )}
+                  />
+                </Box>
+                <Box sx={{ flex: 2 }}>
+                  <Controller
+                    name="endereco_bairro"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Bairro"
+                        error={!!errors.endereco_bairro}
+                        helperText={errors.endereco_bairro?.message}
+                        fullWidth
+                      />
+                    )}
+                  />
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                <Box sx={{ flex: 3 }}>
+                  <Controller
+                    name="endereco_cidade"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Cidade"
+                        error={!!errors.endereco_cidade}
+                        helperText={errors.endereco_cidade?.message}
+                        fullWidth
+                      />
+                    )}
+                  />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Controller
+                    name="endereco_estado"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Estado"
+                        error={!!errors.endereco_estado}
+                        helperText={errors.endereco_estado?.message}
+                        fullWidth
+                      />
+                    )}
+                  />
+                </Box>
+              </Box>
+            </Box>
+          </TabPanel>
+
+          {/* Tab 3: Horários */}
+          <TabPanel value={tabValue} index={2}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
               <Controller
                 name="horario_seg_sex"
                 control={control}
@@ -593,14 +667,13 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                   <TextField
                     {...field}
                     label="Segunda a Sexta"
-                    placeholder="Ex: 09:00-18:00"
                     error={!!errors.horario_seg_sex}
                     helperText={errors.horario_seg_sex?.message}
                     fullWidth
+                    placeholder="08:00 - 18:00"
                   />
                 )}
               />
-              
               <Controller
                 name="horario_sabado"
                 control={control}
@@ -608,14 +681,13 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                   <TextField
                     {...field}
                     label="Sábado"
-                    placeholder="Ex: 09:00-14:00"
                     error={!!errors.horario_sabado}
                     helperText={errors.horario_sabado?.message}
                     fullWidth
+                    placeholder="08:00 - 12:00"
                   />
                 )}
               />
-              
               <Controller
                 name="horario_domingo"
                 control={control}
@@ -623,68 +695,236 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                   <TextField
                     {...field}
                     label="Domingo"
-                    placeholder="Ex: Fechado"
                     error={!!errors.horario_domingo}
                     helperText={errors.horario_domingo?.message}
                     fullWidth
+                    placeholder="Fechado ou 09:00 - 15:00"
                   />
                 )}
               />
             </Box>
-          </CardContent>
-        </Card>
+          </TabPanel>
 
-        {/* Franqueado Principal */}
-        <Card sx={{ marginBottom: theme.spacing(3) }}>
-          <CardHeader 
-            avatar={<User color={theme.palette.primary.main} />}
-            title="Franqueado Principal"
-            sx={{ backgroundColor: 'background.default' }}
-          />
-          <CardContent>
-            <Controller
-              name="franqueado_principal_id"
-              control={control}
-              render={() => (
-                <Autocomplete
-                  loading={isLoadingFranqueados}
-                  options={franqueados}
-                  getOptionLabel={(option) => option.nome}
-                  value={selectedFranqueado}
-                  onChange={(_, newValue) => {
-                    setSelectedFranqueado(newValue);
-                    setValue('franqueado_principal_id', newValue?.id || '');
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Selecione o Franqueado Principal"
-                      error={!!errors.franqueado_principal_id}
-                      helperText={errors.franqueado_principal_id?.message}
-                      InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                          <>
-                            {isLoadingFranqueados ? <CircularProgress color="inherit" size={20} /> : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                />
+          {/* Tab 4: Franqueado Principal */}
+          <TabPanel value={tabValue} index={3}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {!multifranqueado && (
+                <Alert severity="info">
+                  Selecione o franqueado principal responsável por esta unidade.
+                </Alert>
               )}
-            />
-          </CardContent>
-        </Card>
+              {multifranqueado && (
+                <Alert severity="warning">
+                  Esta unidade está marcada como multifranqueado. Você pode definir um franqueado principal, mas ele não será o único responsável.
+                </Alert>
+              )}
 
-        {/* Alertas de erro */}
-        {(createMutation.isError || updateMutation.isError) && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {createMutation.error?.message || updateMutation.error?.message}
-          </Alert>
-        )}
-      </form>
-    </Box>
+              <Controller
+                name="franqueado_principal_id"
+                control={control}
+                render={({ field }) => (
+                  <Autocomplete
+                    {...field}
+                    options={franqueados}
+                    getOptionLabel={(option) => `${option.nome} - ${formatarCpf(option.cpf || '')}`}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Franqueado Principal"
+                        error={!!errors.franqueado_principal_id}
+                        helperText={errors.franqueado_principal_id?.message}
+                        InputProps={{
+                          ...params.InputProps,
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <User size={20} />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    )}
+                    value={selectedFranqueado}
+                    onChange={(_, newValue) => {
+                      setSelectedFranqueado(newValue);
+                      field.onChange(newValue?.id || '');
+                    }}
+                    loading={franqueadosLoading}
+                    isOptionEqualToValue={(option, value) => option.id === value?.id}
+                  />
+                )}
+              />
+
+              {selectedFranqueado && (
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Informações do Franqueado Selecionado
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Nome
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedFranqueado.nome}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            CPF
+                          </Typography>
+                          <Typography variant="body1">
+                            {formatarCpf(selectedFranqueado.cpf || '')}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Email
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedFranqueado.email || 'Não informado'}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Telefone
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedFranqueado.telefone || 'Não informado'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+            </Box>
+          </TabPanel>
+
+          {/* Tab 5: Vínculos (só aparece quando editando) */}
+          {isEditing && (
+            <TabPanel value={tabValue} index={4}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Box>
+                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Link size={20} />
+                    Franqueados Vinculados
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Lista de todos os franqueados que possuem vínculo ativo com esta unidade.
+                  </Typography>
+                </Box>
+
+                <Box>
+                  {vinculosLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : franqueadosVinculados.length > 0 ? (
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Nome</TableCell>
+                            <TableCell>CPF</TableCell>
+                            <TableCell>Tipo</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Data do Vínculo</TableCell>
+                            <TableCell>Contato</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {franqueadosVinculados.map((vinculo) => (
+                            <TableRow key={vinculo.id}>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <User size={16} />
+                                  {vinculo.franqueado.nome}
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                {formatarCpf(vinculo.franqueado.cpf || '')}
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={vinculo.franqueado.tipo}
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={vinculo.franqueado.status}
+                                  size="small"
+                                  color={getStatusColor(vinculo.franqueado.status)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                {new Date(vinculo.data_vinculo).toLocaleDateString('pt-BR')}
+                              </TableCell>
+                              <TableCell>
+                                <Box>
+                                  {vinculo.franqueado.email && (
+                                    <Typography variant="body2">
+                                      {vinculo.franqueado.email}
+                                    </Typography>
+                                  )}
+                                  {vinculo.franqueado.telefone && (
+                                    <Typography variant="body2" color="text.secondary">
+                                      {vinculo.franqueado.telefone}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Alert severity="info">
+                      Nenhum franqueado vinculado a esta unidade no momento.
+                    </Alert>
+                  )}
+                </Box>
+              </Box>
+            </TabPanel>
+          )}
+
+          {/* Botões de ação */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
+            <Button
+              type="button"
+              variant="outlined"
+              startIcon={<X />}
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            
+            <Button
+              type="submit"
+              variant="contained"
+              startIcon={<Save />}
+              disabled={isSubmitting}
+              sx={{
+                minWidth: 140,
+              }}
+            >
+              {isSubmitting ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                isEditing ? 'Atualizar' : 'Salvar'
+              )}
+            </Button>
+          </Box>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

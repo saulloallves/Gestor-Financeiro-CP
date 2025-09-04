@@ -48,6 +48,7 @@ export interface CreateUnidadeData {
   nome_grupo?: string;
   nome_padrao: string;
   cnpj?: string;
+  codigo_unidade?: string; // Código opcional que pode ser fornecido pelo usuário
   
   // Contato da unidade
   telefone_comercial?: string;
@@ -172,4 +173,22 @@ export interface UnidadeCardProps {
   onView?: (unidade: Unidade) => void;
   onStatusChange?: (unidade: Unidade, newStatus: StatusUnidade) => void;
   showActions?: boolean;
+}
+
+// Tipo para franqueados vinculados a uma unidade
+export interface FranqueadoVinculado {
+  id: string;
+  franqueado_id: string;
+  unidade_id: string;
+  data_vinculo: string;
+  ativo: boolean;
+  franqueado: {
+    id: string;
+    nome: string;
+    cpf: string;
+    telefone?: string;
+    email?: string;
+    tipo: string;
+    status: string;
+  };
 }

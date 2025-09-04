@@ -238,27 +238,74 @@ class FranqueadosService {
     try {
       const { unidades_vinculadas, ...dadosFranqueado } = franqueadoData;
 
+      // Função auxiliar para limpar valores vazios
+      const limparCampo = (valor: any) => {
+        if (valor === '' || valor === undefined) return null;
+        return valor;
+      };
+
+      // Usar a função personalizada que cria o usuário automaticamente
       const { data, error } = await supabase
-        .from('franqueados')
-        .insert({
-          ...dadosFranqueado,
-          status: franqueadoData.status || 'ativo',
-          contrato_social: franqueadoData.contrato_social || false,
-          empreendedor_previo: franqueadoData.empreendedor_previo || false,
-        })
-        .select()
-        .single();
+        .rpc('create_franqueado_with_auth', {
+          p_nome: dadosFranqueado.nome,
+          p_cpf: dadosFranqueado.cpf,
+          p_telefone: dadosFranqueado.telefone || '',
+          p_email_pessoal: dadosFranqueado.email_pessoal || '',
+          p_nome_completo: dadosFranqueado.nome, // Usar nome como nome_completo por padrão
+          p_whatsapp: limparCampo(dadosFranqueado.whatsapp) || limparCampo(dadosFranqueado.telefone),
+          p_email_comercial: limparCampo(dadosFranqueado.email_comercial),
+          p_tipo: dadosFranqueado.tipo || 'principal',
+          p_prolabore: limparCampo(dadosFranqueado.prolabore),
+          p_nacionalidade: dadosFranqueado.nacionalidade || 'Brasileira',
+          p_data_nascimento: limparCampo(dadosFranqueado.data_nascimento),
+          p_endereco_rua: limparCampo(dadosFranqueado.endereco_rua),
+          p_endereco_numero: limparCampo(dadosFranqueado.endereco_numero),
+          p_endereco_complemento: null, // Campo não está no CreateFranqueadoData
+          p_endereco_bairro: limparCampo(dadosFranqueado.endereco_bairro),
+          p_endereco_cidade: limparCampo(dadosFranqueado.endereco_cidade),
+          p_endereco_estado: limparCampo(dadosFranqueado.endereco_estado),
+          p_endereco_cep: limparCampo(dadosFranqueado.endereco_cep),
+          p_contrato_social: dadosFranqueado.contrato_social || false,
+          p_disponibilidade: dadosFranqueado.disponibilidade || 'integral',
+          p_profissao_anterior: limparCampo(dadosFranqueado.profissao_anterior),
+          p_empreendedor_previo: dadosFranqueado.empreendedor_previo || false,
+          p_status: dadosFranqueado.status || 'ativo'
+        });
 
       if (error) {
         throw new Error(`Erro ao criar franqueado: ${error.message}`);
       }
 
-      // Se há unidades para vincular, criar os vínculos
-      if (unidades_vinculadas && unidades_vinculadas.length > 0) {
-        await this.vincularUnidades(data.id, unidades_vinculadas);
+      if (!data || data.length === 0) {
+        throw new Error('Erro ao criar franqueado: nenhum dado retornado');
       }
 
-      return data as Franqueado;
+      const resultado = data[0];
+      
+      // Buscar o franqueado criado com todos os dados
+      const { data: franqueadoCriado, error: errorBusca } = await supabase
+        .from('franqueados')
+        .select('*')
+        .eq('id', resultado.franqueado_id)
+        .single();
+
+      if (errorBusca) {
+        throw new Error(`Erro ao buscar franqueado criado: ${errorBusca.message}`);
+      }
+
+      // Se há unidades para vincular, criar os vínculos
+      if (unidades_vinculadas && unidades_vinculadas.length > 0) {
+        await this.vincularUnidades(resultado.franqueado_id, unidades_vinculadas);
+      }
+
+      // Log da senha temporária para o console (em produção, deveria ser enviada por email)
+      console.log('🎉 Franqueado criado com sucesso!');
+      console.log('📧 Email:', resultado.email);
+      console.log('🔐 Senha temporária:', resultado.temporary_password);
+      console.log('⚠️  IMPORTANTE: Informe a senha temporária ao franqueado para primeiro acesso.');
+      console.log('💡 A senha segue o padrão: CP + últimos 6 dígitos do CPF');
+
+      return franqueadoCriado as Franqueado;
     } catch (error) {
       console.error('Erro no FranqueadosService.createFranqueado:', error);
       throw error;

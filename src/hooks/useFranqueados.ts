@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { franqueadosService } from '../api/franqueadosService';
-import { getTipoFranqueadoLabel, getStatusFranqueadoLabel } from '../utils/franqueadosMask';
+import { getStatusFranqueadoLabel } from '../utils/franqueadosMask';
 import type {
   Franqueado,
   CreateFranqueadoData,
@@ -106,7 +106,15 @@ export function useCreateFranqueado() {
         newFranqueado
       );
 
-      toast.success(`Franqueado ${newFranqueado.nome} cadastrado com sucesso!`);
+      // Notificação de sucesso com informações importantes
+      toast.success(
+        `Franqueado ${newFranqueado.nome} cadastrado com sucesso!\n` +
+        `✅ Login criado automaticamente\n` +
+        `🔐 Senha temporária gerada (verifique o console)`,
+        {
+          duration: 6000,
+        }
+      );
     },
     onError: (error: Error) => {
       console.error('Erro ao criar franqueado:', error);

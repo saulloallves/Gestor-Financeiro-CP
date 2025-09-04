@@ -71,6 +71,18 @@ export function useFranqueados() {
 }
 
 /**
+ * Hook para buscar franqueados vinculados a uma unidade específica
+ */
+export function useFranqueadosVinculados(unidadeId: string) {
+  return useQuery({
+    queryKey: [...unidadesQueryKeys.details(), unidadeId, 'franqueados-vinculados'],
+    queryFn: () => unidadesService.getFranqueadosVinculados(unidadeId),
+    enabled: !!unidadeId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+}
+
+/**
  * Hook para buscar estatísticas das unidades
  */
 export function useEstatisticasUnidades() {
