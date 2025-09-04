@@ -361,33 +361,37 @@ export function UnidadesPage() {
         <Card sx={{ 
           p: 3, 
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.25)',
-          transition: 'transform 0.2s ease-in-out',
+          backgroundColor: 'background.paper',
+          color: 'text.primary',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderLeft: '6px solid #667eea',
+          transition: 'all 0.3s ease-in-out',
           '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 25px rgba(102, 126, 234, 0.35)',
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 25px rgba(102, 126, 234, 0.15)',
+            borderLeftColor: '#5a67d8',
           }
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, color: 'text.primary' }}>
                 {totalUnidades}
               </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+              <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                 Total de Unidades
               </Typography>
             </Box>
             <Box sx={{ 
-              backgroundColor: 'rgba(255,255,255,0.2)', 
-              borderRadius: 2, 
-              p: 1.5,
+              backgroundColor: 'rgba(102, 126, 234, 0.1)', 
+              borderRadius: 3, 
+              p: 2,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Building size={32} />
+              <Building size={32} color="#667eea" />
             </Box>
           </Box>
         </Card>
@@ -396,33 +400,37 @@ export function UnidadesPage() {
         <Card sx={{ 
           p: 3, 
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-          color: 'white',
-          boxShadow: '0 4px 20px rgba(17, 153, 142, 0.25)',
-          transition: 'transform 0.2s ease-in-out',
+          backgroundColor: 'background.paper',
+          color: 'text.primary',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderLeft: '6px solid #11998e',
+          transition: 'all 0.3s ease-in-out',
           '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 25px rgba(17, 153, 142, 0.35)',
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 25px rgba(17, 153, 142, 0.15)',
+            borderLeftColor: '#0d7377',
           }
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, color: 'text.primary' }}>
                 {unidades.filter(u => u.status === 'ativo').length}
               </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+              <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                 Ativas
               </Typography>
             </Box>
             <Box sx={{ 
-              backgroundColor: 'rgba(255,255,255,0.2)', 
-              borderRadius: 2, 
-              p: 1.5,
+              backgroundColor: 'rgba(17, 153, 142, 0.1)', 
+              borderRadius: 3, 
+              p: 2,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <CheckCircle size={32} />
+              <CheckCircle size={32} color="#11998e" />
             </Box>
           </Box>
         </Card>
@@ -431,33 +439,37 @@ export function UnidadesPage() {
         <Card sx={{ 
           p: 3, 
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #ff9a56 0%, #ff6b6b 100%)',
-          color: 'white',
-          boxShadow: '0 4px 20px rgba(255, 154, 86, 0.25)',
-          transition: 'transform 0.2s ease-in-out',
+          backgroundColor: 'background.paper',
+          color: 'text.primary',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderLeft: '6px solid #ffa726',
+          transition: 'all 0.3s ease-in-out',
           '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 25px rgba(255, 154, 86, 0.35)',
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 25px rgba(255, 167, 38, 0.15)',
+            borderLeftColor: '#ff9800',
           }
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, color: 'text.primary' }}>
                 {unidades.filter(u => u.status === 'em_implantacao').length}
               </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+              <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                 Em Implantação
               </Typography>
             </Box>
             <Box sx={{ 
-              backgroundColor: 'rgba(255,255,255,0.2)', 
-              borderRadius: 2, 
-              p: 1.5,
+              backgroundColor: 'rgba(255, 167, 38, 0.1)', 
+              borderRadius: 3, 
+              p: 2,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Clock size={32} />
+              <Clock size={32} color="#ffa726" />
             </Box>
           </Box>
         </Card>
@@ -466,33 +478,37 @@ export function UnidadesPage() {
         <Card sx={{ 
           p: 3, 
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%)',
-          color: 'white',
-          boxShadow: '0 4px 20px rgba(252, 74, 26, 0.25)',
-          transition: 'transform 0.2s ease-in-out',
+          backgroundColor: 'background.paper',
+          color: 'text.primary',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderLeft: '6px solid #f44336',
+          transition: 'all 0.3s ease-in-out',
           '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 25px rgba(252, 74, 26, 0.35)',
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 25px rgba(244, 67, 54, 0.15)',
+            borderLeftColor: '#d32f2f',
           }
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, color: 'text.primary' }}>
                 {unidades.filter(u => u.status === 'cancelado').length}
               </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
+              <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                 Canceladas
               </Typography>
             </Box>
             <Box sx={{ 
-              backgroundColor: 'rgba(255,255,255,0.2)', 
-              borderRadius: 2, 
-              p: 1.5,
+              backgroundColor: 'rgba(244, 67, 54, 0.1)', 
+              borderRadius: 3, 
+              p: 2,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <XCircle size={32} />
+              <XCircle size={32} color="#f44336" />
             </Box>
           </Box>
         </Card>
