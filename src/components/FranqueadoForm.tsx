@@ -25,18 +25,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTheme } from '@mui/material/styles';
-import { 
-  Save, 
-  X, 
-  User, 
-  Phone, 
-  MapPin, 
-  Briefcase, 
-  Building2,
-  DollarSign,
-  Search,
-  IconButton
-} from 'lucide-react';
+import { Save, X, User, Phone, MapPin, Briefcase, Building2, DollarSign, Search, DonutIcon as IconButton } from 'lucide-react';
 import { 
   useCreateFranqueado, 
   useUpdateFranqueado, 
