@@ -1,7 +1,6 @@
 import {
   AppBar,
   Toolbar,
-  IconButton,
   Typography,
   Box,
   Avatar,
@@ -11,9 +10,9 @@ import {
   ListItemIcon,
   ListItemText,
   Badge,
+  IconButton,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
   Bell,
   Settings,
   LogOut,
@@ -26,10 +25,10 @@ import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
-  onMenuClick: () => void;
+  sidebarWidth: number;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ sidebarWidth }: HeaderProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const { usuario, logout } = useAuthStore();
@@ -59,13 +58,12 @@ export function Header({ onMenuClick }: HeaderProps) {
     <AppBar
       position="fixed"
       sx={{
-        width: '100%',
-        left: 0,
-        right: 0,
-        zIndex: theme.zIndex.drawer + 1,
-        transition: theme.transitions.create(['width', 'margin'], {
-          easing: theme.transitions.easing.sharp,
-          duration: theme.transitions.duration.leavingScreen,
+        width: `calc(100% - ${sidebarWidth}px)`,
+        left: `${sidebarWidth}px`,
+        zIndex: theme.zIndex.drawer - 1,
+        transition: theme.transitions.create(['width', 'left'], {
+          easing: theme.transitions.easing.easeInOut,
+          duration: theme.transitions.duration.standard,
         }),
         backgroundColor: 'background.paper',
         color: 'text.primary',
@@ -81,23 +79,8 @@ export function Header({ onMenuClick }: HeaderProps) {
           px: theme.spacing(2),
         }}
       >
-        {/* Menu Button e Título */}
+        {/* Título */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            onClick={onMenuClick}
-            sx={{
-              color: 'text.primary',
-              '&:hover': {
-                backgroundColor: 'action.hover',
-              },
-            }}
-          >
-            <MenuIcon size={24} />
-          </IconButton>
-
           <Typography
             variant="h6"
             component="h1"

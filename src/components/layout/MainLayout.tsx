@@ -1,56 +1,61 @@
-import { useState } from 'react';
 import { Box, useTheme } from '@mui/material';
-import { useMediaQuery } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
+import { useState } from 'react';
 
-const DRAWER_WIDTH = 280;
+const SIDEBAR_WIDTH_COLLAPSED = 72;
+const SIDEBAR_WIDTH_EXPANDED = 280;
 
 export function MainLayout() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(false);
 
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  const currentSidebarWidth = (sidebarExpanded || sidebarPinned) ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', maxWidth: '100vw', overflow: 'hidden' }}>
-      {/* Header */}
-      <Header 
-        onMenuClick={handleSidebarToggle}
+      {/* Sidebar - sempre visível */}
+      <Sidebar 
+        onExpandedChange={setSidebarExpanded}
+        onPinnedChange={setSidebarPinned}
+        isPinned={sidebarPinned}
       />
 
-      {/* Sidebar */}
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        width={DRAWER_WIDTH}
-        variant={isMobile ? 'temporary' : 'persistent'}
-      />
-
-      {/* Main Content */}
+      {/* Content Area - se adapta ao sidebar */}
       <Box
-        component="main"
         sx={{
           flexGrow: 1,
-          width: 0, // Força o flex container a respeitar min-width
-          bgcolor: 'background.default',
-          transition: theme.transitions.create(['margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
+          display: 'flex',
+          flexDirection: 'column',
+          marginLeft: `${currentSidebarWidth}px`,
+          transition: theme.transitions.create(['margin-left'], {
+            duration: theme.transitions.duration.standard,
           }),
-          marginLeft: isMobile ? 0 : sidebarOpen ? 0 : `-${DRAWER_WIDTH}px`,
-          marginTop: '64px', // Height of AppBar
-          padding: theme.spacing(3),
-          minHeight: 'calc(100vh - 64px)',
-          overflow: 'auto',
-          maxWidth: '100%',
+          minHeight: '100vh',
+          maxWidth: `calc(100vw - ${currentSidebarWidth}px)`,
+          overflow: 'hidden',
         }}
       >
-        <Outlet />
+        {/* Header */}
+        <Header sidebarWidth={currentSidebarWidth} />
+
+        {/* Main Content */}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            bgcolor: 'background.default',
+            padding: theme.spacing(3),
+            paddingTop: `calc(64px + ${theme.spacing(3)})`, // Header height + padding
+            overflow: 'auto',
+            width: '100%',
+            minHeight: '100vh',
+          }}
+        >
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );

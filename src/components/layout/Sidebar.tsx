@@ -1,5 +1,4 @@
 import {
-  Drawer,
   List,
   ListItem,
   ListItemButton,
@@ -10,6 +9,8 @@ import {
   Divider,
   Collapse,
   Chip,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   LayoutDashboard,
@@ -24,12 +25,15 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Building
+  Building,
+  Pin,
+  PinOff
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useLocation, useNavigate } from 'react-router-dom';
 import logoImage from '../../assets/logo cresci-header.png';
+import cabecaIcon from '../../assets/cabeca.png';
 
 interface MenuItem {
   id: string;
@@ -44,11 +48,15 @@ interface MenuItem {
 }
 
 interface SidebarProps {
-  open: boolean;
-  onClose: () => void;
-  width: number;
-  variant: 'permanent' | 'persistent' | 'temporary';
+  onClose?: () => void;
+  onExpandedChange?: (expanded: boolean) => void;
+  onPinnedChange?: (pinned: boolean) => void;
+  isPinned?: boolean;
 }
+
+// Larguras do sidebar
+const SIDEBAR_WIDTH_COLLAPSED = 75;
+const SIDEBAR_WIDTH_EXPANDED = 280;
 
 // Configuração dos itens do menu
 const menuItems: MenuItem[] = [
@@ -133,11 +141,23 @@ const settingsItems: MenuItem[] = [
   },
 ];
 
-export function Sidebar({ open, onClose, width, variant }: SidebarProps) {
+export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = false }: SidebarProps) {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<string[]>(['cobrancas']);
+  
+  // Estados para controle do sidebar
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // O sidebar está expandido quando está com hover OU fixo
+  const isExpanded = isHovered || isPinned;
+  const currentWidth = isExpanded ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED;
+
+  // Notifica mudanças de estado
+  useEffect(() => {
+    onExpandedChange?.(isExpanded);
+  }, [isExpanded, onExpandedChange]);
 
   const handleItemClick = (item: MenuItem) => {
     if (item.children) {
@@ -150,9 +170,26 @@ export function Sidebar({ open, onClose, width, variant }: SidebarProps) {
     } else {
       // Se não tem filhos, navega
       navigate(item.path);
-      if (variant === 'temporary') {
-        onClose();
-      }
+      onClose?.();
+    }
+  };
+
+  const handleTogglePin = () => {
+    const newPinnedState = !isPinned;
+    onPinnedChange?.(newPinnedState);
+  };
+
+  const handleMouseEnter = () => {
+    if (!isPinned) {
+      setIsHovered(true);
+      onExpandedChange?.(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isPinned) {
+      setIsHovered(false);
+      onExpandedChange?.(false);
     }
   };
 
@@ -170,81 +207,99 @@ export function Sidebar({ open, onClose, width, variant }: SidebarProps) {
 
   const renderMenuItem = (item: MenuItem, level = 0) => {
     const Icon = item.icon;
-    const isExpanded = expandedItems.includes(item.id);
+    const isItemExpanded = expandedItems.includes(item.id);
     const isActive = isItemActive(item.path);
     const isParentActiveItem = isParentActive(item);
+
+    // No modo recolhido, só mostra itens de nível 0
+    if (!isExpanded && level > 0) {
+      return null;
+    }
 
     return (
       <Box key={item.id}>
         <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => handleItemClick(item)}
-            sx={{
-              pl: theme.spacing(2 + level * 2),
-              pr: theme.spacing(2),
-              py: theme.spacing(1.25),
-              borderRadius: level === 0 ? '12px' : '8px',
-              mx: level === 0 ? theme.spacing(1.5) : theme.spacing(1),
-              mb: level === 0 ? theme.spacing(0.5) : theme.spacing(0.25),
-              backgroundColor: isActive ? 'primary.main' : 'transparent',
-              color: isActive ? 'primary.contrastText' : 'text.primary',
-              '&:hover': {
-                backgroundColor: isActive 
-                  ? 'primary.dark' 
-                  : level === 0 
-                    ? 'action.hover' 
-                    : 'action.selected',
-                transform: 'translateX(2px)',
-              },
-              transition: theme.transitions.create(['background-color', 'transform'], {
-                duration: theme.transitions.duration.short,
-              }),
-            }}
+          <Tooltip 
+            title={!isExpanded ? item.title : ''} 
+            placement="right"
+            arrow
           >
-            <ListItemIcon
+            <ListItemButton
+              onClick={() => handleItemClick(item)}
               sx={{
-                color: isActive ? 'primary.contrastText' : isParentActiveItem ? 'primary.main' : 'text.secondary',
-                minWidth: 40,
+                pl: isExpanded ? theme.spacing(2 + level * 2) : theme.spacing(1.5),
+                pr: isExpanded ? theme.spacing(2) : theme.spacing(1.5),
+                py: theme.spacing(1.25),
+                borderRadius: level === 0 ? '12px' : '8px',
+                mx: theme.spacing(1),
+                mb: level === 0 ? theme.spacing(0.5) : theme.spacing(0.25),
+                backgroundColor: isActive ? 'primary.main' : 'transparent',
+                color: isActive ? 'primary.contrastText' : 'text.primary',
+                minHeight: 48,
+                justifyContent: isExpanded ? 'flex-start' : 'center',
+                '&:hover': {
+                  backgroundColor: isActive 
+                    ? 'primary.dark' 
+                    : level === 0 
+                      ? 'action.hover' 
+                      : 'action.selected',
+                  transform: 'translateX(2px)',
+                },
+                transition: theme.transitions.create(['background-color', 'transform', 'padding'], {
+                  duration: theme.transitions.duration.short,
+                }),
               }}
             >
-              <Icon size={level === 0 ? 22 : 18} />
-            </ListItemIcon>
-
-            <ListItemText 
-              primary={item.title}
-              primaryTypographyProps={{
-                fontSize: level === 0 ? '0.95rem' : '0.875rem',
-                fontWeight: isActive ? 600 : level === 0 ? 500 : 400,
-              }}
-            />
-
-            {/* Badge */}
-            {item.badge && (
-              <Chip
-                size="small"
-                label={item.badge.value}
-                color={item.badge.color}
+              <ListItemIcon
                 sx={{
-                  height: 20,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  mr: item.children ? 1 : 0,
+                  color: isActive ? 'primary.contrastText' : isParentActiveItem ? 'primary.main' : 'text.secondary',
+                  minWidth: isExpanded ? 40 : 24,
+                  justifyContent: 'center',
                 }}
-              />
-            )}
+              >
+                <Icon size={level === 0 ? 22 : 18} />
+              </ListItemIcon>
 
-            {/* Expand/Collapse Icon */}
-            {item.children && (
-              <Box sx={{ color: 'text.secondary' }}>
-                {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-              </Box>
-            )}
-          </ListItemButton>
+              {isExpanded && (
+                <>
+                  <ListItemText 
+                    primary={item.title}
+                    primaryTypographyProps={{
+                      fontSize: level === 0 ? '0.95rem' : '0.875rem',
+                      fontWeight: isActive ? 600 : level === 0 ? 500 : 400,
+                    }}
+                  />
+
+                  {/* Badge */}
+                  {item.badge && (
+                    <Chip
+                      size="small"
+                      label={item.badge.value}
+                      color={item.badge.color}
+                      sx={{
+                        height: 20,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        mr: item.children ? 1 : 0,
+                      }}
+                    />
+                  )}
+
+                  {/* Expand/Collapse Icon */}
+                  {item.children && (
+                    <Box sx={{ color: 'text.secondary' }}>
+                      {isItemExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </Box>
+                  )}
+                </>
+              )}
+            </ListItemButton>
+          </Tooltip>
         </ListItem>
 
-        {/* Submenu */}
-        {item.children && (
-          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+        {/* Submenu - só mostra se expandido */}
+        {item.children && isExpanded && (
+          <Collapse in={isItemExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
               {item.children.map((child: MenuItem) => renderMenuItem(child, level + 1))}
             </List>
@@ -262,37 +317,79 @@ export function Sidebar({ open, onClose, width, variant }: SidebarProps) {
         flexDirection: 'column',
         backgroundColor: 'background.paper',
       }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      {/* Logo Section */}
+      {/* Header Section com Logo e Pin */}
       <Box
         sx={{
-          p: theme.spacing(2, 0, 1.5, 0),
+          p: theme.spacing(2),
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
+          justifyContent: isExpanded ? 'space-between' : 'center',
           borderBottom: `1px solid ${theme.palette.divider}`,
+          color: 'primary.contrastText',
+          minHeight: 80,
+          transition: theme.transitions.create(['padding', 'justify-content'], {
+            duration: theme.transitions.duration.standard,
+          }),
         }}
       >
+        {/* Logo */}
         <Box
-          component="img"
-          src={logoImage}
-          alt="Logo"
           sx={{
-            width: 150,
-            height: 'auto',
-            containerFit: 'contain',
+            display: 'flex',
+            alignItems: 'center',
+            overflow: 'hidden',
           }}
-        />
+        >
+          <Box
+            component="img"
+            src={isExpanded ? logoImage : cabecaIcon}
+            alt="Cresci e Perdi"
+            sx={{
+              height: isExpanded ? 40 : 32,
+              width: isExpanded ? 'auto' : 32,
+              objectFit: 'contain',
+              transition: theme.transitions.create(['height', 'width'], {
+                duration: theme.transitions.duration.standard,
+              }),
+            }}
+          />
+        </Box>
+        
+        {/* Botão de Pin - só aparece quando expandido */}
+        {isExpanded && (
+          <Tooltip title={isPinned ? "Desfixar sidebar" : "Fixar sidebar"} placement="bottom">
+            <IconButton
+              onClick={handleTogglePin}
+              size="small"
+              sx={{
+                color: 'primary.contrastText',
+                backgroundColor: isPinned ? 'rgba(255,255,255,0.2)' : 'transparent',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                },
+                transition: theme.transitions.create(['background-color'], {
+                  duration: theme.transitions.duration.short,
+                }),
+              }}
+            >
+              {isPinned ? <Pin size={18} /> : <PinOff size={18} />}
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
 
-      {/* Main Menu */}
+      {/* Menu Section */}
       <Box sx={{ flex: 1, py: theme.spacing(2), overflowY: 'auto' }}>
         <List component="nav" disablePadding>
           {menuItems.map((item) => renderMenuItem(item))}
         </List>
 
-        <Divider sx={{ mx: theme.spacing(2), my: theme.spacing(2) }} />
+        {isExpanded && (
+          <Divider sx={{ mx: theme.spacing(2), my: theme.spacing(2) }} />
+        )}
 
         {/* Settings Menu */}
         <List component="nav" disablePadding>
@@ -301,45 +398,48 @@ export function Sidebar({ open, onClose, width, variant }: SidebarProps) {
       </Box>
 
       {/* Footer */}
-      <Box
-        sx={{
-          p: theme.spacing(2),
-          borderTop: `1px solid ${theme.palette.divider}`,
-          backgroundColor: 'background.default',
-        }}
-      >
-        <Typography
-          variant="caption"
+      {isExpanded && (
+        <Box
           sx={{
-            color: 'text.secondary',
-            fontSize: '0.7rem',
-            textAlign: 'center',
-            display: 'block',
+            p: theme.spacing(2),
+            borderTop: `1px solid ${theme.palette.divider}`,
+            backgroundColor: 'background.default',
           }}
         >
-          © 2025 Cresci e Perdi
-        </Typography>
-      </Box>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              fontSize: '0.7rem',
+              textAlign: 'center',
+              display: 'block',
+            }}
+          >
+            © 2025 Cresci e Perdi
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 
   return (
-    <Drawer
-      variant={variant}
-      open={open}
-      onClose={onClose}
+    <Box
       sx={{
-        width: width,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: width,
-          boxSizing: 'border-box',
-          border: 'none',
-          boxShadow: '2px 0 8px rgba(0, 0, 0, 0.1)',
-        },
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: currentWidth,
+        height: '100vh',
+        zIndex: theme.zIndex.drawer,
+        boxShadow: '2px 0 8px rgba(0, 0, 0, 0.1)',
+        transition: theme.transitions.create(['width'], {
+          duration: theme.transitions.duration.standard,
+          easing: theme.transitions.easing.easeInOut,
+        }),
+        overflow: 'hidden',
       }}
     >
       {drawerContent}
-    </Drawer>
+    </Box>
   );
 }
