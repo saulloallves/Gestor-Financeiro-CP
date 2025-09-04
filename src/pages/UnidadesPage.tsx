@@ -14,7 +14,10 @@ import {
   MenuItem,
   Paper,
   Tooltip,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent
 } from '@mui/material';
 import { DataGrid, type GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { useTheme } from '@mui/material/styles';
@@ -27,26 +30,45 @@ import {
   Eye,
   Building2,
   Phone,
-  MapPin
+  MapPin,
+  X
 } from 'lucide-react';
 import { useUnidadesPage } from '../hooks/useUnidades';
+import { UnidadeForm } from '../components/UnidadeForm';
 import type { Unidade, StatusUnidade } from '../types/unidades';
 
-interface UnidadesPageProps {
-  onCreateUnidade?: () => void;
-  onEditUnidade?: (unidade: Unidade) => void;
-  onViewUnidade?: (unidade: Unidade) => void;
-}
-
-export function UnidadesPage({ 
-  onCreateUnidade, 
-  onEditUnidade, 
-  onViewUnidade 
-}: UnidadesPageProps) {
+export function UnidadesPage() {
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusUnidade | ''>('');
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Estados do modal
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUnidade, setSelectedUnidade] = useState<Unidade | null>(null);
+
+  // Handlers do modal
+  const handleCreateUnidade = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  const handleEditUnidade = (unidade: Unidade) => {
+    setSelectedUnidade(unidade);
+    setIsEditModalOpen(true);
+  };
+
+  const handleViewUnidade = (unidade: Unidade) => {
+    // Por enquanto, vamos abrir o modal de edição em modo visualização
+    setSelectedUnidade(unidade);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseModals = () => {
+    setIsCreateModalOpen(false);
+    setIsEditModalOpen(false);
+    setSelectedUnidade(null);
+  };
 
   const {
     unidades,
@@ -191,7 +213,7 @@ export function UnidadesPage({
             </Tooltip>
           }
           label="Visualizar"
-          onClick={() => onViewUnidade?.(params.row)}
+          onClick={() => handleViewUnidade(params.row)}
         />,
         <GridActionsCellItem
           key="edit"
@@ -201,7 +223,7 @@ export function UnidadesPage({
             </Tooltip>
           }
           label="Editar"
-          onClick={() => onEditUnidade?.(params.row)}
+          onClick={() => handleEditUnidade(params.row)}
         />,
       ],
     },
@@ -255,7 +277,7 @@ export function UnidadesPage({
           <Button
             variant="contained"
             startIcon={<Plus size={20} />}
-            onClick={onCreateUnidade}
+            onClick={handleCreateUnidade}
             sx={{ minWidth: 160 }}
           >
             Nova Unidade
@@ -393,6 +415,59 @@ export function UnidadesPage({
           autoHeight
         />
       </Card>
+
+      {/* Modal de Criar Unidade */}
+      <Dialog
+        open={isCreateModalOpen}
+        onClose={handleCloseModals}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2 }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" component="div">
+            Nova Unidade
+          </Typography>
+          <IconButton onClick={handleCloseModals} size="small">
+            <X size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <UnidadeForm
+            onSuccess={handleCloseModals}
+            onCancel={handleCloseModals}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Editar Unidade */}
+      <Dialog
+        open={isEditModalOpen}
+        onClose={handleCloseModals}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2 }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" component="div">
+            Editar Unidade
+          </Typography>
+          <IconButton onClick={handleCloseModals} size="small">
+            <X size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <UnidadeForm
+            unidade={selectedUnidade || undefined}
+            onSuccess={handleCloseModals}
+            onCancel={handleCloseModals}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

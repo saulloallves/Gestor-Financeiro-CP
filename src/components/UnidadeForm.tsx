@@ -15,18 +15,21 @@ import {
   Switch,
   Alert,
   CircularProgress,
-  Autocomplete
+  Autocomplete,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTheme } from '@mui/material/styles';
-import { Save, X, Building2, User, MapPin, Clock } from 'lucide-react';
+import { Save, X, Building2, User, MapPin, Clock, Search } from 'lucide-react';
 import { 
   useCreateUnidade, 
   useUpdateUnidade, 
   useFranqueados 
 } from '../hooks/useUnidades';
+import { useEnderecoForm } from '../hooks/useEnderecoForm';
 import type { 
   Unidade, 
   CreateUnidadeData, 
@@ -116,6 +119,22 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
       multifranqueado: false,
       franqueado_principal_id: '',
     },
+  });
+
+  // Hook para endereço com ViaCEP
+  const {
+    loading: loadingCep,
+    handleCepChange,
+    handleBuscarCep
+  } = useEnderecoForm({
+    setValue,
+    cepFieldName: 'endereco_cep',
+    ruaFieldName: 'endereco_rua',
+    bairroFieldName: 'endereco_bairro',
+    cidadeFieldName: 'endereco_cidade',
+    estadoFieldName: 'endereco_estado',
+    ufFieldName: 'endereco_uf',
+    complementoFieldName: 'endereco_complemento',
   });
 
   // Estados brasileiros
@@ -478,9 +497,35 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                   <TextField
                     {...field}
                     label="CEP"
+                    placeholder="00000-000"
                     error={!!errors.endereco_cep}
-                    helperText={errors.endereco_cep?.message}
+                    helperText={errors.endereco_cep?.message || 'Digite o CEP para buscar automaticamente o endereço'}
                     fullWidth
+                    onChange={(e) => {
+                      handleCepChange(e.target.value, field.onChange);
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => {
+                              const cep = (field.value || '').replace(/\D/g, '');
+                              if (cep.length === 8) {
+                                handleBuscarCep(cep);
+                              }
+                            }}
+                            disabled={loadingCep}
+                            size="small"
+                          >
+                            {loadingCep ? (
+                              <CircularProgress size={20} />
+                            ) : (
+                              <Search size={20} />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
                   />
                 )}
               />
