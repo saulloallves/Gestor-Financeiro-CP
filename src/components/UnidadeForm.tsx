@@ -30,6 +30,7 @@ import {
   useFranqueados 
 } from '../hooks/useUnidades';
 import { useEnderecoForm } from '../hooks/useEnderecoForm';
+import { validarCnpj, formatarCnpj, formatarTelefone, validarTelefone } from '../utils/validations';
 import type { 
   Unidade, 
   CreateUnidadeData, 
@@ -41,10 +42,24 @@ import type {
 const unidadeSchema = z.object({
   nome_grupo: z.string().optional(),
   nome_padrao: z.string().min(1, 'Nome da unidade é obrigatório'),
-  cnpj: z.string().optional(),
+  cnpj: z.string()
+    .optional()
+    .refine((cnpj) => {
+      if (!cnpj || cnpj.trim() === '') return true; // Campo opcional
+      return validarCnpj(cnpj);
+    }, {
+      message: 'CNPJ inválido'
+    }),
   
   // Contato
-  telefone_comercial: z.string().optional(),
+  telefone_comercial: z.string()
+    .optional()
+    .refine((telefone) => {
+      if (!telefone || telefone.trim() === '') return true; // Campo opcional
+      return validarTelefone(telefone);
+    }, {
+      message: 'Telefone inválido'
+    }),
   email_comercial: z.string().email('Email inválido').optional().or(z.literal('')),
   instagram: z.string().optional(),
   
@@ -292,9 +307,15 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                   <TextField
                     {...field}
                     label="CNPJ"
+                    placeholder="00.000.000/0000-00"
                     error={!!errors.cnpj}
-                    helperText={errors.cnpj?.message}
+                    helperText={errors.cnpj?.message || 'Formato: 00.000.000/0000-00'}
                     fullWidth
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      const cnpjFormatado = formatarCnpj(valor);
+                      field.onChange(cnpjFormatado);
+                    }}
                   />
                 )}
               />
@@ -350,9 +371,15 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                   <TextField
                     {...field}
                     label="Telefone Comercial"
+                    placeholder="(11) 99999-9999"
                     error={!!errors.telefone_comercial}
-                    helperText={errors.telefone_comercial?.message}
+                    helperText={errors.telefone_comercial?.message || 'Formato: (11) 99999-9999 ou (11) 9999-9999'}
                     fullWidth
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      const telefoneFormatado = formatarTelefone(valor);
+                      field.onChange(telefoneFormatado);
+                    }}
                   />
                 )}
               />
