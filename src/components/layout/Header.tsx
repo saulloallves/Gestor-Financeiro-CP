@@ -27,11 +27,9 @@ import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   onMenuClick: () => void;
-  sidebarWidth: number;
-  sidebarOpen: boolean;
 }
 
-export function Header({ onMenuClick, sidebarWidth, sidebarOpen }: HeaderProps) {
+export function Header({ onMenuClick }: HeaderProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const { usuario, logout } = useAuthStore();
@@ -61,8 +59,10 @@ export function Header({ onMenuClick, sidebarWidth, sidebarOpen }: HeaderProps) 
     <AppBar
       position="fixed"
       sx={{
-        width: `calc(100% - ${sidebarOpen ? sidebarWidth : 0}px)`,
-        ml: sidebarOpen ? `${sidebarWidth}px` : 0,
+        width: '100%',
+        left: 0,
+        right: 0,
+        zIndex: theme.zIndex.drawer + 1,
         transition: theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.leavingScreen,

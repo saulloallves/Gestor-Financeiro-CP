@@ -99,6 +99,7 @@ export function UnidadesPage() {
       field: 'codigo_unidade',
       headerName: 'Código',
       width: 100,
+      flex: 0,
       renderCell: (params) => (
         <Chip 
           label={params.value} 
@@ -114,7 +115,7 @@ export function UnidadesPage() {
     {
       field: 'nome_padrao',
       headerName: 'Nome da Unidade',
-      flex: 1,
+      flex: 2,
       minWidth: 200,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -128,7 +129,8 @@ export function UnidadesPage() {
     {
       field: 'cnpj',
       headerName: 'CNPJ',
-      width: 150,
+      flex: 1,
+      minWidth: 120,
       renderCell: (params) => (
         <Typography variant="body2" color="text.secondary">
           {params.value || '-'}
@@ -138,7 +140,8 @@ export function UnidadesPage() {
     {
       field: 'status',
       headerName: 'Status',
-      width: 130,
+      flex: 0.8,
+      minWidth: 130,
       renderCell: (params) => {
         const status = params.value as StatusUnidade;
         return (
@@ -154,7 +157,8 @@ export function UnidadesPage() {
     {
       field: 'telefone_comercial',
       headerName: 'Telefone',
-      width: 140,
+      flex: 1,
+      minWidth: 130,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {params.value && <Phone size={14} color={theme.palette.text.secondary} />}
@@ -167,7 +171,8 @@ export function UnidadesPage() {
     {
       field: 'endereco_cidade',
       headerName: 'Cidade',
-      width: 120,
+      flex: 1,
+      minWidth: 100,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {params.value && <MapPin size={14} color={theme.palette.text.secondary} />}
@@ -180,7 +185,9 @@ export function UnidadesPage() {
     {
       field: 'endereco_uf',
       headerName: 'UF',
-      width: 60,
+      flex: 0.3,
+      minWidth: 60,
+      maxWidth: 80,
       renderCell: (params) => (
         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
           {params.value || '-'}
@@ -191,7 +198,9 @@ export function UnidadesPage() {
       field: 'actions',
       type: 'actions',
       headerName: 'Ações',
-      width: 80,
+      flex: 0.3,
+      minWidth: 80,
+      maxWidth: 100,
       getActions: (params) => [
         <GridActionsCellItem
           key="edit"
@@ -225,12 +234,19 @@ export function UnidadesPage() {
   }
 
   return (
-    <Box sx={{ padding: theme.spacing(3) }}>
+    <Box sx={{ 
+      width: '100%', 
+      maxWidth: '100%', 
+      overflow: 'hidden',
+      padding: theme.spacing(3) 
+    }}>
       {/* Cabeçalho */}
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
-        alignItems: 'center',
+        alignItems: { xs: 'flex-start', md: 'center' },
+        flexDirection: { xs: 'column', md: 'row' },
+        gap: { xs: 2, md: 0 },
         marginBottom: theme.spacing(3)
       }}>
         <Box>
@@ -242,7 +258,12 @@ export function UnidadesPage() {
           </Typography>
         </Box>
         
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          width: { xs: '100%', md: 'auto' }
+        }}>
           <Button
             variant="outlined"
             startIcon={<Download size={20} />}
@@ -264,7 +285,7 @@ export function UnidadesPage() {
       </Box>
 
       {/* Filtros e Busca */}
-      <Card sx={{ marginBottom: theme.spacing(3) }}>
+      <Card sx={{ marginBottom: theme.spacing(3), width: '100%' }}>
         <CardContent>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField
@@ -368,30 +389,56 @@ export function UnidadesPage() {
       </Box>
 
       {/* Tabela de Unidades */}
-      <Card>
-        <DataGrid
-          rows={unidades}
-          columns={columns}
-          loading={isLoading}
-          pageSizeOptions={[10, 20, 50]}
-          initialState={{
-            pagination: {
-              paginationModel: { pageSize: 20 },
-            },
-          }}
-          sx={{
-            border: 'none',
-            '& .MuiDataGrid-cell': {
-              borderColor: 'divider',
-            },
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: 'background.default',
-              borderColor: 'divider',
-            },
-          }}
-          disableRowSelectionOnClick
-          autoHeight
-        />
+      <Card sx={{ width: '100%', overflow: 'hidden', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ 
+          width: '100%', 
+          flexGrow: 1,
+          '& .MuiDataGrid-root': {
+            width: '100%',
+            maxWidth: '100%',
+          }
+        }}>
+          <DataGrid
+            rows={unidades}
+            columns={columns}
+            loading={isLoading}
+            pageSizeOptions={[10, 20, 50]}
+            initialState={{
+              pagination: {
+                paginationModel: { pageSize: 20 },
+              },
+            }}
+            sx={{
+              border: 'none',
+              width: '100%',
+              minWidth: 0,
+              '& .MuiDataGrid-main': {
+                minWidth: 0,
+              },
+              '& .MuiDataGrid-cell': {
+                borderColor: 'divider',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+              },
+              '& .MuiDataGrid-columnHeaders': {
+                backgroundColor: 'background.default',
+                borderColor: 'divider',
+              },
+              '& .MuiDataGrid-virtualScroller': {
+                overflow: 'auto',
+              },
+              '& .MuiDataGrid-columnHeader': {
+                minWidth: 0,
+              },
+            }}
+            disableRowSelectionOnClick
+            autoHeight
+            hideFooterSelectedRowCount
+            getRowHeight={() => 'auto'}
+          />
+        </Box>
       </Card>
 
       {/* Modal de Criar Unidade */}

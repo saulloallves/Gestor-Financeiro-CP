@@ -17,12 +17,10 @@ export function MainLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', maxWidth: '100vw', overflow: 'hidden' }}>
       {/* Header */}
       <Header 
         onMenuClick={handleSidebarToggle}
-        sidebarWidth={DRAWER_WIDTH}
-        sidebarOpen={sidebarOpen && !isMobile}
       />
 
       {/* Sidebar */}
@@ -38,6 +36,7 @@ export function MainLayout() {
         component="main"
         sx={{
           flexGrow: 1,
+          width: 0, // Força o flex container a respeitar min-width
           bgcolor: 'background.default',
           transition: theme.transitions.create(['margin'], {
             easing: theme.transitions.easing.sharp,
@@ -47,6 +46,8 @@ export function MainLayout() {
           marginTop: '64px', // Height of AppBar
           padding: theme.spacing(3),
           minHeight: 'calc(100vh - 64px)',
+          overflow: 'auto',
+          maxWidth: '100%',
         }}
       >
         <Outlet />
