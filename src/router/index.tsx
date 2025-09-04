@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { LoginPage } from '../pages/LoginPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { UnidadesPage } from '../pages/UnidadesPage';
+import { FranqueadosPage } from '../pages/FranqueadosPage';
 import { MainLayout } from '../components/layout/MainLayout';
 import { ProtectedRoute, UnauthorizedPage } from '../components/auth/ProtectedRoute';
 
@@ -31,6 +32,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <UnidadesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'franqueados',
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <FranqueadosPage />
           </ProtectedRoute>
         ),
       },
