@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useUnidadesPage } from '../hooks/useUnidades';
 import { UnidadeForm } from '../components/UnidadeForm';
+import { getStatusLabel, getStatusColor } from '../utils/statusMask';
 import type { Unidade, StatusUnidade } from '../types/unidades';
 
 export function UnidadesPage() {
@@ -146,17 +147,11 @@ export function UnidadesPage() {
       headerName: 'Status',
       width: 130,
       renderCell: (params) => {
-        const statusColors = {
-          ativo: 'success',
-          em_implantacao: 'warning',
-          suspenso: 'info',
-          cancelado: 'error'
-        } as const;
-        
+        const status = params.value as StatusUnidade;
         return (
           <Chip
-            label={params.value}
-            color={statusColors[params.value as StatusUnidade] || 'default'}
+            label={getStatusLabel(status)}
+            color={getStatusColor(status)}
             size="small"
             variant="outlined"
           />

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { unidadesService } from '../api/unidadesService';
+import { getStatusLabel } from '../utils/statusMask';
 import type {
   Unidade,
   CreateUnidadeData,
@@ -166,7 +167,7 @@ export function useUpdateStatusUnidade() {
       // Invalidar estatísticas
       queryClient.invalidateQueries({ queryKey: unidadesQueryKeys.estatisticas() });
 
-      toast.success(`Status da unidade ${updatedUnidade.codigo_unidade} alterado para ${updatedUnidade.status}`);
+      toast.success(`Status da unidade ${updatedUnidade.codigo_unidade} alterado para ${getStatusLabel(updatedUnidade.status)}`);
     },
     onError: (error: Error) => {
       console.error('Erro ao alterar status:', error);
