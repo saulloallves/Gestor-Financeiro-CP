@@ -31,6 +31,7 @@ import {
 } from '../hooks/useUnidades';
 import { useEnderecoForm } from '../hooks/useEnderecoForm';
 import { validarCnpj, formatarCnpj, formatarTelefone, validarTelefone } from '../utils/validations';
+import CodigoUnidade from './CodigoUnidade';
 import type { 
   Unidade, 
   CreateUnidadeData, 
@@ -103,6 +104,7 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
   const { data: franqueados = [], isLoading: isLoadingFranqueados } = useFranqueados();
   
   const [selectedFranqueado, setSelectedFranqueado] = useState<FranqueadoPrincipal | null>(null);
+  const [codigoUnidade, setCodigoUnidade] = useState<string>(unidade?.codigo_unidade || '');
 
   const {
     control,
@@ -192,6 +194,9 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
           setSelectedFranqueado(franqueado);
         }
       }
+      
+      // Sincronizar o código da unidade
+      setCodigoUnidade(unidade.codigo_unidade);
     }
   }, [unidade, franqueados, reset]);
 
@@ -202,6 +207,8 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
         ...data,
         email_comercial: data.email_comercial || undefined,
         franqueado_principal_id: data.franqueado_principal_id || undefined,
+        // Incluir código da unidade se foi especificado manualmente
+        ...(codigoUnidade && { codigo_unidade: codigoUnidade }),
       };
 
       if (isEditing) {
@@ -270,6 +277,16 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
             sx={{ backgroundColor: 'background.default' }}
           />
           <CardContent>
+            {/* Componente de Código da Unidade */}
+            <Box sx={{ marginBottom: theme.spacing(3), padding: theme.spacing(2), backgroundColor: 'background.default', borderRadius: 1 }}>
+              <CodigoUnidade
+                codigo={codigoUnidade}
+                isEditing={isEditing}
+                onCodigoChange={setCodigoUnidade}
+                disabled={isSubmitting}
+              />
+            </Box>
+            
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
               <Controller
                 name="nome_grupo"

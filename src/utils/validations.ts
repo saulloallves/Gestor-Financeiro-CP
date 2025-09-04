@@ -183,6 +183,40 @@ export function validarTelefone(telefone: string): boolean {
 }
 
 /**
+ * Valida se um código de unidade é válido (4 dígitos)
+ * Seguindo o padrão da Cresci e Perdi
+ */
+export function validarCodigoUnidade(codigo: string): boolean {
+  const codigoLimpo = limparNumeros(codigo);
+  
+  // Deve ter exatamente 4 dígitos
+  if (codigoLimpo.length !== 4) {
+    return false;
+  }
+  
+  // Deve estar na faixa 0000-9999
+  const numerocodigo = parseInt(codigoLimpo);
+  return numerocodigo >= 0 && numerocodigo <= 9999;
+}
+
+/**
+ * Formata código de unidade para exibição (mantém 4 dígitos com zeros à esquerda)
+ */
+export function formatarCodigoUnidade(codigo: string): string {
+  const codigoLimpo = limparNumeros(codigo);
+  
+  if (codigoLimpo.length === 0) {
+    return codigo;
+  }
+  
+  // Garantir que tenha no máximo 4 dígitos
+  const codigoTruncado = codigoLimpo.substring(0, 4);
+  
+  // Adicionar zeros à esquerda se necessário
+  return codigoTruncado.padStart(4, '0');
+}
+
+/**
  * Regex patterns para validação
  */
 export const REGEX_PATTERNS = {
@@ -200,6 +234,9 @@ export const REGEX_PATTERNS = {
   
   // Email básico
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  
+  // Código de unidade: exatamente 4 dígitos
+  CODIGO_UNIDADE: /^\d{4}$/,
   
   // Apenas números
   APENAS_NUMEROS: /^\d+$/,
