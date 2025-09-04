@@ -531,13 +531,32 @@ export function UnidadesPage() {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
                 minWidth: 0,
+                padding: theme.spacing(2, 1.5), // Aumenta o padding das células
+                fontSize: '1rem', // Aumenta ainda mais o tamanho da fonte das células
+                '& .MuiTypography-root': {
+                  fontSize: '1rem !important', // Força o tamanho da fonte para todos os Typography
+                },
+                '& .MuiChip-root': {
+                  fontSize: '0.9rem', // Tamanho específico para chips
+                },
               },
               '& .MuiDataGrid-columnHeaders': {
                 backgroundColor: 'background.default',
                 borderColor: 'divider',
+                '& .MuiDataGrid-columnHeader': {
+                  padding: theme.spacing(1.5, 1.5), // Padding para headers
+                  fontSize: '1rem', // Aumenta ainda mais o tamanho da fonte dos headers
+                  fontWeight: 600,
+                }
               },
               '& .MuiDataGrid-virtualScroller': {
                 overflow: 'auto',
+              },
+              '& .MuiDataGrid-row': {
+                minHeight: '64px !important', // Altura mínima das linhas
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                }
               },
               '& .MuiDataGrid-columnHeader': {
                 minWidth: 0,
@@ -546,7 +565,7 @@ export function UnidadesPage() {
             disableRowSelectionOnClick
             autoHeight
             hideFooterSelectedRowCount
-            getRowHeight={() => 'auto'}
+            rowHeight={64} // Define altura fixa das linhas
           />
         </Box>
       </Card>
