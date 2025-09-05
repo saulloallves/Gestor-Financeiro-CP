@@ -117,50 +117,38 @@ export class UsuariosInternosService {
 
   // Criar novo usuário interno
   static async criarUsuario(usuario: UsuarioInternoCreate): Promise<UsuarioInterno> {
-    // 1. Criar usuário no auth.users primeiro
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: usuario.email,
-      password: usuario.senha || this.gerarSenhaTemporaria(),
-      options: {
-        emailRedirectTo: undefined, // Não redirecionar
-      },
-    });
-
-    if (authError) {
-      throw new Error(`Erro ao criar conta de autenticação: ${authError.message}`);
-    }
-
-    if (!authData.user) {
-      throw new Error("Erro ao criar usuário: dados de autenticação inválidos");
-    }
-
     try {
-      // 2. Criar registro na tabela usuarios_internos
-      const { data, error } = await supabase
-        .from("usuarios_internos")
-        .insert({
-          nome: usuario.nome,
-          email: usuario.email,
-          telefone: usuario.telefone,
-          perfil: usuario.perfil,
-          equipe_id: usuario.equipe_id,
-          status: usuario.status || "ativo",
-          user_id: authData.user.id,
-        })
-        .select()
-        .single();
+      // Usar função do banco para criar usuário com autenticação
+      const { data, error } = await supabase.rpc('create_usuario_interno_with_auth', {
+        p_nome: usuario.nome,
+        p_email: usuario.email,
+        p_telefone: usuario.telefone || null,
+        p_perfil: usuario.perfil,
+        p_equipe_id: usuario.equipe_id,
+        p_senha: usuario.senha || null,
+      });
 
       if (error) {
-        // Se falhar, tentar limpar o usuário do auth
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw new Error(`Erro ao criar usuário interno: ${error.message}`);
+        throw new Error(`Erro na função de criação: ${error.message}`);
       }
 
-      return data;
+      if (!data.success) {
+        throw new Error(data.message || data.error || 'Erro desconhecido ao criar usuário');
+      }
+
+      // Buscar o usuário criado para retornar os dados completos
+      const usuarioCompleto = await this.buscarUsuarioPorAuthId(data.user_id);
+      if (!usuarioCompleto) {
+        throw new Error('Usuário criado, mas não foi possível recuperar os dados');
+      }
+
+      return usuarioCompleto;
+
     } catch (error) {
-      // Limpar usuário do auth em caso de erro
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw error;
+      if (error instanceof Error) {
+        throw new Error(`Erro ao criar usuário: ${error.message}`);
+      }
+      throw new Error('Erro desconhecido ao criar usuário');
     }
   }
 
@@ -315,16 +303,5 @@ export class UsuariosInternosService {
     if (error) {
       throw new Error(`Erro ao resetar senha: ${error.message}`);
     }
-  }
-
-  // Gerar senha temporária
-  private static gerarSenhaTemporaria(): string {
-    const length = 12;
-    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
-    let password = "";
-    for (let i = 0; i < length; i++) {
-      password += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    return password;
   }
 }
