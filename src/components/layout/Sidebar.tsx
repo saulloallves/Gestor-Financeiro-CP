@@ -18,7 +18,6 @@ import {
   Users,
   FileText,
   BarChart3,
-  Settings,
   ChevronDown,
   ChevronRight,
   TrendingUp,
@@ -28,6 +27,8 @@ import {
   Building,
   Pin,
   PinOff,
+  Shield,
+  UserCog,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -77,6 +78,26 @@ const menuItems: MenuItem[] = [
     title: "Franqueados",
     icon: Users,
     path: "/franqueados",
+  },
+  {
+    id: "administracao",
+    title: "Administração",
+    icon: Shield,
+    path: "/administracao",
+    children: [
+      {
+        id: "equipes",
+        title: "Equipes",
+        icon: Users,
+        path: "/equipes",
+      },
+      {
+        id: "usuarios-internos",
+        title: "Usuários Internos",
+        icon: UserCog,
+        path: "/usuarios-internos",
+      },
+    ],
   },
   {
     id: "cobrancas",
@@ -129,15 +150,6 @@ const menuItems: MenuItem[] = [
     title: "Documentos",
     icon: FileText,
     path: "/documentos",
-  },
-];
-
-const settingsItems: MenuItem[] = [
-  {
-    id: "configuracoes",
-    title: "Configurações",
-    icon: Settings,
-    path: "/configuracoes",
   },
 ];
 
@@ -417,11 +429,6 @@ export function Sidebar({
         {isExpanded && (
           <Divider sx={{ mx: theme.spacing(2), my: theme.spacing(2) }} />
         )}
-
-        {/* Settings Menu */}
-        <List component="nav" disablePadding>
-          {settingsItems.map((item) => renderMenuItem(item))}
-        </List>
       </Box>
 
       {/* Footer */}

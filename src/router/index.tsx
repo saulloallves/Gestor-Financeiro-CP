@@ -3,6 +3,8 @@ import { LoginPage } from "../pages/LoginPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { UnidadesPage } from "../pages/UnidadesPage";
 import { FranqueadosPage } from "../pages/FranqueadosPage";
+import { EquipesPage } from "../pages/EquipesPage";
+import { UsuariosInternosPage } from "../pages/UsuariosInternosPage";
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -43,6 +45,22 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <FranqueadosPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "equipes",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <EquipesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "usuarios-internos",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <UsuariosInternosPage />
           </ProtectedRoute>
         ),
       },

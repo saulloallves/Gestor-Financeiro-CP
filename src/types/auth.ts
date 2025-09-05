@@ -31,7 +31,11 @@ export interface UsuarioInterno {
   id: string;
   nome: string;
   email: string;
-  perfil: "admin" | "cobranca" | "gestao";
+  telefone?: string;
+  perfil: "operador" | "gestor" | "juridico" | "admin";
+  equipe_id?: string;
+  status: "ativo" | "inativo";
+  ultimo_login?: string;
 }
 
 export interface UnidadeVinculada {
