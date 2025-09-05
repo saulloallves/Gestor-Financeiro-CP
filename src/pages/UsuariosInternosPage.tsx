@@ -29,6 +29,7 @@ import {
   Download,
   Filter,
   X,
+  Trash2,
 } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
@@ -40,6 +41,7 @@ import {
 } from "../hooks/useUsuariosInternos";
 import { useEquipesAtivas } from "../hooks/useEquipes";
 import { UsuarioInternoForm } from "../components/UsuarioInternoForm";
+import { UsuariosInternosService } from "../api/usuariosInternosService";
 import type { 
   UsuarioInterno, 
   UsuarioInternoListItem, 
@@ -55,9 +57,9 @@ import type {
 const getPerfilColor = (perfil: PerfilUsuario) => {
   switch (perfil) {
     case "admin":
-      return "error";
+      return "success";
     case "gestor":
-      return "warning";
+      return "error";
     case "juridico":
       return "info";
     case "operador":
@@ -98,6 +100,7 @@ export function UsuariosInternosPage() {
   const [filtros, setFiltros] = React.useState<FiltrosUsuarios>({});
   const [usuarioSelecionado, setUsuarioSelecionado] = React.useState<UsuarioInterno | undefined>();
   const [formOpen, setFormOpen] = React.useState(false);
+  const [isLimpandoOrfaos, setIsLimpandoOrfaos] = React.useState(false);
   const [termoBusca, setTermoBusca] = React.useState("");
   const [equipeFilter, setEquipeFilter] = React.useState<string>("");
   const [perfilFilter, setPerfilFilter] = React.useState<PerfilUsuario | "">("");
@@ -105,7 +108,7 @@ export function UsuariosInternosPage() {
   const [isExporting] = React.useState(false); // Para futuro uso de exportação
 
   // Hooks
-  const { data: usuarios, isLoading, error } = useUsuariosInternos(filtros);
+  const { data: usuarios, isLoading, error, refetch } = useUsuariosInternos(filtros);
   const { data: equipesAtivas } = useEquipesAtivas();
   const inativarMutation = useInativarUsuario();
   const ativarMutation = useAtivarUsuario();
@@ -178,32 +181,96 @@ export function UsuariosInternosPage() {
     }));
   };
 
+  // Função temporária para limpeza de usuários órfãos
+  const handleLimparOrfaos = async () => {
+    if (!confirm("Tem certeza que deseja limpar usuários órfãos? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+
+    setIsLimpandoOrfaos(true);
+    try {
+      const resultado = await UsuariosInternosService.limparUsuariosOrfaos();
+      
+      if (resultado.success) {
+        alert(`Limpeza concluída! ${resultado.deleted_count || 0} usuários órfãos removidos.`);
+        // Recarregar dados
+        refetch();
+      } else {
+        alert(`Erro na limpeza: ${resultado.error || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      console.error('Erro ao limpar órfãos:', error);
+      alert('Erro ao executar limpeza de usuários órfãos');
+    } finally {
+      setIsLimpandoOrfaos(false);
+    }
+  };
+
   // Colunas da DataGrid
   const columns: GridColDef[] = [
     {
       field: "nome",
       headerName: "Usuário",
       flex: 1,
-      minWidth: 250,
       renderCell: (params) => {
         const usuario = params.row as UsuarioInternoListItem;
         return (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box 
+            sx={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: 1.5,
+              width: "100%",
+              height: "100%",
+              padding: "8px 0",
+            }}
+          >
             <Avatar
               sx={{
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 bgcolor: "primary.main",
                 fontSize: "0.875rem",
+                flexShrink: 0,
               }}
             >
               {getInitials(usuario.nome)}
             </Avatar>
-            <Box>
-              <Typography variant="body2" fontWeight={500}>
+            <Box 
+              sx={{ 
+                minWidth: 0,
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 0.5,
+              }}
+            >
+              <Typography 
+                variant="body2" 
+                fontWeight={500}
+                sx={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  lineHeight: 1.3,
+                  fontSize: "0.95rem",
+                  color: "text.primary",
+                }}
+              >
                 {usuario.nome}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography 
+                variant="caption" 
+                sx={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  lineHeight: 1.2,
+                  fontSize: "0.8rem",
+                  color: "text.secondary",
+                }}
+              >
                 {usuario.email}
               </Typography>
             </Box>
@@ -214,7 +281,7 @@ export function UsuariosInternosPage() {
     {
       field: "equipe_nome",
       headerName: "Equipe",
-      width: 150,
+      width: 400,
       renderCell: (params) => (
         <Typography variant="body2" color="text.secondary">
           {params.value || "Sem equipe"}
@@ -224,7 +291,7 @@ export function UsuariosInternosPage() {
     {
       field: "perfil",
       headerName: "Perfil",
-      width: 130,
+      width: 200,
       renderCell: (params) => (
         <Chip
           label={getPerfilLabel(params.value)}
@@ -237,7 +304,7 @@ export function UsuariosInternosPage() {
     {
       field: "telefone",
       headerName: "Contato",
-      width: 140,
+      width: 200,
       renderCell: (params) => {
         const usuario = params.row as UsuarioInternoListItem;
         return (
@@ -273,7 +340,7 @@ export function UsuariosInternosPage() {
     {
       field: "ultimo_login",
       headerName: "Último Login",
-      width: 140,
+      width: 150,
       renderCell: (params) => (
         <Typography variant="body2" color="text.secondary">
           {params.value 
@@ -285,7 +352,7 @@ export function UsuariosInternosPage() {
     {
       field: "actions",
       headerName: "Ações",
-      width: 120,
+      width: 100,
       sortable: false,
       renderCell: (params) => {
         const usuario = params.row as UsuarioInternoListItem;
@@ -391,6 +458,16 @@ export function UsuariosInternosPage() {
             sx={{ minWidth: 140 }}
           >
             {isExporting ? <CircularProgress size={20} /> : "Exportar"}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Trash2 size={20} />}
+            onClick={handleLimparOrfaos}
+            disabled={isLimpandoOrfaos}
+            color="warning"
+            sx={{ minWidth: 160 }}
+          >
+            {isLimpandoOrfaos ? <CircularProgress size={20} /> : "Limpar Órfãos"}
           </Button>
           <Button
             variant="contained"
@@ -559,18 +636,35 @@ export function UsuariosInternosPage() {
               pagination: { paginationModel: { pageSize: 10 } },
             }}
             localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
+            rowHeight={80}
             sx={{
               border: "none",
               "& .MuiDataGrid-cell": {
                 borderBottom: `1px solid ${theme.palette.divider}`,
+                padding: theme.spacing(1.5, 2),
+                fontSize: "0.95rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                overflow: "hidden",
               },
               "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: theme.palette.grey[50],
                 borderBottom: `2px solid ${theme.palette.divider}`,
-                fontWeight: 600,
+                "& .MuiDataGrid-columnHeader": {
+                  padding: theme.spacing(1.5, 2),
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                },
               },
-              "& .MuiDataGrid-row:hover": {
-                backgroundColor: theme.palette.action.hover,
+              "& .MuiDataGrid-row": {
+                minHeight: "80px !important",
+                maxHeight: "80px !important",
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                },
               },
             }}
           />

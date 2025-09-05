@@ -115,9 +115,36 @@ export class UsuariosInternosService {
     };
   }
 
+  // Verificar se email já existe
+  static async verificarEmailExiste(email: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.rpc('verificar_email_existe', {
+        p_email: email
+      });
+
+      if (error) {
+        console.error('Erro ao verificar email:', error);
+        throw error;
+      }
+
+      // A função retorna um objeto JSON com informações sobre onde o email existe
+      return data?.exists || false;
+    } catch (error) {
+      console.error('Erro ao verificar email:', error);
+      // Em caso de erro, assumir que o email não existe para não bloquear o cadastro
+      return false;
+    }
+  }
+
   // Criar novo usuário interno
   static async criarUsuario(usuario: UsuarioInternoCreate): Promise<UsuarioInterno> {
     try {
+      // Verificar se o email já existe
+      const emailExiste = await this.verificarEmailExiste(usuario.email);
+      if (emailExiste) {
+        throw new Error('Este email já está cadastrado no sistema. Use um email diferente.');
+      }
+
       // Usar função do banco para criar usuário com autenticação
       const { data, error } = await supabase.rpc('create_usuario_interno_with_auth', {
         p_nome: usuario.nome,
@@ -132,12 +159,38 @@ export class UsuariosInternosService {
         throw new Error(`Erro na função de criação: ${error.message}`);
       }
 
-      if (!data.success) {
-        throw new Error(data.message || data.error || 'Erro desconhecido ao criar usuário');
+      if (!data) {
+        throw new Error('Nenhum dado retornado pela função de criação');
+      }
+
+      // Verificar se data é string (JSON) e fazer parse se necessário
+      let result = data;
+      if (typeof data === 'string') {
+        try {
+          result = JSON.parse(data);
+        } catch {
+          throw new Error('Resposta da função em formato inválido');
+        }
+      }
+
+      if (!result.success) {
+        // Melhorar mensagem de erro para email duplicado
+        if (result.error && result.error.includes('já está em uso')) {
+          throw new Error(`Este email já está cadastrado no sistema. Use um email diferente.`);
+        }
+        throw new Error(result.message || result.error || 'Erro desconhecido ao criar usuário');
+      }
+
+      // 🔑 TEMPORÁRIO: Exibir senha gerada no console
+      if (result.senha_temporaria) {
+        console.log('🔑 SENHA TEMPORÁRIA GERADA (REMOVER EM PRODUÇÃO):');
+        console.log(`📧 Email: ${result.email}`);
+        console.log(`🔐 Senha: ${result.senha_temporaria}`);
+        console.log('⚠️  IMPORTANTE: Guarde esta senha, ela não será exibida novamente!');
       }
 
       // Buscar o usuário criado para retornar os dados completos
-      const usuarioCompleto = await this.buscarUsuarioPorAuthId(data.user_id);
+      const usuarioCompleto = await this.buscarUsuarioPorAuthId(result.user_id);
       if (!usuarioCompleto) {
         throw new Error('Usuário criado, mas não foi possível recuperar os dados');
       }
@@ -146,9 +199,9 @@ export class UsuariosInternosService {
 
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Erro ao criar usuário: ${error.message}`);
+        throw new Error(`Erro ao criar usuário interno: ${error.message}`);
       }
-      throw new Error('Erro desconhecido ao criar usuário');
+      throw new Error('Erro ao criar usuário interno');
     }
   }
 
@@ -201,6 +254,24 @@ export class UsuariosInternosService {
 
     if (error) {
       console.error("Erro ao atualizar último login:", error.message);
+    }
+  }
+
+  // Listar emails já cadastrados (para debug)
+  static async listarEmailsCadastrados(): Promise<string[]> {
+    try {
+      const { data, error } = await supabase.rpc('listar_emails_cadastrados');
+
+      if (error) {
+        console.error('Erro ao listar emails:', error);
+        return [];
+      }
+
+      // A função retorna um objeto JSON com array de emails
+      return data?.emails || [];
+    } catch (error) {
+      console.error('Erro ao listar emails:', error);
+      return [];
     }
   }
 
@@ -302,6 +373,30 @@ export class UsuariosInternosService {
 
     if (error) {
       throw new Error(`Erro ao resetar senha: ${error.message}`);
+    }
+  }
+
+  // Limpar usuários órfãos (auth.users sem registro em usuarios_internos)
+  static async limparUsuariosOrfaos(): Promise<{
+    success: boolean;
+    deleted_count?: number;
+    message?: string;
+    error?: string;
+  }> {
+    try {
+      const { data, error } = await supabase.rpc('cleanup_orphan_auth_users');
+      
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error: unknown) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido ao limpar usuários órfãos',
+        message: 'Falha na limpeza de usuários órfãos'
+      };
     }
   }
 }

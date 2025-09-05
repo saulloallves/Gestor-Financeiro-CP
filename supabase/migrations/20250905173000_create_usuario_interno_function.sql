@@ -1,9 +1,9 @@
 -- Migration: Criar função para criação de usuários internos com autenticação
 -- Data: 2025-09-05
 
--- Drop function if exists (para recriar)
+-- Drop function if exists (para recriar) - corrigindo assinatura
 DROP FUNCTION IF EXISTS create_usuario_interno_with_auth(
-    TEXT, TEXT, TEXT, TEXT, TEXT
+    TEXT, TEXT, TEXT, TEXT, UUID, TEXT
 );
 
 -- Criar função para criar usuário interno com autenticação

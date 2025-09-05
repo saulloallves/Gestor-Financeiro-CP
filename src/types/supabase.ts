@@ -18,7 +18,12 @@ export interface Database {
           id: string;
           nome: string;
           email: string;
-          perfil: "admin" | "cobranca" | "gestao";
+          telefone?: string | null;
+          perfil: "operador" | "gestor" | "juridico" | "admin";
+          equipe_id?: string | null;
+          status: "ativo" | "inativo";
+          ultimo_login?: string | null;
+          user_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -26,7 +31,12 @@ export interface Database {
           id?: string;
           nome: string;
           email: string;
-          perfil: "admin" | "cobranca" | "gestao";
+          telefone?: string | null;
+          perfil: "operador" | "gestor" | "juridico" | "admin";
+          equipe_id: string;
+          status?: "ativo" | "inativo";
+          ultimo_login?: string | null;
+          user_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -34,7 +44,12 @@ export interface Database {
           id?: string;
           nome?: string;
           email?: string;
-          perfil?: "admin" | "cobranca" | "gestao";
+          telefone?: string | null;
+          perfil?: "operador" | "gestor" | "juridico" | "admin";
+          equipe_id?: string | null;
+          status?: "ativo" | "inativo";
+          ultimo_login?: string | null;
+          user_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -76,7 +91,7 @@ export interface Database {
       [_ in never]: never;
     };
     Enums: {
-      perfil_usuario: "admin" | "cobranca" | "gestao";
+  perfil_usuario_enum: "operador" | "gestor" | "juridico" | "admin";
     };
     CompositeTypes: {
       [_ in never]: never;
