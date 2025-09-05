@@ -1,22 +1,25 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { LoginPage } from '../pages/LoginPage';
-import { DashboardPage } from '../pages/DashboardPage';
-import { UnidadesPage } from '../pages/UnidadesPage';
-import { FranqueadosPage } from '../pages/FranqueadosPage';
-import { MainLayout } from '../components/layout/MainLayout';
-import { ProtectedRoute, UnauthorizedPage } from '../components/auth/ProtectedRoute';
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import { LoginPage } from "../pages/LoginPage";
+import { DashboardPage } from "../pages/DashboardPage";
+import { UnidadesPage } from "../pages/UnidadesPage";
+import { FranqueadosPage } from "../pages/FranqueadosPage";
+import { MainLayout } from "../components/layout/MainLayout";
+import {
+  ProtectedRoute,
+  UnauthorizedPage,
+} from "../components/auth/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <Navigate to="/dashboard" replace />,
   },
   {
-    path: '/login',
+    path: "/login",
     element: <LoginPage />,
   },
   {
-    path: '/',
+    path: "/",
     element: (
       <ProtectedRoute>
         <MainLayout />
@@ -24,11 +27,11 @@ export const router = createBrowserRouter([
     ),
     children: [
       {
-        path: 'dashboard',
+        path: "dashboard",
         element: <DashboardPage />,
       },
       {
-        path: 'unidades',
+        path: "unidades",
         element: (
           <ProtectedRoute requiredType="interno">
             <UnidadesPage />
@@ -36,7 +39,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'franqueados',
+        path: "franqueados",
         element: (
           <ProtectedRoute requiredType="interno">
             <FranqueadosPage />
@@ -44,7 +47,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'admin',
+        path: "admin",
         element: (
           <ProtectedRoute requiredType="interno">
             <DashboardPage />
@@ -52,21 +55,21 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'franqueado',
+        path: "franqueado",
         element: (
           <ProtectedRoute requiredType="franqueado">
             <DashboardPage />
           </ProtectedRoute>
         ),
       },
-    ]
+    ],
   },
   {
-    path: '/unauthorized',
+    path: "/unauthorized",
     element: <UnauthorizedPage />,
   },
   {
-    path: '*',
+    path: "*",
     element: <Navigate to="/dashboard" replace />,
   },
 ]);

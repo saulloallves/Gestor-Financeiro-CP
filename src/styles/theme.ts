@@ -2,8 +2,8 @@ import { createTheme } from "@mui/material/styles";
 
 // Paleta de cores da sua marca
 const brandColors = {
-  primary: "#FFC31A", // Um azul escuro como cor principal
-  secondary: "#E3A024", // Um âmbar como cor secundária
+  primary: "#FFC31A", // Amarelo Principal da Marca
+  secondary: "#E3A024", // Um tom mais escuro de amarelo para secundário
   success: "#2E7D32", // Verde para sucesso
   error: "#C62828", // Vermelho para erros
   warning: "#F9A825", // Amarelo para alertas

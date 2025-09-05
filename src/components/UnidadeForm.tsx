@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -23,37 +23,40 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip
-} from '@mui/material';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useTheme } from '@mui/material/styles';
-import { 
-  Save, 
-  X, 
-  Building2, 
-  User, 
-  MapPin, 
-  Clock, 
+  Chip,
+} from "@mui/material";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useTheme } from "@mui/material/styles";
+import {
+  Save,
+  X,
+  Building2,
+  User,
+  MapPin,
+  Clock,
   Search,
   Info,
   Users,
-  Link
-} from 'lucide-react';
-import { 
-  useCreateUnidade, 
-  useUpdateUnidade, 
+  Link,
+} from "lucide-react";
+import {
+  useCreateUnidade,
+  useUpdateUnidade,
   useFranqueados,
-  useFranqueadosVinculados
-} from '../hooks/useUnidades';
-import { validarCnpj, formatarCnpj, formatarTelefone, validarTelefone, formatarCpf } from '../utils/validations';
-import { buscarCep } from '../api/viaCepService';
-import { CodigoUnidade } from './CodigoUnidade';
-import type { 
-  Unidade, 
-  FranqueadoPrincipal
-} from '../types/unidades';
+  useFranqueadosVinculados,
+} from "../hooks/useUnidades";
+import {
+  validarCnpj,
+  formatarCnpj,
+  formatarTelefone,
+  validarTelefone,
+  formatarCpf,
+} from "../utils/validations";
+import { buscarCep } from "../api/viaCepService";
+import { CodigoUnidade } from "./CodigoUnidade";
+import type { Unidade, FranqueadoPrincipal } from "../types/unidades";
 
 // Interface personalizada para as abas
 interface TabPanelProps {
@@ -73,11 +76,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`unidade-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
 }
@@ -85,35 +84,47 @@ function TabPanel(props: TabPanelProps) {
 function a11yProps(index: number) {
   return {
     id: `unidade-tab-${index}`,
-    'aria-controls': `unidade-tabpanel-${index}`,
+    "aria-controls": `unidade-tabpanel-${index}`,
   };
 }
 
 // Schema de validação com Zod
 const unidadeSchema = z.object({
   nome_grupo: z.string().optional(),
-  nome_padrao: z.string().min(1, 'Nome da unidade é obrigatório'),
-  cnpj: z.string()
+  nome_padrao: z.string().min(1, "Nome da unidade é obrigatório"),
+  cnpj: z
+    .string()
     .optional()
-    .refine((cnpj) => {
-      if (!cnpj || cnpj.trim() === '') return true; // Campo opcional
-      return validarCnpj(cnpj);
-    }, {
-      message: 'CNPJ inválido'
-    }),
-  
+    .refine(
+      (cnpj) => {
+        if (!cnpj || cnpj.trim() === "") return true; // Campo opcional
+        return validarCnpj(cnpj);
+      },
+      {
+        message: "CNPJ inválido",
+      }
+    ),
+
   // Contato
-  telefone_comercial: z.string()
+  telefone_comercial: z
+    .string()
     .optional()
-    .refine((telefone) => {
-      if (!telefone || telefone.trim() === '') return true;
-      return validarTelefone(telefone);
-    }, {
-      message: 'Telefone inválido'
-    }),
-  email_comercial: z.string().email('Email inválido').optional().or(z.literal('')),
+    .refine(
+      (telefone) => {
+        if (!telefone || telefone.trim() === "") return true;
+        return validarTelefone(telefone);
+      },
+      {
+        message: "Telefone inválido",
+      }
+    ),
+  email_comercial: z
+    .string()
+    .email("Email inválido")
+    .optional()
+    .or(z.literal("")),
   instagram: z.string().optional(),
-  
+
   // Endereço
   endereco_rua: z.string().optional(),
   endereco_numero: z.string().optional(),
@@ -121,15 +132,16 @@ const unidadeSchema = z.object({
   endereco_bairro: z.string().optional(),
   endereco_cidade: z.string().optional(),
   endereco_estado: z.string().optional(),
+  endereco_uf: z.string().optional(),
   endereco_cep: z.string().optional(),
-  
+
   // Horários
   horario_seg_sex: z.string().optional(),
   horario_sabado: z.string().optional(),
   horario_domingo: z.string().optional(),
-  
+
   // Configurações
-  status: z.enum(['ativo', 'em_implantacao', 'suspenso', 'cancelado'] as const),
+  status: z.enum(["ativo", "em_implantacao", "suspenso", "cancelado"] as const),
   multifranqueado: z.boolean(),
   franqueado_principal_id: z.string().optional(),
 });
@@ -142,21 +154,26 @@ interface UnidadeFormProps {
   onCancel: () => void;
 }
 
-export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) {
+export function UnidadeForm({
+  unidade,
+  onSuccess,
+  onCancel,
+}: UnidadeFormProps) {
   const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
-  const [codigoUnidade, setCodigoUnidade] = useState('');
-  const [selectedFranqueado, setSelectedFranqueado] = useState<FranqueadoPrincipal | null>(null);
+  const [codigoUnidade, setCodigoUnidade] = useState("");
+  const [selectedFranqueado, setSelectedFranqueado] =
+    useState<FranqueadoPrincipal | null>(null);
   const [buscandoCep, setBuscandoCep] = useState(false);
-  
+
   const isEditing = !!unidade;
-  
+
   // Hooks para queries
-  const { data: franqueados = [], isLoading: franqueadosLoading } = useFranqueados();
-  const { data: franqueadosVinculados = [], isLoading: vinculosLoading } = useFranqueadosVinculados(
-    unidade?.id || ''
-  );
-  
+  const { data: franqueados = [], isLoading: franqueadosLoading } =
+    useFranqueados();
+  const { data: franqueadosVinculados = [], isLoading: vinculosLoading } =
+    useFranqueadosVinculados(unidade?.id || "");
+
   // Mutations
   const createMutation = useCreateUnidade();
   const updateMutation = useUpdateUnidade();
@@ -168,50 +185,52 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
   } = useForm<UnidadeFormData>({
     resolver: zodResolver(unidadeSchema),
     defaultValues: {
-      nome_grupo: '',
-      nome_padrao: '',
-      cnpj: '',
-      telefone_comercial: '',
-      email_comercial: '',
-      instagram: '',
-      endereco_rua: '',
-      endereco_numero: '',
-      endereco_complemento: '',
-      endereco_bairro: '',
-      endereco_cidade: '',
-      endereco_estado: '',
-      endereco_cep: '',
-      horario_seg_sex: '',
-      horario_sabado: '',
-      horario_domingo: '',
-      status: 'ativo',
+      nome_grupo: "",
+      nome_padrao: "",
+      cnpj: "",
+      telefone_comercial: "",
+      email_comercial: "",
+      instagram: "",
+      endereco_rua: "",
+      endereco_numero: "",
+      endereco_complemento: "",
+      endereco_bairro: "",
+      endereco_cidade: "",
+      endereco_estado: "",
+      endereco_uf: "",
+      endereco_cep: "",
+      horario_seg_sex: "",
+      horario_sabado: "",
+      horario_domingo: "",
+      status: "ativo",
       multifranqueado: false,
       franqueado_principal_id: undefined,
-    }
+    },
   });
 
   // Watch para valores que afetam a UI
-  const multifranqueado = watch('multifranqueado');
+  const multifranqueado = watch("multifranqueado");
 
   // Função para buscar CEP
   const handleBuscarCep = async (cep: string) => {
     if (!cep || cep.length < 8) return;
-    
+
     setBuscandoCep(true);
     try {
       const endereco = await buscarCep(cep);
       if (endereco) {
-        setValue('endereco_rua', endereco.logradouro);
-        setValue('endereco_bairro', endereco.bairro);
-        setValue('endereco_cidade', endereco.cidade);
-        setValue('endereco_estado', endereco.estado);
+        setValue("endereco_rua", endereco.logradouro);
+        setValue("endereco_bairro", endereco.bairro);
+        setValue("endereco_cidade", endereco.cidade);
+        setValue("endereco_estado", endereco.estado);
+        setValue("endereco_uf", endereco.uf);
       }
     } catch (error) {
-      console.error('Erro ao buscar CEP:', error);
+      console.error("Erro ao buscar CEP:", error);
     } finally {
       setBuscandoCep(false);
     }
@@ -221,22 +240,23 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
   useEffect(() => {
     if (unidade) {
       reset({
-        nome_grupo: unidade.nome_grupo || '',
+        nome_grupo: unidade.nome_grupo || "",
         nome_padrao: unidade.nome_padrao,
-        cnpj: unidade.cnpj || '',
-        telefone_comercial: unidade.telefone_comercial || '',
-        email_comercial: unidade.email_comercial || '',
-        instagram: unidade.instagram || '',
-        endereco_rua: unidade.endereco_rua || '',
-        endereco_numero: unidade.endereco_numero || '',
-        endereco_complemento: unidade.endereco_complemento || '',
-        endereco_bairro: unidade.endereco_bairro || '',
-        endereco_cidade: unidade.endereco_cidade || '',
-        endereco_estado: unidade.endereco_estado || '',
-        endereco_cep: unidade.endereco_cep || '',
-        horario_seg_sex: unidade.horario_seg_sex || '',
-        horario_sabado: unidade.horario_sabado || '',
-        horario_domingo: unidade.horario_domingo || '',
+        cnpj: unidade.cnpj || "",
+        telefone_comercial: unidade.telefone_comercial || "",
+        email_comercial: unidade.email_comercial || "",
+        instagram: unidade.instagram || "",
+        endereco_rua: unidade.endereco_rua || "",
+        endereco_numero: unidade.endereco_numero || "",
+        endereco_complemento: unidade.endereco_complemento || "",
+        endereco_bairro: unidade.endereco_bairro || "",
+        endereco_cidade: unidade.endereco_cidade || "",
+        endereco_estado: unidade.endereco_estado || "",
+        endereco_uf: unidade.endereco_uf || "",
+        endereco_cep: unidade.endereco_cep || "",
+        horario_seg_sex: unidade.horario_seg_sex || "",
+        horario_sabado: unidade.horario_sabado || "",
+        horario_domingo: unidade.horario_domingo || "",
         status: unidade.status,
         multifranqueado: unidade.multifranqueado,
         franqueado_principal_id: unidade.franqueado_principal_id || undefined,
@@ -244,12 +264,14 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
 
       // Encontrar e selecionar o franqueado principal
       if (unidade.franqueado_principal_id && franqueados.length > 0) {
-        const franqueado = franqueados.find(f => f.id === unidade.franqueado_principal_id);
+        const franqueado = franqueados.find(
+          (f) => f.id === unidade.franqueado_principal_id
+        );
         if (franqueado) {
           setSelectedFranqueado(franqueado);
         }
       }
-      
+
       setCodigoUnidade(unidade.codigo_unidade);
     }
   }, [unidade, franqueados, reset]);
@@ -275,7 +297,7 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
 
       onSuccess();
     } catch (error) {
-      console.error('Erro no formulário:', error);
+      console.error("Erro no formulário:", error);
     }
   };
 
@@ -285,24 +307,31 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
   };
 
   // Função para obter a cor do status
-  const getStatusColor = (status: string): "default" | "success" | "warning" | "error" => {
+  const getStatusColor = (
+    status: string
+  ): "default" | "success" | "warning" | "error" => {
     switch (status) {
-      case 'ativo': return 'success';
-      case 'em_implantacao': return 'warning';
-      case 'suspenso': return 'error';
-      case 'cancelado': return 'default';
-      default: return 'default';
+      case "ativo":
+        return "success";
+      case "em_implantacao":
+        return "warning";
+      case "suspenso":
+        return "error";
+      case "cancelado":
+        return "default";
+      default:
+        return "default";
     }
   };
 
   return (
-    <Card sx={{ maxWidth: 1200, margin: 'auto' }}>
+    <Card sx={{ maxWidth: 1200, margin: "auto" }}>
       <CardHeader
         title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Building2 color={theme.palette.primary.main} />
             <Typography variant="h5" component="h1">
-              {isEditing ? 'Editar Unidade' : 'Nova Unidade'}
+              {isEditing ? "Editar Unidade" : "Nova Unidade"}
             </Typography>
           </Box>
         }
@@ -329,7 +358,7 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
         )}
 
         {/* Tabs de Navegação */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
           <Tabs
             value={tabValue}
             onChange={handleTabChange}
@@ -370,7 +399,7 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Tab 1: Informações Básicas */}
           <TabPanel value={tabValue} index={0}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
               {/* Componente para geração/exibição do código da unidade */}
               <CodigoUnidade
                 codigo={codigoUnidade}
@@ -378,8 +407,14 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                 onCodigoChange={setCodigoUnidade}
                 disabled={isSubmitting}
               />
-              
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="nome_padrao"
                   control={control}
@@ -409,7 +444,13 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                 />
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="cnpj"
                   control={control}
@@ -438,7 +479,9 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                       helperText={errors.telefone_comercial?.message}
                       fullWidth
                       onChange={(e) => {
-                        const telefoneFormatado = formatarTelefone(e.target.value);
+                        const telefoneFormatado = formatarTelefone(
+                          e.target.value
+                        );
                         field.onChange(telefoneFormatado);
                       }}
                     />
@@ -446,7 +489,13 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                 />
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="email_comercial"
                   control={control}
@@ -477,7 +526,13 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                 />
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="status"
                   control={control}
@@ -498,7 +553,13 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                     </TextField>
                   )}
                 />
-                <Box sx={{ display: 'flex', alignItems: 'center', minWidth: { md: '50%' } }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    minWidth: { md: "50%" },
+                  }}
+                >
                   <Controller
                     name="multifranqueado"
                     control={control}
@@ -521,8 +582,14 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
 
           {/* Tab 2: Endereço */}
           <TabPanel value={tabValue} index={1}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="endereco_cep"
                   control={control}
@@ -540,7 +607,9 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                               <CircularProgress size={20} />
                             ) : (
                               <Button
-                                onClick={() => handleBuscarCep(field.value || '')}
+                                onClick={() =>
+                                  handleBuscarCep(field.value || "")
+                                }
                                 startIcon={<Search />}
                                 size="small"
                               >
@@ -574,7 +643,13 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                 />
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                }}
+              >
                 <Box sx={{ flex: 1 }}>
                   <Controller
                     name="endereco_numero"
@@ -622,7 +697,13 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                 </Box>
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                }}
+              >
                 <Box sx={{ flex: 3 }}>
                   <Controller
                     name="endereco_cidade"
@@ -638,7 +719,7 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                     )}
                   />
                 </Box>
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 2 }}>
                   <Controller
                     name="endereco_estado"
                     control={control}
@@ -653,13 +734,35 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                     )}
                   />
                 </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Controller
+                    name="endereco_uf"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="UF"
+                        error={!!errors.endereco_uf}
+                        helperText={errors.endereco_uf?.message}
+                        fullWidth
+                        inputProps={{ maxLength: 2 }}
+                      />
+                    )}
+                  />
+                </Box>
               </Box>
             </Box>
           </TabPanel>
 
           {/* Tab 3: Horários */}
           <TabPanel value={tabValue} index={2}>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                gap: 2,
+              }}
+            >
               <Controller
                 name="horario_seg_sex"
                 control={control}
@@ -707,7 +810,7 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
 
           {/* Tab 4: Franqueado Principal */}
           <TabPanel value={tabValue} index={3}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
               {!multifranqueado && (
                 <Alert severity="info">
                   Selecione o franqueado principal responsável por esta unidade.
@@ -715,7 +818,9 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
               )}
               {multifranqueado && (
                 <Alert severity="warning">
-                  Esta unidade está marcada como multifranqueado. Você pode definir um franqueado principal, mas ele não será o único responsável.
+                  Esta unidade está marcada como multifranqueado. Você pode
+                  definir um franqueado principal, mas ele não será o único
+                  responsável.
                 </Alert>
               )}
 
@@ -726,7 +831,9 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                   <Autocomplete
                     {...field}
                     options={franqueados}
-                    getOptionLabel={(option) => `${option.nome} - ${formatarCpf(option.cpf || '')}`}
+                    getOptionLabel={(option) =>
+                      `${option.nome} - ${formatarCpf(option.cpf || "")}`
+                    }
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -746,10 +853,12 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                     value={selectedFranqueado}
                     onChange={(_, newValue) => {
                       setSelectedFranqueado(newValue);
-                      field.onChange(newValue?.id || '');
+                      field.onChange(newValue?.id || "");
                     }}
                     loading={franqueadosLoading}
-                    isOptionEqualToValue={(option, value) => option.id === value?.id}
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value?.id
+                    }
                   />
                 )}
               />
@@ -760,8 +869,16 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                     <Typography variant="h6" gutterBottom>
                       Informações do Franqueado Selecionado
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: { xs: "column", md: "row" },
+                          gap: 2,
+                        }}
+                      >
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="body2" color="text.secondary">
                             Nome
@@ -775,17 +892,23 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                             CPF
                           </Typography>
                           <Typography variant="body1">
-                            {formatarCpf(selectedFranqueado.cpf || '')}
+                            {formatarCpf(selectedFranqueado.cpf || "")}
                           </Typography>
                         </Box>
                       </Box>
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: { xs: "column", md: "row" },
+                          gap: 2,
+                        }}
+                      >
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="body2" color="text.secondary">
                             Email
                           </Typography>
                           <Typography variant="body1">
-                            {selectedFranqueado.email || 'Não informado'}
+                            {selectedFranqueado.email || "Não informado"}
                           </Typography>
                         </Box>
                         <Box sx={{ flex: 1 }}>
@@ -793,7 +916,7 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                             Telefone
                           </Typography>
                           <Typography variant="body1">
-                            {selectedFranqueado.telefone || 'Não informado'}
+                            {selectedFranqueado.telefone || "Não informado"}
                           </Typography>
                         </Box>
                       </Box>
@@ -807,20 +930,27 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
           {/* Tab 5: Vínculos (só aparece quando editando) */}
           {isEditing && (
             <TabPanel value={tabValue} index={4}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <Box>
-                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
                     <Link size={20} />
                     Franqueados Vinculados
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Lista de todos os franqueados que possuem vínculo ativo com esta unidade.
+                    Lista de todos os franqueados que possuem vínculo ativo com
+                    esta unidade.
                   </Typography>
                 </Box>
 
                 <Box>
                   {vinculosLoading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", py: 4 }}
+                    >
                       <CircularProgress />
                     </Box>
                   ) : franqueadosVinculados.length > 0 ? (
@@ -840,13 +970,19 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                           {franqueadosVinculados.map((vinculo) => (
                             <TableRow key={vinculo.id}>
                               <TableCell>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                  }}
+                                >
                                   <User size={16} />
                                   {vinculo.franqueado.nome}
                                 </Box>
                               </TableCell>
                               <TableCell>
-                                {formatarCpf(vinculo.franqueado.cpf || '')}
+                                {formatarCpf(vinculo.franqueado.cpf || "")}
                               </TableCell>
                               <TableCell>
                                 <Chip
@@ -860,11 +996,15 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                                 <Chip
                                   label={vinculo.franqueado.status}
                                   size="small"
-                                  color={getStatusColor(vinculo.franqueado.status)}
+                                  color={getStatusColor(
+                                    vinculo.franqueado.status
+                                  )}
                                 />
                               </TableCell>
                               <TableCell>
-                                {new Date(vinculo.data_vinculo).toLocaleDateString('pt-BR')}
+                                {new Date(
+                                  vinculo.data_vinculo
+                                ).toLocaleDateString("pt-BR")}
                               </TableCell>
                               <TableCell>
                                 <Box>
@@ -874,7 +1014,10 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
                                     </Typography>
                                   )}
                                   {vinculo.franqueado.telefone && (
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
                                       {vinculo.franqueado.telefone}
                                     </Typography>
                                   )}
@@ -896,7 +1039,9 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
           )}
 
           {/* Botões de ação */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
+          <Box
+            sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 4 }}
+          >
             <Button
               type="button"
               variant="outlined"
@@ -906,7 +1051,7 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
             >
               Cancelar
             </Button>
-            
+
             <Button
               type="submit"
               variant="contained"
@@ -918,8 +1063,10 @@ export function UnidadeForm({ unidade, onSuccess, onCancel }: UnidadeFormProps) 
             >
               {isSubmitting ? (
                 <CircularProgress size={20} color="inherit" />
+              ) : isEditing ? (
+                "Atualizar"
               ) : (
-                isEditing ? 'Atualizar' : 'Salvar'
+                "Salvar"
               )}
             </Button>
           </Box>

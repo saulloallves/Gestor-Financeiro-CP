@@ -3,16 +3,16 @@
  * Converte os valores do banco para labels amigáveis ao usuário
  */
 
-import type { StatusUnidade } from '../types/unidades';
+import type { StatusUnidade } from "../types/unidades";
 
 /**
  * Mapeia os status do banco para labels amigáveis
  */
 export const STATUS_LABELS: Record<StatusUnidade, string> = {
-  em_implantacao: 'Em Implantação',
-  ativo: 'Ativo',
-  suspenso: 'Suspenso',
-  cancelado: 'Cancelado'
+  em_implantacao: "Em Implantação",
+  ativo: "Ativo",
+  suspenso: "Suspenso",
+  cancelado: "Cancelado",
 } as const;
 
 /**
@@ -28,10 +28,10 @@ export function getStatusLabel(status: StatusUnidade): string {
  * Mapeia cores para cada status (para uso com Chips e indicadores)
  */
 export const STATUS_COLORS = {
-  em_implantacao: 'warning',
-  ativo: 'success',
-  suspenso: 'info',
-  cancelado: 'error'
+  em_implantacao: "warning",
+  ativo: "success",
+  suspenso: "info",
+  cancelado: "error",
 } as const;
 
 /**
@@ -40,5 +40,5 @@ export const STATUS_COLORS = {
  * @returns Cor do tema do Material-UI
  */
 export function getStatusColor(status: StatusUnidade) {
-  return STATUS_COLORS[status] || 'default';
+  return STATUS_COLORS[status] || "default";
 }

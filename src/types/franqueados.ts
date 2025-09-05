@@ -1,20 +1,24 @@
 // Tipos para o módulo de Franqueados - Cresci e Perdi
 // Baseado na especificação do módulo 2.2
 
-export type TipoFranqueado = 'principal' | 'familiar' | 'investidor' | 'parceiro';
-export type StatusFranqueado = 'ativo' | 'inativo';
-export type DisponibilidadeFranqueado = 'integral' | 'parcial' | 'eventos';
+export type TipoFranqueado =
+  | "principal"
+  | "familiar"
+  | "investidor"
+  | "parceiro";
+export type StatusFranqueado = "ativo" | "inativo";
+export type DisponibilidadeFranqueado = "integral" | "parcial" | "eventos";
 
 export interface Franqueado {
   id: string;
-  
+
   // Dados Pessoais
   nome: string;
   nome_completo?: string; // Campo adicional para nome completo
   cpf: string;
   nacionalidade?: string;
   data_nascimento?: string;
-  
+
   // Endereço
   endereco_rua?: string;
   endereco_numero?: string;
@@ -22,31 +26,32 @@ export interface Franqueado {
   endereco_bairro?: string;
   endereco_cidade?: string;
   endereco_estado?: string;
+  endereco_uf?: string;
   endereco_cep?: string;
-  
+
   // Contatos
   telefone?: string;
   whatsapp?: string;
   email_pessoal?: string;
   email_comercial?: string;
   email?: string; // Campo calculado para busca
-  
+
   // Informações Contratuais
   tipo: TipoFranqueado;
   prolabore?: number | null;
   contrato_social: boolean;
   disponibilidade: DisponibilidadeFranqueado;
-  
+
   // Histórico Profissional
   profissao_anterior?: string;
   empreendedor_previo: boolean;
-  
+
   // Status e Metadados
   status: StatusFranqueado;
   user_id?: string; // Referência ao auth.users para login
   created_at: string;
   updated_at: string;
-  
+
   // Relacionamentos (populados via join)
   unidades_vinculadas?: UnidadeVinculada[];
 }
@@ -67,34 +72,36 @@ export interface CreateFranqueadoData {
   cpf: string;
   nacionalidade?: string;
   data_nascimento?: string;
-  
+
   // Endereço
   endereco_rua?: string;
   endereco_numero?: string;
+  endereco_complemento?: string;
   endereco_bairro?: string;
   endereco_cidade?: string;
   endereco_estado?: string;
+  endereco_uf?: string;
   endereco_cep?: string;
-  
+
   // Contatos
   telefone?: string;
   whatsapp?: string;
   email_pessoal: string; // Obrigatório para criação de login
   email_comercial?: string;
-  
+
   // Informações Contratuais
   tipo: TipoFranqueado;
   prolabore?: number | null;
   contrato_social?: boolean;
   disponibilidade: DisponibilidadeFranqueado;
-  
+
   // Histórico Profissional
   profissao_anterior?: string;
   empreendedor_previo?: boolean;
-  
+
   // Status
   status?: StatusFranqueado;
-  
+
   // Vínculos com unidades
   unidades_vinculadas?: string[]; // Array de IDs de unidades
 }
@@ -120,7 +127,7 @@ export interface FranqueadoFilter {
 // Tipo para ordenação
 export interface FranqueadoSort {
   field: keyof Franqueado;
-  direction: 'asc' | 'desc';
+  direction: "asc" | "desc";
 }
 
 // Tipo para busca e paginação
@@ -151,7 +158,7 @@ export interface FranqueadoAuditLog {
   id: string;
   franqueado_id: string;
   usuario_id: string;
-  acao: 'create' | 'update' | 'delete' | 'status_change' | 'vinculo_change';
+  acao: "create" | "update" | "delete" | "status_change" | "vinculo_change";
   dados_anteriores?: Partial<Franqueado>;
   dados_novos?: Partial<Franqueado>;
   observacoes?: string;
@@ -175,7 +182,9 @@ export interface FranqueadoListProps {
 
 export interface FranqueadoFormProps {
   franqueado?: Franqueado;
-  onSubmit: (data: CreateFranqueadoData | UpdateFranqueadoData) => Promise<void>;
+  onSubmit: (
+    data: CreateFranqueadoData | UpdateFranqueadoData
+  ) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -184,7 +193,10 @@ export interface FranqueadoCardProps {
   franqueado: Franqueado;
   onEdit?: (franqueado: Franqueado) => void;
   onView?: (franqueado: Franqueado) => void;
-  onStatusChange?: (franqueado: Franqueado, newStatus: StatusFranqueado) => void;
+  onStatusChange?: (
+    franqueado: Franqueado,
+    newStatus: StatusFranqueado
+  ) => void;
   showActions?: boolean;
 }
 

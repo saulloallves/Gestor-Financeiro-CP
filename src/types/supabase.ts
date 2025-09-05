@@ -8,99 +8,102 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[]
+  | Json[];
 
 export interface Database {
   public: {
     Tables: {
       usuarios_internos: {
         Row: {
-          id: string
-          nome: string
-          email: string
-          perfil: 'admin' | 'cobranca' | 'gestao'
-          created_at: string
-          updated_at: string
-        }
+          id: string;
+          nome: string;
+          email: string;
+          perfil: "admin" | "cobranca" | "gestao";
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?: string
-          nome: string
-          email: string
-          perfil: 'admin' | 'cobranca' | 'gestao'
-          created_at?: string
-          updated_at?: string
-        }
+          id?: string;
+          nome: string;
+          email: string;
+          perfil: "admin" | "cobranca" | "gestao";
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          id?: string
-          nome?: string
-          email?: string
-          perfil?: 'admin' | 'cobranca' | 'gestao'
-          created_at?: string
-          updated_at?: string
-        }
-      }
+          id?: string;
+          nome?: string;
+          email?: string;
+          perfil?: "admin" | "cobranca" | "gestao";
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       franqueados: {
         Row: {
-          id: string
-          nome: string
-          codigo_franquia: string
-          nome_fantasia: string
-          user_id: string // Referência ao auth.users
-          created_at: string
-          updated_at: string
-        }
+          id: string;
+          nome: string;
+          codigo_franquia: string;
+          nome_fantasia: string;
+          user_id: string; // Referência ao auth.users
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          id?: string
-          nome: string
-          codigo_franquia: string
-          nome_fantasia: string
-          user_id: string
-          created_at?: string
-          updated_at?: string
-        }
+          id?: string;
+          nome: string;
+          codigo_franquia: string;
+          nome_fantasia: string;
+          user_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          id?: string
-          nome?: string
-          codigo_franquia?: string
-          nome_fantasia?: string
-          user_id?: string
-          created_at?: string
-          updated_at?: string
-        }
-      }
-    }
+          id?: string;
+          nome?: string;
+          codigo_franquia?: string;
+          nome_fantasia?: string;
+          user_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Enums: {
-      perfil_usuario: 'admin' | 'cobranca' | 'gestao'
-    }
+      perfil_usuario: "admin" | "cobranca" | "gestao";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
+      [_ in never]: never;
+    };
+  };
 }
 
 // Tipos auxiliares para facilitar o uso
-export type UsuarioInterno = Database['public']['Tables']['usuarios_internos']['Row']
-export type Franqueado = Database['public']['Tables']['franqueados']['Row']
-export type NovoUsuarioInterno = Database['public']['Tables']['usuarios_internos']['Insert']
-export type NovoFranqueado = Database['public']['Tables']['franqueados']['Insert']
+export type UsuarioInterno =
+  Database["public"]["Tables"]["usuarios_internos"]["Row"];
+export type Franqueado = Database["public"]["Tables"]["franqueados"]["Row"];
+export type NovoUsuarioInterno =
+  Database["public"]["Tables"]["usuarios_internos"]["Insert"];
+export type NovoFranqueado =
+  Database["public"]["Tables"]["franqueados"]["Insert"];
 
 // Tipos para respostas de autenticação
 export interface SupabaseAuthResponse {
   user: {
-    id: string
-    email?: string
-    user_metadata?: Json
-    app_metadata?: Json
-  }
+    id: string;
+    email?: string;
+    user_metadata?: Json;
+    app_metadata?: Json;
+  };
   session: {
-    access_token: string
-    refresh_token: string
-    expires_at?: number
-  }
+    access_token: string;
+    refresh_token: string;
+    expires_at?: number;
+  };
 }

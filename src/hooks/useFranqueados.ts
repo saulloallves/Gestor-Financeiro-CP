@@ -1,30 +1,34 @@
 // Hooks customizados para o módulo de Franqueados
 // Usando TanStack Query (React Query) para gerenciamento de estado do servidor
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-hot-toast';
-import { franqueadosService } from '../api/franqueadosService';
-import { getStatusFranqueadoLabel } from '../utils/franqueadosMask';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
+import { franqueadosService } from "../api/franqueadosService";
+import { getStatusFranqueadoLabel } from "../utils/franqueadosMask";
 import type {
   Franqueado,
   CreateFranqueadoData,
   UpdateFranqueadoData,
   FranqueadoFilter,
   FranqueadoSort,
-  FranqueadoPagination
-} from '../types/franqueados';
+  FranqueadoPagination,
+} from "../types/franqueados";
 
 // Query keys para organização e invalidação de cache
 export const franqueadosQueryKeys = {
-  all: ['franqueados'] as const,
-  lists: () => [...franqueadosQueryKeys.all, 'list'] as const,
-  list: (filters: FranqueadoFilter, sort: FranqueadoSort, pagination: FranqueadoPagination) => 
+  all: ["franqueados"] as const,
+  lists: () => [...franqueadosQueryKeys.all, "list"] as const,
+  list: (
+    filters: FranqueadoFilter,
+    sort: FranqueadoSort,
+    pagination: FranqueadoPagination
+  ) =>
     [...franqueadosQueryKeys.lists(), { filters, sort, pagination }] as const,
-  details: () => [...franqueadosQueryKeys.all, 'detail'] as const,
+  details: () => [...franqueadosQueryKeys.all, "detail"] as const,
   detail: (id: string) => [...franqueadosQueryKeys.details(), id] as const,
-  unidades: () => [...franqueadosQueryKeys.all, 'unidades'] as const,
-  estatisticas: () => [...franqueadosQueryKeys.all, 'estatisticas'] as const,
+  unidades: () => [...franqueadosQueryKeys.all, "unidades"] as const,
+  estatisticas: () => [...franqueadosQueryKeys.all, "estatisticas"] as const,
 };
 
 // ================================
@@ -36,7 +40,7 @@ export const franqueadosQueryKeys = {
  */
 export function useFranqueados(
   filters: FranqueadoFilter = {},
-  sort: FranqueadoSort = { field: 'nome', direction: 'asc' },
+  sort: FranqueadoSort = { field: "nome", direction: "asc" },
   pagination: FranqueadoPagination = { page: 1, limit: 50 }
 ) {
   return useQuery({
@@ -92,14 +96,17 @@ export function useCreateFranqueado() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateFranqueadoData) => franqueadosService.createFranqueado(data),
+    mutationFn: (data: CreateFranqueadoData) =>
+      franqueadosService.createFranqueado(data),
     onSuccess: (newFranqueado) => {
       // Invalidar cache da lista de franqueados
       queryClient.invalidateQueries({ queryKey: franqueadosQueryKeys.lists() });
-      
+
       // Invalidar estatísticas
-      queryClient.invalidateQueries({ queryKey: franqueadosQueryKeys.estatisticas() });
-      
+      queryClient.invalidateQueries({
+        queryKey: franqueadosQueryKeys.estatisticas(),
+      });
+
       // Adicionar o novo franqueado ao cache de detalhes
       queryClient.setQueryData(
         franqueadosQueryKeys.detail(newFranqueado.id),
@@ -109,16 +116,16 @@ export function useCreateFranqueado() {
       // Notificação de sucesso com informações importantes
       toast.success(
         `Franqueado ${newFranqueado.nome} cadastrado com sucesso!\n` +
-        `✅ Login criado automaticamente\n` +
-        `🔐 Senha temporária gerada (verifique o console)`,
+          `✅ Login criado automaticamente\n` +
+          `🔐 Senha temporária gerada (verifique o console)`,
         {
           duration: 6000,
         }
       );
     },
     onError: (error: Error) => {
-      console.error('Erro ao criar franqueado:', error);
-      toast.error(error.message || 'Erro ao cadastrar franqueado');
+      console.error("Erro ao criar franqueado:", error);
+      toast.error(error.message || "Erro ao cadastrar franqueado");
     },
   });
 }
@@ -130,11 +137,12 @@ export function useUpdateFranqueado() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateFranqueadoData) => franqueadosService.updateFranqueado(data),
+    mutationFn: (data: UpdateFranqueadoData) =>
+      franqueadosService.updateFranqueado(data),
     onSuccess: (updatedFranqueado) => {
       // Invalidar cache da lista de franqueados
       queryClient.invalidateQueries({ queryKey: franqueadosQueryKeys.lists() });
-      
+
       // Atualizar cache de detalhes
       queryClient.setQueryData(
         franqueadosQueryKeys.detail(updatedFranqueado.id),
@@ -142,13 +150,17 @@ export function useUpdateFranqueado() {
       );
 
       // Invalidar estatísticas
-      queryClient.invalidateQueries({ queryKey: franqueadosQueryKeys.estatisticas() });
+      queryClient.invalidateQueries({
+        queryKey: franqueadosQueryKeys.estatisticas(),
+      });
 
-      toast.success(`Franqueado ${updatedFranqueado.nome} atualizado com sucesso!`);
+      toast.success(
+        `Franqueado ${updatedFranqueado.nome} atualizado com sucesso!`
+      );
     },
     onError: (error: Error) => {
-      console.error('Erro ao atualizar franqueado:', error);
-      toast.error(error.message || 'Erro ao atualizar franqueado');
+      console.error("Erro ao atualizar franqueado:", error);
+      toast.error(error.message || "Erro ao atualizar franqueado");
     },
   });
 }
@@ -160,12 +172,12 @@ export function useUpdateStatusFranqueado() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => 
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
       franqueadosService.updateStatus(id, status),
     onSuccess: (updatedFranqueado) => {
       // Invalidar cache da lista de franqueados
       queryClient.invalidateQueries({ queryKey: franqueadosQueryKeys.lists() });
-      
+
       // Atualizar cache de detalhes
       queryClient.setQueryData(
         franqueadosQueryKeys.detail(updatedFranqueado.id),
@@ -173,13 +185,19 @@ export function useUpdateStatusFranqueado() {
       );
 
       // Invalidar estatísticas
-      queryClient.invalidateQueries({ queryKey: franqueadosQueryKeys.estatisticas() });
+      queryClient.invalidateQueries({
+        queryKey: franqueadosQueryKeys.estatisticas(),
+      });
 
-      toast.success(`Status do franqueado ${updatedFranqueado.nome} alterado para ${getStatusFranqueadoLabel(updatedFranqueado.status)}`);
+      toast.success(
+        `Status do franqueado ${
+          updatedFranqueado.nome
+        } alterado para ${getStatusFranqueadoLabel(updatedFranqueado.status)}`
+      );
     },
     onError: (error: Error) => {
-      console.error('Erro ao alterar status:', error);
-      toast.error(error.message || 'Erro ao alterar status do franqueado');
+      console.error("Erro ao alterar status:", error);
+      toast.error(error.message || "Erro ao alterar status do franqueado");
     },
   });
 }
@@ -193,10 +211,10 @@ export function useUpdateStatusFranqueado() {
  */
 export function useValidateCpf() {
   return useMutation({
-    mutationFn: ({ cpf, excludeId }: { cpf: string; excludeId?: string }) => 
+    mutationFn: ({ cpf, excludeId }: { cpf: string; excludeId?: string }) =>
       franqueadosService.isCpfUnique(cpf, excludeId),
     onError: (error: Error) => {
-      console.error('Erro ao validar CPF:', error);
+      console.error("Erro ao validar CPF:", error);
     },
   });
 }
@@ -206,25 +224,29 @@ export function useValidateCpf() {
  */
 export function useExportFranqueados() {
   return useMutation({
-    mutationFn: (filters: FranqueadoFilter = {}) => franqueadosService.exportToCsv(filters),
+    mutationFn: (filters: FranqueadoFilter = {}) =>
+      franqueadosService.exportToCsv(filters),
     onSuccess: (csvData) => {
       // Criar e baixar arquivo CSV
-      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
+      const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
       if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `franqueados_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
+        link.setAttribute("href", url);
+        link.setAttribute(
+          "download",
+          `franqueados_${new Date().toISOString().split("T")[0]}.csv`
+        );
+        link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
       }
-      toast.success('Relatório exportado com sucesso!');
+      toast.success("Relatório exportado com sucesso!");
     },
     onError: (error: Error) => {
-      console.error('Erro ao exportar:', error);
-      toast.error('Erro ao exportar relatório');
+      console.error("Erro ao exportar:", error);
+      toast.error("Erro ao exportar relatório");
     },
   });
 }
@@ -238,7 +260,7 @@ export function useExportFranqueados() {
  */
 export function useFranqueadosPage(
   initialFilters: FranqueadoFilter = {},
-  initialSort: FranqueadoSort = { field: 'nome', direction: 'asc' },
+  initialSort: FranqueadoSort = { field: "nome", direction: "asc" },
   initialPagination: FranqueadoPagination = { page: 1, limit: 20 }
 ) {
   const [filters, setFilters] = useState(initialFilters);
@@ -251,16 +273,16 @@ export function useFranqueadosPage(
 
   const handleFilterChange = (newFilters: FranqueadoFilter) => {
     setFilters(newFilters);
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset para primeira página
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset para primeira página
   };
 
   const handleSortChange = (newSort: FranqueadoSort) => {
     setSort(newSort);
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset para primeira página
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset para primeira página
   };
 
   const handlePageChange = (page: number) => {
-    setPagination(prev => ({ ...prev, page }));
+    setPagination((prev) => ({ ...prev, page }));
   };
 
   const handleStatusChange = (franqueado: Franqueado, newStatus: string) => {
@@ -276,18 +298,18 @@ export function useFranqueadosPage(
     filters,
     sort,
     pagination,
-    
+
     // Dados
     franqueados: franqueadosQuery.data?.data || [],
     totalFranqueados: franqueadosQuery.data?.pagination.total || 0,
     totalPages: franqueadosQuery.data?.pagination.totalPages || 0,
-    
+
     // Status
     isLoading: franqueadosQuery.isLoading,
     isError: franqueadosQuery.isError,
     error: franqueadosQuery.error,
     isExporting: exportMutation.isPending,
-    
+
     // Ações
     handleFilterChange,
     handleSortChange,

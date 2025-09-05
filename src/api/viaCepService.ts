@@ -3,8 +3,8 @@
  * Documentação: https://viacep.com.br/
  */
 
-import { useState } from 'react';
-import { toast } from 'react-hot-toast';
+import { useState } from "react";
+import { toast } from "react-hot-toast";
 
 // Interface para o retorno da API ViaCEP
 export interface ViaCepResponse {
@@ -39,7 +39,7 @@ export interface EnderecoData {
  * Valida se o CEP está no formato correto (8 dígitos)
  */
 export function validarCep(cep: string): boolean {
-  const cepLimpo = cep.replace(/\D/g, '');
+  const cepLimpo = cep.replace(/\D/g, "");
   return /^[0-9]{8}$/.test(cepLimpo);
 }
 
@@ -47,15 +47,15 @@ export function validarCep(cep: string): boolean {
  * Formata o CEP para exibição (12345-678)
  */
 export function formatarCep(cep: string): string {
-  const cepLimpo = cep.replace(/\D/g, '');
-  return cepLimpo.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+  const cepLimpo = cep.replace(/\D/g, "");
+  return cepLimpo.replace(/^(\d{5})(\d{3})$/, "$1-$2");
 }
 
 /**
  * Remove formatação do CEP, deixando apenas os dígitos
  */
 export function limparCep(cep: string): string {
-  return cep.replace(/\D/g, '');
+  return cep.replace(/\D/g, "");
 }
 
 /**
@@ -64,15 +64,15 @@ export function limparCep(cep: string): string {
 export async function buscarCep(cep: string): Promise<EnderecoData | null> {
   try {
     const cepLimpo = limparCep(cep);
-    
+
     // Validar formato do CEP antes de fazer a requisição
     if (!validarCep(cepLimpo)) {
-      toast.error('CEP deve conter 8 dígitos');
+      toast.error("CEP deve conter 8 dígitos");
       return null;
     }
 
     const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-    
+
     if (!response.ok) {
       throw new Error(`Erro HTTP: ${response.status}`);
     }
@@ -81,7 +81,7 @@ export async function buscarCep(cep: string): Promise<EnderecoData | null> {
 
     // Verificar se o CEP foi encontrado
     if (data.erro) {
-      toast.error('CEP não encontrado');
+      toast.error("CEP não encontrado");
       return null;
     }
 
@@ -93,14 +93,13 @@ export async function buscarCep(cep: string): Promise<EnderecoData | null> {
       bairro: data.bairro,
       cidade: data.localidade,
       uf: data.uf,
-      estado: data.estado
+      estado: data.estado,
     };
 
     return enderecoData;
-
   } catch (error) {
-    console.error('Erro ao buscar CEP:', error);
-    toast.error('Erro ao consultar CEP. Tente novamente.');
+    console.error("Erro ao buscar CEP:", error);
+    toast.error("Erro ao consultar CEP. Tente novamente.");
     return null;
   }
 }
@@ -117,24 +116,26 @@ export async function buscarCepPorEndereco(
   try {
     // Validar parâmetros mínimos
     if (uf.length < 2) {
-      toast.error('UF deve ter 2 caracteres');
-      return null;
-    }
-    
-    if (cidade.length < 3) {
-      toast.error('Cidade deve ter pelo menos 3 caracteres');
-      return null;
-    }
-    
-    if (logradouro.length < 3) {
-      toast.error('Logradouro deve ter pelo menos 3 caracteres');
+      toast.error("UF deve ter 2 caracteres");
       return null;
     }
 
-    const url = `https://viacep.com.br/ws/${encodeURIComponent(uf)}/${encodeURIComponent(cidade)}/${encodeURIComponent(logradouro)}/json/`;
-    
+    if (cidade.length < 3) {
+      toast.error("Cidade deve ter pelo menos 3 caracteres");
+      return null;
+    }
+
+    if (logradouro.length < 3) {
+      toast.error("Logradouro deve ter pelo menos 3 caracteres");
+      return null;
+    }
+
+    const url = `https://viacep.com.br/ws/${encodeURIComponent(
+      uf
+    )}/${encodeURIComponent(cidade)}/${encodeURIComponent(logradouro)}/json/`;
+
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       throw new Error(`Erro HTTP: ${response.status}`);
     }
@@ -142,15 +143,14 @@ export async function buscarCepPorEndereco(
     const data: ViaCepResponse[] = await response.json();
 
     if (Array.isArray(data) && data.length === 0) {
-      toast.error('Nenhum CEP encontrado para este endereço');
+      toast.error("Nenhum CEP encontrado para este endereço");
       return null;
     }
 
     return data;
-
   } catch (error) {
-    console.error('Erro ao buscar CEP por endereço:', error);
-    toast.error('Erro ao consultar endereço. Tente novamente.');
+    console.error("Erro ao buscar CEP por endereço:", error);
+    toast.error("Erro ao consultar endereço. Tente novamente.");
     return null;
   }
 }
@@ -191,6 +191,6 @@ export function useViaCep() {
     consultarEndereco,
     validarCep,
     formatarCep,
-    limparCep
+    limparCep,
   };
 }

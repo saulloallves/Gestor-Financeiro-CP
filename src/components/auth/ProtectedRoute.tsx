@@ -1,15 +1,18 @@
-import { useEffect } from 'react';
-import type { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Box } from '@mui/material';
-import { useAuthStore } from '../../store/authStore';
+import { useEffect } from "react";
+import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
+import { Box } from "@mui/material";
+import { useAuthStore } from "../../store/authStore";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredType?: 'interno' | 'franqueado';
+  requiredType?: "interno" | "franqueado";
 }
 
-export function ProtectedRoute({ children, requiredType }: ProtectedRouteProps) {
+export function ProtectedRoute({
+  children,
+  requiredType,
+}: ProtectedRouteProps) {
   const { usuario, tipoAcesso, initializeAuth } = useAuthStore();
 
   // Inicializa a autenticação quando o componente monta
@@ -50,11 +53,11 @@ export function UnauthorizedPage() {
   return (
     <Box
       sx={{
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
+        height: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
       }}
     >
       <Box>

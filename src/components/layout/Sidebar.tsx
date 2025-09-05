@@ -11,7 +11,7 @@ import {
   Chip,
   IconButton,
   Tooltip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   LayoutDashboard,
   CreditCard,
@@ -27,13 +27,13 @@ import {
   Clock,
   Building,
   Pin,
-  PinOff
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useTheme } from '@mui/material/styles';
-import { useLocation, useNavigate } from 'react-router-dom';
-import logoImage from '../../assets/logo cresci-header.png';
-import cabecaIcon from '../../assets/cabeca.png';
+  PinOff,
+} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useTheme } from "@mui/material/styles";
+import { useLocation, useNavigate } from "react-router-dom";
+import logoImage from "../../assets/logo cresci-header.png";
+import cabecaIcon from "../../assets/cabeca.png";
 
 interface MenuItem {
   id: string;
@@ -42,7 +42,7 @@ interface MenuItem {
   path: string;
   badge?: {
     value: number;
-    color: 'error' | 'warning' | 'info' | 'success';
+    color: "error" | "warning" | "info" | "success";
   };
   children?: MenuItem[];
 }
@@ -61,98 +61,105 @@ const SIDEBAR_WIDTH_EXPANDED = 280;
 // Configuração dos itens do menu
 const menuItems: MenuItem[] = [
   {
-    id: 'dashboard',
-    title: 'Dashboard',
+    id: "dashboard",
+    title: "Dashboard",
     icon: LayoutDashboard,
-    path: '/dashboard',
+    path: "/dashboard",
   },
   {
-    id: 'unidades',
-    title: 'Unidades',
+    id: "unidades",
+    title: "Unidades",
     icon: Building,
-    path: '/unidades',
+    path: "/unidades",
   },
   {
-    id: 'cobrancas',
-    title: 'Cobranças',
-    icon: CreditCard,
-    path: '/cobrancas',
-    children: [
-      {
-        id: 'cobrancas-pendentes',
-        title: 'Pendentes',
-        icon: Clock,
-        path: '/cobrancas/pendentes',
-      },
-      {
-        id: 'cobrancas-vencidas',
-        title: 'Vencidas',
-        icon: AlertCircle,
-        path: '/cobrancas/vencidas',
-      },
-      {
-        id: 'cobrancas-pagas',
-        title: 'Pagas',
-        icon: CheckCircle,
-        path: '/cobrancas/pagas',
-      },
-    ],
-  },
-  {
-    id: 'franqueados',
-    title: 'Franqueados',
+    id: "franqueados",
+    title: "Franqueados",
     icon: Users,
-    path: '/franqueados',
+    path: "/franqueados",
   },
   {
-    id: 'relatorios',
-    title: 'Relatórios',
-    icon: BarChart3,
-    path: '/relatorios',
+    id: "cobrancas",
+    title: "Cobranças",
+    icon: CreditCard,
+    path: "/cobrancas",
     children: [
       {
-        id: 'relatorios-financeiro',
-        title: 'Financeiro',
-        icon: TrendingUp,
-        path: '/relatorios/financeiro',
+        id: "cobrancas-pendentes",
+        title: "Pendentes",
+        icon: Clock,
+        path: "/cobrancas/pendentes",
       },
       {
-        id: 'relatorios-inadimplencia',
-        title: 'Inadimplência',
+        id: "cobrancas-vencidas",
+        title: "Vencidas",
         icon: AlertCircle,
-        path: '/relatorios/inadimplencia',
+        path: "/cobrancas/vencidas",
+      },
+      {
+        id: "cobrancas-pagas",
+        title: "Pagas",
+        icon: CheckCircle,
+        path: "/cobrancas/pagas",
       },
     ],
   },
   {
-    id: 'documentos',
-    title: 'Documentos',
+    id: "relatorios",
+    title: "Relatórios",
+    icon: BarChart3,
+    path: "/relatorios",
+    children: [
+      {
+        id: "relatorios-financeiro",
+        title: "Financeiro",
+        icon: TrendingUp,
+        path: "/relatorios/financeiro",
+      },
+      {
+        id: "relatorios-inadimplencia",
+        title: "Inadimplência",
+        icon: AlertCircle,
+        path: "/relatorios/inadimplencia",
+      },
+    ],
+  },
+  {
+    id: "documentos",
+    title: "Documentos",
     icon: FileText,
-    path: '/documentos',
+    path: "/documentos",
   },
 ];
 
 const settingsItems: MenuItem[] = [
   {
-    id: 'configuracoes',
-    title: 'Configurações',
+    id: "configuracoes",
+    title: "Configurações",
     icon: Settings,
-    path: '/configuracoes',
+    path: "/configuracoes",
   },
 ];
 
-export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = false }: SidebarProps) {
+export function Sidebar({
+  onClose,
+  onExpandedChange,
+  onPinnedChange,
+  isPinned = false,
+}: SidebarProps) {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [expandedItems, setExpandedItems] = useState<string[]>(['cobrancas']);
-  
+  const [expandedItems, setExpandedItems] = useState<string[]>(["cobrancas"]);
+
   // Estados para controle do sidebar
   const [isHovered, setIsHovered] = useState(false);
-  
+
   // O sidebar está expandido quando está com hover OU fixo
   const isExpanded = isHovered || isPinned;
-  const currentWidth = isExpanded ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED;
+  const currentWidth = isExpanded
+    ? SIDEBAR_WIDTH_EXPANDED
+    : SIDEBAR_WIDTH_COLLAPSED;
 
   // Notifica mudanças de estado
   useEffect(() => {
@@ -162,9 +169,9 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
   const handleItemClick = (item: MenuItem) => {
     if (item.children) {
       // Se tem filhos, expande/colapsa
-      setExpandedItems(prev => 
-        prev.includes(item.id) 
-          ? prev.filter(id => id !== item.id)
+      setExpandedItems((prev) =>
+        prev.includes(item.id)
+          ? prev.filter((id) => id !== item.id)
           : [...prev, item.id]
       );
     } else {
@@ -219,42 +226,51 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
     return (
       <Box key={item.id}>
         <ListItem disablePadding>
-          <Tooltip 
-            title={!isExpanded ? item.title : ''} 
+          <Tooltip
+            title={!isExpanded ? item.title : ""}
             placement="right"
             arrow
           >
             <ListItemButton
               onClick={() => handleItemClick(item)}
               sx={{
-                pl: isExpanded ? theme.spacing(2 + level * 2) : theme.spacing(1.5),
+                pl: isExpanded
+                  ? theme.spacing(2 + level * 2)
+                  : theme.spacing(1.5),
                 pr: isExpanded ? theme.spacing(2) : theme.spacing(1.5),
                 py: theme.spacing(1.25),
-                borderRadius: level === 0 ? '12px' : '8px',
+                borderRadius: level === 0 ? "12px" : "8px",
                 mx: theme.spacing(1),
                 mb: level === 0 ? theme.spacing(0.5) : theme.spacing(0.25),
-                backgroundColor: isActive ? 'primary.main' : 'transparent',
-                color: isActive ? 'primary.contrastText' : 'text.primary',
+                backgroundColor: isActive ? "primary.main" : "transparent",
+                color: isActive ? "primary.contrastText" : "text.primary",
                 minHeight: 48,
-                justifyContent: isExpanded ? 'flex-start' : 'center',
-                '&:hover': {
-                  backgroundColor: isActive 
-                    ? 'primary.dark' 
-                    : level === 0 
-                      ? 'action.hover' 
-                      : 'action.selected',
-                  transform: 'translateX(2px)',
+                justifyContent: isExpanded ? "flex-start" : "center",
+                "&:hover": {
+                  backgroundColor: isActive
+                    ? "primary.dark"
+                    : level === 0
+                    ? "action.hover"
+                    : "action.selected",
+                  transform: "translateX(2px)",
                 },
-                transition: theme.transitions.create(['background-color', 'transform', 'padding'], {
-                  duration: theme.transitions.duration.short,
-                }),
+                transition: theme.transitions.create(
+                  ["background-color", "transform", "padding"],
+                  {
+                    duration: theme.transitions.duration.short,
+                  }
+                ),
               }}
             >
               <ListItemIcon
                 sx={{
-                  color: isActive ? 'primary.contrastText' : isParentActiveItem ? 'primary.main' : 'text.secondary',
+                  color: isActive
+                    ? "primary.contrastText"
+                    : isParentActiveItem
+                    ? "primary.main"
+                    : "text.secondary",
                   minWidth: isExpanded ? 40 : 24,
-                  justifyContent: 'center',
+                  justifyContent: "center",
                 }}
               >
                 <Icon size={level === 0 ? 22 : 18} />
@@ -262,10 +278,10 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
 
               {isExpanded && (
                 <>
-                  <ListItemText 
+                  <ListItemText
                     primary={item.title}
                     primaryTypographyProps={{
-                      fontSize: level === 0 ? '0.95rem' : '0.875rem',
+                      fontSize: level === 0 ? "0.95rem" : "0.875rem",
                       fontWeight: isActive ? 600 : level === 0 ? 500 : 400,
                     }}
                   />
@@ -278,7 +294,7 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
                       color={item.badge.color}
                       sx={{
                         height: 20,
-                        fontSize: '0.75rem',
+                        fontSize: "0.75rem",
                         fontWeight: 600,
                         mr: item.children ? 1 : 0,
                       }}
@@ -287,8 +303,12 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
 
                   {/* Expand/Collapse Icon */}
                   {item.children && (
-                    <Box sx={{ color: 'text.secondary' }}>
-                      {isItemExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    <Box sx={{ color: "text.secondary" }}>
+                      {isItemExpanded ? (
+                        <ChevronDown size={18} />
+                      ) : (
+                        <ChevronRight size={18} />
+                      )}
                     </Box>
                   )}
                 </>
@@ -301,7 +321,9 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
         {item.children && isExpanded && (
           <Collapse in={isItemExpanded} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
-              {item.children.map((child: MenuItem) => renderMenuItem(child, level + 1))}
+              {item.children.map((child: MenuItem) =>
+                renderMenuItem(child, level + 1)
+              )}
             </List>
           </Collapse>
         )}
@@ -312,10 +334,10 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
   const drawerContent = (
     <Box
       sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: 'background.paper',
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "background.paper",
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -324,13 +346,13 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
       <Box
         sx={{
           p: theme.spacing(2),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: isExpanded ? 'space-between' : 'center',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: isExpanded ? "space-between" : "center",
           borderBottom: `1px solid ${theme.palette.divider}`,
-          color: 'primary.contrastText',
+          color: "primary.contrastText",
           minHeight: 80,
-          transition: theme.transitions.create(['padding', 'justify-content'], {
+          transition: theme.transitions.create(["padding", "justify-content"], {
             duration: theme.transitions.duration.standard,
           }),
         }}
@@ -338,9 +360,9 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
         {/* Logo */}
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            overflow: 'hidden',
+            display: "flex",
+            alignItems: "center",
+            overflow: "hidden",
           }}
         >
           <Box
@@ -349,28 +371,33 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
             alt="Cresci e Perdi"
             sx={{
               height: isExpanded ? 40 : 32,
-              width: isExpanded ? 'auto' : 32,
-              objectFit: 'contain',
-              transition: theme.transitions.create(['height', 'width'], {
+              width: isExpanded ? "auto" : 32,
+              objectFit: "contain",
+              transition: theme.transitions.create(["height", "width"], {
                 duration: theme.transitions.duration.standard,
               }),
             }}
           />
         </Box>
-        
+
         {/* Botão de Pin - só aparece quando expandido */}
         {isExpanded && (
-          <Tooltip title={isPinned ? "Desfixar sidebar" : "Fixar sidebar"} placement="bottom">
+          <Tooltip
+            title={isPinned ? "Desfixar sidebar" : "Fixar sidebar"}
+            placement="bottom"
+          >
             <IconButton
               onClick={handleTogglePin}
               size="small"
               sx={{
-                color: 'primary.contrastText',
-                backgroundColor: isPinned ? 'rgba(255,255,255,0.2)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(255,255,255,0.1)',
+                color: "primary.contrastText",
+                backgroundColor: isPinned
+                  ? "rgba(255,255,255,0.2)"
+                  : "transparent",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.1)",
                 },
-                transition: theme.transitions.create(['background-color'], {
+                transition: theme.transitions.create(["background-color"], {
                   duration: theme.transitions.duration.short,
                 }),
               }}
@@ -382,7 +409,7 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
       </Box>
 
       {/* Menu Section */}
-      <Box sx={{ flex: 1, py: theme.spacing(2), overflowY: 'auto' }}>
+      <Box sx={{ flex: 1, py: theme.spacing(2), overflowY: "auto" }}>
         <List component="nav" disablePadding>
           {menuItems.map((item) => renderMenuItem(item))}
         </List>
@@ -403,16 +430,16 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
           sx={{
             p: theme.spacing(2),
             borderTop: `1px solid ${theme.palette.divider}`,
-            backgroundColor: 'background.default',
+            backgroundColor: "background.default",
           }}
         >
           <Typography
             variant="caption"
             sx={{
-              color: 'text.secondary',
-              fontSize: '0.7rem',
-              textAlign: 'center',
-              display: 'block',
+              color: "text.secondary",
+              fontSize: "0.7rem",
+              textAlign: "center",
+              display: "block",
             }}
           >
             © 2025 Cresci e Perdi
@@ -425,18 +452,18 @@ export function Sidebar({ onClose, onExpandedChange, onPinnedChange, isPinned = 
   return (
     <Box
       sx={{
-        position: 'fixed',
+        position: "fixed",
         top: 0,
         left: 0,
         width: currentWidth,
-        height: '100vh',
+        height: "100vh",
         zIndex: theme.zIndex.drawer,
-        boxShadow: '2px 0 8px rgba(0, 0, 0, 0.1)',
-        transition: theme.transitions.create(['width'], {
+        boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)",
+        transition: theme.transitions.create(["width"], {
           duration: theme.transitions.duration.standard,
           easing: theme.transitions.easing.easeInOut,
         }),
-        overflow: 'hidden',
+        overflow: "hidden",
       }}
     >
       {drawerContent}

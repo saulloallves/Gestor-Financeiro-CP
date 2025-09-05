@@ -1,8 +1,8 @@
-import { Box, useTheme } from '@mui/material';
-import { Outlet } from 'react-router-dom';
-import { Header } from './Header';
-import { Sidebar } from './Sidebar';
-import { useState } from 'react';
+import { Box, useTheme } from "@mui/material";
+import { Outlet } from "react-router-dom";
+import { Header } from "./Header";
+import { Sidebar } from "./Sidebar";
+import { useState } from "react";
 
 const SIDEBAR_WIDTH_COLLAPSED = 72;
 const SIDEBAR_WIDTH_EXPANDED = 280;
@@ -12,12 +12,22 @@ export function MainLayout() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(false);
 
-  const currentSidebarWidth = (sidebarExpanded || sidebarPinned) ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED;
+  const currentSidebarWidth =
+    sidebarExpanded || sidebarPinned
+      ? SIDEBAR_WIDTH_EXPANDED
+      : SIDEBAR_WIDTH_COLLAPSED;
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', maxWidth: '100vw', overflow: 'hidden' }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        maxWidth: "100vw",
+        overflow: "hidden",
+      }}
+    >
       {/* Sidebar - sempre visível */}
-      <Sidebar 
+      <Sidebar
         onExpandedChange={setSidebarExpanded}
         onPinnedChange={setSidebarPinned}
         isPinned={sidebarPinned}
@@ -27,15 +37,15 @@ export function MainLayout() {
       <Box
         sx={{
           flexGrow: 1,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
           marginLeft: `${currentSidebarWidth}px`,
-          transition: theme.transitions.create(['margin-left'], {
+          transition: theme.transitions.create(["margin-left"], {
             duration: theme.transitions.duration.standard,
           }),
-          minHeight: '100vh',
+          minHeight: "100vh",
           maxWidth: `calc(100vw - ${currentSidebarWidth}px)`,
-          overflow: 'hidden',
+          overflow: "hidden",
         }}
       >
         {/* Header */}
@@ -46,12 +56,12 @@ export function MainLayout() {
           component="main"
           sx={{
             flexGrow: 1,
-            bgcolor: 'background.default',
+            bgcolor: "background.default",
             padding: theme.spacing(3),
             paddingTop: `calc(64px + ${theme.spacing(3)})`, // Header height + padding
-            overflow: 'auto',
-            width: '100%',
-            minHeight: '100vh',
+            overflow: "auto",
+            width: "100%",
+            minHeight: "100vh",
           }}
         >
           <Outlet />

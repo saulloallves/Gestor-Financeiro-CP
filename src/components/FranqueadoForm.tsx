@@ -1,7 +1,7 @@
 // Formulário de Cadastro/Edição de Franqueados - Módulo 2.2
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -18,87 +18,116 @@ import {
   Chip,
   Tabs,
   Tab,
-  InputAdornment
-} from '@mui/material';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useTheme } from '@mui/material/styles';
-import { Save, X, User, Phone, MapPin, Briefcase, Building2, DollarSign, Search  } from 'lucide-react';
-import { 
-  useCreateFranqueado, 
-  useUpdateFranqueado, 
-  useUnidadesParaVinculo 
-} from '../hooks/useFranqueados';
-import { useEnderecoForm } from '../hooks/useEnderecoForm';
-import { 
-  validarCpf, 
-  formatarCpf, 
-  formatarTelefone, 
-  validarTelefone 
-} from '../utils/validations';
-import type { 
-  Franqueado, 
-  CreateFranqueadoData, 
+  InputAdornment,
+} from "@mui/material";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useTheme } from "@mui/material/styles";
+import {
+  Save,
+  X,
+  User,
+  Phone,
+  MapPin,
+  Briefcase,
+  Building2,
+  Search,
+} from "lucide-react";
+import {
+  useCreateFranqueado,
+  useUpdateFranqueado,
+  useUnidadesParaVinculo,
+} from "../hooks/useFranqueados";
+import { useEnderecoForm } from "../hooks/useEnderecoForm";
+import {
+  validarCpf,
+  formatarCpf,
+  formatarTelefone,
+  validarTelefone,
+} from "../utils/validations";
+import type {
+  Franqueado,
+  CreateFranqueadoData,
   UpdateFranqueadoData,
-  UnidadeParaVinculo
-} from '../types/franqueados';
+  UnidadeParaVinculo,
+} from "../types/franqueados";
 
 // Schema de validação com Zod
 const franqueadoSchema = z.object({
   // Dados Pessoais
-  nome: z.string().min(1, 'Nome é obrigatório'),
-  cpf: z.string()
-    .min(1, 'CPF é obrigatório')
+  nome: z.string().min(1, "Nome é obrigatório"),
+  cpf: z
+    .string()
+    .min(1, "CPF é obrigatório")
     .refine((cpf) => validarCpf(cpf), {
-      message: 'CPF inválido'
+      message: "CPF inválido",
     }),
   nacionalidade: z.string().optional(),
   data_nascimento: z.string().optional(),
-  
+
   // Endereço
   endereco_rua: z.string().optional(),
   endereco_numero: z.string().optional(),
+  endereco_complemento: z.string().optional(),
   endereco_bairro: z.string().optional(),
   endereco_cidade: z.string().optional(),
   endereco_estado: z.string().optional(),
+  endereco_uf: z.string().optional(),
   endereco_cep: z.string().optional(),
-  
+
   // Contatos
-  telefone: z.string()
+  telefone: z
+    .string()
     .optional()
-    .refine((telefone) => {
-      if (!telefone || telefone.trim() === '') return true;
-      return validarTelefone(telefone);
-    }, {
-      message: 'Telefone inválido'
-    }),
-  whatsapp: z.string()
+    .refine(
+      (telefone) => {
+        if (!telefone || telefone.trim() === "") return true;
+        return validarTelefone(telefone);
+      },
+      {
+        message: "Telefone inválido",
+      }
+    ),
+  whatsapp: z
+    .string()
     .optional()
-    .refine((whatsapp) => {
-      if (!whatsapp || whatsapp.trim() === '') return true;
-      return validarTelefone(whatsapp);
-    }, {
-      message: 'WhatsApp inválido'
-    }),
-  email_pessoal: z.string()
-    .min(1, 'Email pessoal é obrigatório')
-    .email('Email inválido'),
-  email_comercial: z.string().email('Email inválido').optional().or(z.literal('')),
-  
+    .refine(
+      (whatsapp) => {
+        if (!whatsapp || whatsapp.trim() === "") return true;
+        return validarTelefone(whatsapp);
+      },
+      {
+        message: "WhatsApp inválido",
+      }
+    ),
+  email_pessoal: z
+    .string()
+    .min(1, "Email pessoal é obrigatório")
+    .email("Email inválido"),
+  email_comercial: z
+    .string()
+    .email("Email inválido")
+    .optional()
+    .or(z.literal("")),
+
   // Informações Contratuais
-  tipo: z.enum(['principal', 'familiar', 'investidor', 'parceiro'] as const),
-  prolabore: z.number().min(0, 'Pró-labore deve ser positivo').nullable().optional(),
+  tipo: z.enum(["principal", "familiar", "investidor", "parceiro"] as const),
+  prolabore: z
+    .number()
+    .min(0, "Pró-labore deve ser positivo")
+    .nullable()
+    .optional(),
   contrato_social: z.boolean(),
-  disponibilidade: z.enum(['integral', 'parcial', 'eventos'] as const),
-  
+  disponibilidade: z.enum(["integral", "parcial", "eventos"] as const),
+
   // Histórico Profissional
   profissao_anterior: z.string().optional(),
   empreendedor_previo: z.boolean(),
-  
+
   // Status
-  status: z.enum(['ativo', 'inativo'] as const),
-  
+  status: z.enum(["ativo", "inativo"] as const),
+
   // Vínculos
   unidades_vinculadas: z.array(z.string()).optional(),
 });
@@ -130,16 +159,23 @@ interface FranqueadoFormProps {
   onCancel?: () => void;
 }
 
-export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFormProps) {
+export function FranqueadoForm({
+  franqueado,
+  onSuccess,
+  onCancel,
+}: FranqueadoFormProps) {
   const theme = useTheme();
   const isEditing = !!franqueado;
   const [tabAtiva, setTabAtiva] = useState(0);
-  
+
   const createMutation = useCreateFranqueado();
   const updateMutation = useUpdateFranqueado();
-  const { data: unidadesDisponiveis = [], isLoading: isLoadingUnidades } = useUnidadesParaVinculo();
-  
-  const [unidadesSelecionadas, setUnidadesSelecionadas] = useState<UnidadeParaVinculo[]>([]);
+  const { data: unidadesDisponiveis = [], isLoading: isLoadingUnidades } =
+    useUnidadesParaVinculo();
+
+  const [unidadesSelecionadas, setUnidadesSelecionadas] = useState<
+    UnidadeParaVinculo[]
+  >([]);
 
   const {
     control,
@@ -147,31 +183,33 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
     formState: { errors, isSubmitting },
     reset,
     setValue,
-    watch
+    watch,
   } = useForm<FranqueadoFormData>({
     resolver: zodResolver(franqueadoSchema),
     defaultValues: {
-      nome: '',
-      cpf: '',
-      nacionalidade: 'Brasileira',
-      data_nascimento: '',
-      endereco_rua: '',
-      endereco_numero: '',
-      endereco_bairro: '',
-      endereco_cidade: '',
-      endereco_estado: '',
-      endereco_cep: '',
-      telefone: '',
-      whatsapp: '',
-      email_pessoal: '',
-      email_comercial: '',
-      tipo: 'principal',
+      nome: "",
+      cpf: "",
+      nacionalidade: "Brasileira",
+      data_nascimento: "",
+      endereco_rua: "",
+      endereco_numero: "",
+      endereco_complemento: "",
+      endereco_bairro: "",
+      endereco_cidade: "",
+      endereco_estado: "",
+      endereco_uf: "",
+      endereco_cep: "",
+      telefone: "",
+      whatsapp: "",
+      email_pessoal: "",
+      email_comercial: "",
+      tipo: "principal",
       prolabore: null,
       contrato_social: true,
-      disponibilidade: 'integral',
-      profissao_anterior: '',
+      disponibilidade: "integral",
+      profissao_anterior: "",
       empreendedor_previo: false,
-      status: 'ativo',
+      status: "ativo",
       unidades_vinculadas: [],
     },
   });
@@ -180,27 +218,22 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
   const {
     loading: loadingCep,
     handleCepChange,
-    handleBuscarCep
+    handleBuscarCep,
   } = useEnderecoForm({
     setValue,
-    cepFieldName: 'endereco_cep',
-    ruaFieldName: 'endereco_rua',
-    bairroFieldName: 'endereco_bairro',
-    cidadeFieldName: 'endereco_cidade',
-    estadoFieldName: 'endereco_estado',
-    ufFieldName: 'endereco_estado',
+    cepFieldName: "endereco_cep",
+    ruaFieldName: "endereco_rua",
+    bairroFieldName: "endereco_bairro",
+    cidadeFieldName: "endereco_cidade",
+    estadoFieldName: "endereco_estado",
+    ufFieldName: "endereco_uf",
+    complementoFieldName: "endereco_complemento",
   });
 
-  // Estados brasileiros
-  const estados = [
-    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
-    'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
-    'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
-  ];
-
   // Watch para mostrar/ocultar campo de pró-labore
-  const tipoFranqueado = watch('tipo');
-  const mostrarProlabore = tipoFranqueado === 'principal' || tipoFranqueado === 'familiar';
+  const tipoFranqueado = watch("tipo");
+  const mostrarProlabore =
+    tipoFranqueado === "principal" || tipoFranqueado === "familiar";
 
   // Carregar dados do franqueado para edição
   useEffect(() => {
@@ -208,37 +241,40 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
       reset({
         nome: franqueado.nome,
         cpf: franqueado.cpf,
-        nacionalidade: franqueado.nacionalidade || 'Brasileira',
-        data_nascimento: franqueado.data_nascimento || '',
-        endereco_rua: franqueado.endereco_rua || '',
-        endereco_numero: franqueado.endereco_numero || '',
-        endereco_bairro: franqueado.endereco_bairro || '',
-        endereco_cidade: franqueado.endereco_cidade || '',
-        endereco_estado: franqueado.endereco_estado || '',
-        endereco_cep: franqueado.endereco_cep || '',
-        telefone: franqueado.telefone || '',
-        whatsapp: franqueado.whatsapp || '',
-        email_pessoal: franqueado.email_pessoal || '',
-        email_comercial: franqueado.email_comercial || '',
+        nacionalidade: franqueado.nacionalidade || "Brasileira",
+        data_nascimento: franqueado.data_nascimento || "",
+        endereco_rua: franqueado.endereco_rua || "",
+        endereco_numero: franqueado.endereco_numero || "",
+        endereco_complemento: franqueado.endereco_complemento || "",
+        endereco_bairro: franqueado.endereco_bairro || "",
+        endereco_cidade: franqueado.endereco_cidade || "",
+        endereco_estado: franqueado.endereco_estado || "",
+        endereco_uf: franqueado.endereco_uf || "",
+        endereco_cep: franqueado.endereco_cep || "",
+        telefone: franqueado.telefone || "",
+        whatsapp: franqueado.whatsapp || "",
+        email_pessoal: franqueado.email_pessoal || "",
+        email_comercial: franqueado.email_comercial || "",
         tipo: franqueado.tipo,
         prolabore: franqueado.prolabore ?? null,
         contrato_social: franqueado.contrato_social,
         disponibilidade: franqueado.disponibilidade,
-        profissao_anterior: franqueado.profissao_anterior || '',
+        profissao_anterior: franqueado.profissao_anterior || "",
         empreendedor_previo: franqueado.empreendedor_previo,
         status: franqueado.status,
-        unidades_vinculadas: franqueado.unidades_vinculadas?.map(u => u.id) || [],
+        unidades_vinculadas:
+          franqueado.unidades_vinculadas?.map((u) => u.id) || [],
       });
 
       // Selecionar unidades vinculadas
       if (franqueado.unidades_vinculadas) {
-        const unidadesVinculadas = franqueado.unidades_vinculadas.map(uv => ({
+        const unidadesVinculadas = franqueado.unidades_vinculadas.map((uv) => ({
           id: uv.id,
           codigo_unidade: uv.codigo_unidade,
           nome_padrao: uv.nome_padrao,
           status: uv.status,
           franqueado_principal_id: undefined,
-          franqueado_principal_nome: undefined
+          franqueado_principal_nome: undefined,
         }));
         setUnidadesSelecionadas(unidadesVinculadas);
       }
@@ -253,47 +289,55 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
         email_pessoal: data.email_pessoal || undefined,
         email_comercial: data.email_comercial || undefined,
         prolabore: mostrarProlabore ? data.prolabore : undefined,
-        unidades_vinculadas: unidadesSelecionadas.map(u => u.id),
+        unidades_vinculadas: unidadesSelecionadas.map((u) => u.id),
       };
 
       if (isEditing) {
         const updatedFranqueado = await updateMutation.mutateAsync({
           id: franqueado.id,
-          ...formData
+          ...formData,
         } as UpdateFranqueadoData);
         onSuccess?.(updatedFranqueado);
       } else {
-        const newFranqueado = await createMutation.mutateAsync(formData as CreateFranqueadoData);
+        const newFranqueado = await createMutation.mutateAsync(
+          formData as CreateFranqueadoData
+        );
         onSuccess?.(newFranqueado);
       }
     } catch (error) {
-      console.error('Erro no formulário:', error);
+      console.error("Erro no formulário:", error);
     }
   };
 
-  const isLoading = isSubmitting || createMutation.isPending || updateMutation.isPending;
+  const isLoading =
+    isSubmitting || createMutation.isPending || updateMutation.isPending;
 
   return (
     <Box sx={{ padding: theme.spacing(3) }}>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: theme.spacing(3)
-      }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: theme.spacing(3),
+        }}
+      >
         <Box>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-            {isEditing ? 'Editar Franqueado' : 'Novo Franqueado'}
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ fontWeight: 700, color: "text.primary" }}
+          >
+            {isEditing ? "Editar Franqueado" : "Novo Franqueado"}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            {isEditing 
-              ? `Editando dados de ${franqueado.nome}` 
-              : 'Cadastre um novo franqueado na rede'
-            }
+            {isEditing
+              ? `Editando dados de ${franqueado.nome}`
+              : "Cadastre um novo franqueado na rede"}
           </Typography>
         </Box>
-        
-        <Box sx={{ display: 'flex', gap: 2 }}>
+
+        <Box sx={{ display: "flex", gap: 2 }}>
           <Button
             variant="outlined"
             startIcon={<X size={20} />}
@@ -304,11 +348,13 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
           </Button>
           <Button
             variant="contained"
-            startIcon={isLoading ? <CircularProgress size={20} /> : <Save size={20} />}
+            startIcon={
+              isLoading ? <CircularProgress size={20} /> : <Save size={20} />
+            }
             onClick={handleSubmit(onSubmit)}
             disabled={isLoading}
           >
-            {isEditing ? 'Atualizar' : 'Salvar'}
+            {isEditing ? "Atualizar" : "Salvar"}
           </Button>
         </Box>
       </Box>
@@ -316,18 +362,18 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* Tabs de Navegação */}
         <Card sx={{ marginBottom: theme.spacing(3) }}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
             <Tabs
               value={tabAtiva}
               onChange={(_, newValue) => setTabAtiva(newValue)}
               variant="scrollable"
               scrollButtons="auto"
               sx={{
-                '& .MuiTab-root': {
+                "& .MuiTab-root": {
                   minHeight: 64,
-                  fontSize: '0.95rem',
+                  fontSize: "0.95rem",
                   fontWeight: 500,
-                  textTransform: 'none',
+                  textTransform: "none",
                 },
               }}
             >
@@ -367,7 +413,13 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
           <CardContent>
             {/* Aba 1 - Dados Pessoais */}
             <TabPanel value={tabAtiva} index={0}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="nome"
                   control={control}
@@ -379,11 +431,11 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       error={!!errors.nome}
                       helperText={errors.nome?.message}
                       fullWidth
-                      sx={{ gridColumn: 'span 2' }}
+                      sx={{ gridColumn: "span 2" }}
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="cpf"
                   control={control}
@@ -394,7 +446,9 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       required
                       placeholder="000.000.000-00"
                       error={!!errors.cpf}
-                      helperText={errors.cpf?.message || 'Formato: 000.000.000-00'}
+                      helperText={
+                        errors.cpf?.message || "Formato: 000.000.000-00"
+                      }
                       fullWidth
                       onChange={(e) => {
                         const valor = e.target.value;
@@ -404,7 +458,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="nacionalidade"
                   control={control}
@@ -418,7 +472,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="data_nascimento"
                   control={control}
@@ -434,7 +488,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="status"
                   control={control}
@@ -457,7 +511,13 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
 
             {/* Aba 2 - Contatos */}
             <TabPanel value={tabAtiva} index={1}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="telefone"
                   control={control}
@@ -467,7 +527,9 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       label="Telefone"
                       placeholder="(11) 99999-9999"
                       error={!!errors.telefone}
-                      helperText={errors.telefone?.message || 'Formato: (11) 99999-9999'}
+                      helperText={
+                        errors.telefone?.message || "Formato: (11) 99999-9999"
+                      }
                       fullWidth
                       onChange={(e) => {
                         const valor = e.target.value;
@@ -477,7 +539,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="whatsapp"
                   control={control}
@@ -487,7 +549,9 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       label="WhatsApp"
                       placeholder="(11) 99999-9999"
                       error={!!errors.whatsapp}
-                      helperText={errors.whatsapp?.message || 'Formato: (11) 99999-9999'}
+                      helperText={
+                        errors.whatsapp?.message || "Formato: (11) 99999-9999"
+                      }
                       fullWidth
                       onChange={(e) => {
                         const valor = e.target.value;
@@ -497,7 +561,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="email_pessoal"
                   control={control}
@@ -513,7 +577,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="email_comercial"
                   control={control}
@@ -533,7 +597,13 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
 
             {/* Aba 3 - Endereço */}
             <TabPanel value={tabAtiva} index={2}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2 }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="endereco_cep"
                   control={control}
@@ -543,7 +613,10 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       label="CEP"
                       placeholder="00000-000"
                       error={!!errors.endereco_cep}
-                      helperText={errors.endereco_cep?.message || 'Digite o CEP para buscar automaticamente'}
+                      helperText={
+                        errors.endereco_cep?.message ||
+                        "Digite o CEP para buscar"
+                      }
                       fullWidth
                       onChange={(e) => {
                         handleCepChange(e.target.value, field.onChange);
@@ -554,7 +627,10 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                             <Box
                               component={Button}
                               onClick={() => {
-                                const cep = (field.value || '').replace(/\D/g, '');
+                                const cep = (field.value || "").replace(
+                                  /\D/g,
+                                  ""
+                                );
                                 if (cep.length === 8) {
                                   handleBuscarCep(cep);
                                 }
@@ -570,12 +646,12 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                               )}
                             </Box>
                           </InputAdornment>
-                        )
+                        ),
                       }}
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="endereco_rua"
                   control={control}
@@ -586,11 +662,11 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       error={!!errors.endereco_rua}
                       helperText={errors.endereco_rua?.message}
                       fullWidth
-                      sx={{ gridColumn: 'span 2' }}
+                      sx={{ gridColumn: "span 2" }}
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="endereco_numero"
                   control={control}
@@ -604,7 +680,21 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
+                <Controller
+                  name="endereco_complemento"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Complemento"
+                      error={!!errors.endereco_complemento}
+                      helperText={errors.endereco_complemento?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+
                 <Controller
                   name="endereco_bairro"
                   control={control}
@@ -618,7 +708,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="endereco_cidade"
                   control={control}
@@ -632,25 +722,33 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 <Controller
                   name="endereco_estado"
                   control={control}
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      select
                       label="Estado"
                       error={!!errors.endereco_estado}
                       helperText={errors.endereco_estado?.message}
                       fullWidth
-                    >
-                      {estados.map((estado) => (
-                        <MenuItem key={estado} value={estado}>
-                          {estado}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                    />
+                  )}
+                />
+
+                <Controller
+                  name="endereco_uf"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="UF"
+                      error={!!errors.endereco_uf}
+                      helperText={errors.endereco_uf?.message}
+                      fullWidth
+                      inputProps={{ maxLength: 2 }}
+                    />
                   )}
                 />
               </Box>
@@ -658,20 +756,25 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
 
             {/* Aba 4 - Vínculos com Unidades */}
             <TabPanel value={tabAtiva} index={3}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Unidades Vinculadas
                 </Typography>
-                
+
                 <Autocomplete
                   multiple
                   loading={isLoadingUnidades}
                   options={unidadesDisponiveis}
-                  getOptionLabel={(option) => `${option.codigo_unidade} - ${option.nome_padrao}`}
+                  getOptionLabel={(option) =>
+                    `${option.codigo_unidade} - ${option.nome_padrao}`
+                  }
                   value={unidadesSelecionadas}
                   onChange={(_, newValue) => {
                     setUnidadesSelecionadas(newValue);
-                    setValue('unidades_vinculadas', newValue.map(u => u.id));
+                    setValue(
+                      "unidades_vinculadas",
+                      newValue.map((u) => u.id)
+                    );
                   }}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => (
@@ -692,7 +795,9 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                         ...params.InputProps,
                         endAdornment: (
                           <>
-                            {isLoadingUnidades ? <CircularProgress color="inherit" size={20} /> : null}
+                            {isLoadingUnidades ? (
+                              <CircularProgress color="inherit" size={20} />
+                            ) : null}
                             {params.InputProps.endAdornment}
                           </>
                         ),
@@ -700,13 +805,17 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
+
                 {unidadesSelecionadas.length > 0 && (
                   <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
                       {unidadesSelecionadas.length} unidade(s) selecionada(s)
                     </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                       {unidadesSelecionadas.map((unidade) => (
                         <Chip
                           key={unidade.id}
@@ -723,7 +832,13 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
 
             {/* Aba 5 - Informações Contratuais */}
             <TabPanel value={tabAtiva} index={4}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 2 }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                  gap: 2,
+                }}
+              >
                 <Controller
                   name="tipo"
                   control={control}
@@ -743,7 +858,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     </TextField>
                   )}
                 />
-                
+
                 <Controller
                   name="disponibilidade"
                   control={control}
@@ -762,7 +877,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     </TextField>
                   )}
                 />
-                
+
                 {mostrarProlabore && (
                   <Controller
                     name="prolabore"
@@ -778,13 +893,22 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">
-                              <DollarSign size={20} />
+                              <Typography
+                                component="span"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontWeight: 500,
+                                  fontSize: "0.875rem",
+                                }}
+                              >
+                                R$
+                              </Typography>
                             </InputAdornment>
                           ),
                         }}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === '' || value === null) {
+                          if (value === "" || value === null) {
                             field.onChange(null);
                           } else {
                             const valor = parseFloat(value);
@@ -795,7 +919,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     )}
                   />
                 )}
-                
+
                 <Controller
                   name="profissao_anterior"
                   control={control}
@@ -809,8 +933,8 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                     />
                   )}
                 />
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <Controller
                     name="contrato_social"
                     control={control}
@@ -821,7 +945,7 @@ export function FranqueadoForm({ franqueado, onSuccess, onCancel }: FranqueadoFo
                       />
                     )}
                   />
-                  
+
                   <Controller
                     name="empreendedor_previo"
                     control={control}

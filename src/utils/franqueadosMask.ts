@@ -3,16 +3,20 @@
  * Converte os valores do banco para labels amigáveis ao usuário
  */
 
-import type { StatusFranqueado, TipoFranqueado, DisponibilidadeFranqueado } from '../types/franqueados';
+import type {
+  StatusFranqueado,
+  TipoFranqueado,
+  DisponibilidadeFranqueado,
+} from "../types/franqueados";
 
 /**
  * Mapeia os tipos de franqueado para labels amigáveis
  */
 export const TIPO_FRANQUEADO_LABELS: Record<TipoFranqueado, string> = {
-  principal: 'Principal',
-  familiar: 'Sócio Familiar',
-  investidor: 'Investidor',
-  parceiro: 'Parceiro'
+  principal: "Principal",
+  familiar: "Sócio Familiar",
+  investidor: "Investidor",
+  parceiro: "Parceiro",
 } as const;
 
 /**
@@ -26,25 +30,25 @@ export function getTipoFranqueadoLabel(tipo: TipoFranqueado): string {
  * Mapeia cores para cada tipo de franqueado
  */
 export const TIPO_FRANQUEADO_COLORS = {
-  principal: 'primary',
-  familiar: 'secondary',
-  investidor: 'info',
-  parceiro: 'warning'
+  principal: "primary",
+  familiar: "secondary",
+  investidor: "info",
+  parceiro: "warning",
 } as const;
 
 /**
  * Obtém a cor apropriada para um tipo de franqueado
  */
 export function getTipoFranqueadoColor(tipo: TipoFranqueado) {
-  return TIPO_FRANQUEADO_COLORS[tipo] || 'default';
+  return TIPO_FRANQUEADO_COLORS[tipo] || "default";
 }
 
 /**
  * Mapeia os status do franqueado para labels amigáveis
  */
 export const STATUS_FRANQUEADO_LABELS: Record<StatusFranqueado, string> = {
-  ativo: 'Ativo',
-  inativo: 'Inativo'
+  ativo: "Ativo",
+  inativo: "Inativo",
 } as const;
 
 /**
@@ -58,30 +62,33 @@ export function getStatusFranqueadoLabel(status: StatusFranqueado): string {
  * Mapeia cores para cada status de franqueado
  */
 export const STATUS_FRANQUEADO_COLORS = {
-  ativo: 'success',
-  inativo: 'error'
+  ativo: "success",
+  inativo: "error",
 } as const;
 
 /**
  * Obtém a cor apropriada para um status de franqueado
  */
 export function getStatusFranqueadoColor(status: StatusFranqueado) {
-  return STATUS_FRANQUEADO_COLORS[status] || 'default';
+  return STATUS_FRANQUEADO_COLORS[status] || "default";
 }
 
 /**
  * Mapeia a disponibilidade do franqueado para labels amigáveis
  */
-export const DISPONIBILIDADE_LABELS: Record<DisponibilidadeFranqueado, string> = {
-  integral: 'Integral',
-  parcial: 'Parcial',
-  eventos: 'Apenas Eventos'
-} as const;
+export const DISPONIBILIDADE_LABELS: Record<DisponibilidadeFranqueado, string> =
+  {
+    integral: "Integral",
+    parcial: "Parcial",
+    eventos: "Apenas Eventos",
+  } as const;
 
 /**
  * Converte uma disponibilidade para o label amigável
  */
-export function getDisponibilidadeLabel(disponibilidade: DisponibilidadeFranqueado): string {
+export function getDisponibilidadeLabel(
+  disponibilidade: DisponibilidadeFranqueado
+): string {
   return DISPONIBILIDADE_LABELS[disponibilidade] || disponibilidade;
 }
 
@@ -89,39 +96,43 @@ export function getDisponibilidadeLabel(disponibilidade: DisponibilidadeFranquea
  * Mapeia cores para cada disponibilidade
  */
 export const DISPONIBILIDADE_COLORS = {
-  integral: 'success',
-  parcial: 'warning',
-  eventos: 'info'
+  integral: "success",
+  parcial: "warning",
+  eventos: "info",
 } as const;
 
 /**
  * Obtém a cor apropriada para uma disponibilidade
  */
-export function getDisponibilidadeColor(disponibilidade: DisponibilidadeFranqueado) {
-  return DISPONIBILIDADE_COLORS[disponibilidade] || 'default';
+export function getDisponibilidadeColor(
+  disponibilidade: DisponibilidadeFranqueado
+) {
+  return DISPONIBILIDADE_COLORS[disponibilidade] || "default";
 }
 
 /**
  * Formata valor de pró-labore para exibição
  */
 export function formatarProlabore(valor?: number): string {
-  if (!valor) return '-';
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
+  if (!valor) return "-";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
   }).format(valor);
 }
 
 /**
  * Formata lista de unidades vinculadas para exibição
  */
-export function formatarUnidadesVinculadas(unidades?: Array<{ codigo_unidade: string; nome_padrao: string }>): string {
-  if (!unidades || unidades.length === 0) return 'Nenhuma unidade vinculada';
-  
+export function formatarUnidadesVinculadas(
+  unidades?: Array<{ codigo_unidade: string; nome_padrao: string }>
+): string {
+  if (!unidades || unidades.length === 0) return "Nenhuma unidade vinculada";
+
   if (unidades.length === 1) {
     return `${unidades[0].codigo_unidade} - ${unidades[0].nome_padrao}`;
   }
-  
+
   return `${unidades.length} unidades vinculadas`;
 }
 
@@ -130,24 +141,26 @@ export function formatarUnidadesVinculadas(unidades?: Array<{ codigo_unidade: st
  */
 export function getTipoFranqueadoIcon(tipo: TipoFranqueado): string {
   const icons = {
-    principal: '👑',
-    familiar: '👨‍👩‍👧‍👦',
-    investidor: '💰',
-    parceiro: '🤝'
+    principal: "👑",
+    familiar: "👨‍👩‍👧‍👦",
+    investidor: "💰",
+    parceiro: "🤝",
   };
-  
-  return icons[tipo] || '👤';
+
+  return icons[tipo] || "👤";
 }
 
 /**
  * Obtém ícone apropriado para disponibilidade
  */
-export function getDisponibilidadeIcon(disponibilidade: DisponibilidadeFranqueado): string {
+export function getDisponibilidadeIcon(
+  disponibilidade: DisponibilidadeFranqueado
+): string {
   const icons = {
-    integral: '🕐',
-    parcial: '⏰',
-    eventos: '📅'
+    integral: "🕐",
+    parcial: "⏰",
+    eventos: "📅",
   };
-  
-  return icons[disponibilidade] || '⏱️';
+
+  return icons[disponibilidade] || "⏱️";
 }

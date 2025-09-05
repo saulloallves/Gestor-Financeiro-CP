@@ -3,7 +3,7 @@
  * Segue o padrão da Cresci e Perdi: códigos únicos de 4 dígitos
  */
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -11,13 +11,16 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Tooltip
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { Hash, RefreshCw, Check, X } from 'lucide-react';
-import { validarCodigoUnidade, formatarCodigoUnidade } from '../utils/validations';
-import { supabase } from '../api/supabaseClient';
-import { toast } from 'react-hot-toast';
+  Tooltip,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { Hash, RefreshCw, Check, X } from "lucide-react";
+import {
+  validarCodigoUnidade,
+  formatarCodigoUnidade,
+} from "../utils/validations";
+import { supabase } from "../api/supabaseClient";
+import { toast } from "react-hot-toast";
 
 interface CodigoUnidadeProps {
   codigo?: string;
@@ -26,36 +29,38 @@ interface CodigoUnidadeProps {
   disabled?: boolean;
 }
 
-export function CodigoUnidade({ 
-  codigo, 
-  isEditing = false, 
+export function CodigoUnidade({
+  codigo,
+  isEditing = false,
   onCodigoChange,
-  disabled = false 
+  disabled = false,
 }: CodigoUnidadeProps) {
   const theme = useTheme();
   const [isEditingCodigo, setIsEditingCodigo] = useState(false);
-  const [tempCodigo, setTempCodigo] = useState(codigo || '');
+  const [tempCodigo, setTempCodigo] = useState(codigo || "");
   const [isValidating, setIsValidating] = useState(false);
 
   /**
    * Verifica se um código está disponível no banco
    */
-  const verificarDisponibilidade = async (novoCodigo: string): Promise<boolean> => {
+  const verificarDisponibilidade = async (
+    novoCodigo: string
+  ): Promise<boolean> => {
     try {
       const { data, error } = await supabase
-        .from('unidades')
-        .select('codigo_unidade')
-        .eq('codigo_unidade', novoCodigo)
+        .from("unidades")
+        .select("codigo_unidade")
+        .eq("codigo_unidade", novoCodigo)
         .maybeSingle();
 
       if (error) {
-        console.error('Erro ao verificar código:', error);
+        console.error("Erro ao verificar código:", error);
         return false;
       }
 
       return !data; // Retorna true se não encontrou (código disponível)
     } catch (error) {
-      console.error('Erro na verificação:', error);
+      console.error("Erro na verificação:", error);
       return false;
     }
   };
@@ -65,13 +70,15 @@ export function CodigoUnidade({
    */
   const gerarCodigoAleatorio = async () => {
     setIsValidating(true);
-    
+
     try {
       // Tentar até 10 vezes gerar um código único
       for (let i = 0; i < 10; i++) {
-        const novoCodigo = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        const novoCodigo = Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, "0");
         const disponivel = await verificarDisponibilidade(novoCodigo);
-        
+
         if (disponivel) {
           setTempCodigo(novoCodigo);
           if (onCodigoChange) {
@@ -81,11 +88,11 @@ export function CodigoUnidade({
           return;
         }
       }
-      
-      toast.error('Não foi possível gerar um código único. Tente novamente.');
+
+      toast.error("Não foi possível gerar um código único. Tente novamente.");
     } catch (error) {
-      console.error('Erro ao gerar código:', error);
-      toast.error('Erro ao gerar código. Tente novamente.');
+      console.error("Erro ao gerar código:", error);
+      toast.error("Erro ao gerar código. Tente novamente.");
     } finally {
       setIsValidating(false);
     }
@@ -96,9 +103,9 @@ export function CodigoUnidade({
    */
   const confirmarEdicao = async () => {
     const codigoFormatado = formatarCodigoUnidade(tempCodigo);
-    
+
     if (!validarCodigoUnidade(codigoFormatado)) {
-      toast.error('Código deve ter exatamente 4 dígitos (0000-9999)');
+      toast.error("Código deve ter exatamente 4 dígitos (0000-9999)");
       return;
     }
 
@@ -109,24 +116,26 @@ export function CodigoUnidade({
     }
 
     setIsValidating(true);
-    
+
     try {
       const disponivel = await verificarDisponibilidade(codigoFormatado);
-      
+
       if (!disponivel) {
-        toast.error(`Código ${codigoFormatado} já está em uso por outra unidade`);
+        toast.error(
+          `Código ${codigoFormatado} já está em uso por outra unidade`
+        );
         return;
       }
 
       if (onCodigoChange) {
         onCodigoChange(codigoFormatado);
       }
-      
+
       setIsEditingCodigo(false);
       toast.success(`Código alterado para ${codigoFormatado}`);
     } catch (error) {
-      console.error('Erro ao validar código:', error);
-      toast.error('Erro ao validar código. Tente novamente.');
+      console.error("Erro ao validar código:", error);
+      toast.error("Erro ao validar código. Tente novamente.");
     } finally {
       setIsValidating(false);
     }
@@ -136,23 +145,23 @@ export function CodigoUnidade({
    * Cancela a edição
    */
   const cancelarEdicao = () => {
-    setTempCodigo(codigo || '');
+    setTempCodigo(codigo || "");
     setIsEditingCodigo(false);
   };
 
   // Se não está editando (criação), mostrar apenas o status
   if (!isEditing) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         <Hash size={20} color={theme.palette.primary.main} />
         {codigo ? (
-          <Chip 
+          <Chip
             label={`Código: ${codigo}`}
             size="small"
-            sx={{ 
-              backgroundColor: 'primary.main',
-              color: 'primary.contrastText',
-              fontWeight: 'bold'
+            sx={{
+              backgroundColor: "primary.main",
+              color: "primary.contrastText",
+              fontWeight: "bold",
             }}
           />
         ) : (
@@ -167,33 +176,39 @@ export function CodigoUnidade({
   // Modo de edição de código
   if (isEditingCodigo) {
     return (
-      <Box sx={{ display: 'flex', flex: 1, gap: 2, alignItems: 'flex-start' }}>
+      <Box sx={{ display: "flex", flex: 1, gap: 2, alignItems: "flex-start" }}>
         <TextField
           value={tempCodigo}
           onChange={(e) => {
-            const valor = e.target.value.replace(/\D/g, '').substring(0, 4);
-            setTempCodigo(valor.padStart(Math.min(valor.length, 4), '0'));
+            const valor = e.target.value.replace(/\D/g, "").substring(0, 4);
+            setTempCodigo(valor.padStart(Math.min(valor.length, 4), "0"));
           }}
           placeholder="0000"
           size="small"
-          inputProps={{ 
+          inputProps={{
             maxLength: 4,
-            style: { textAlign: 'center', fontFamily: 'monospace', fontSize: '16px' }
+            style: {
+              textAlign: "center",
+              fontFamily: "monospace",
+              fontSize: "16px",
+            },
           }}
           sx={{ width: 80 }}
           disabled={disabled || isValidating}
         />
-        
+
         <Button
           size="small"
           variant="outlined"
-          startIcon={isValidating ? <CircularProgress size={16} /> : <Check size={16} />}
+          startIcon={
+            isValidating ? <CircularProgress size={16} /> : <Check size={16} />
+          }
           onClick={confirmarEdicao}
           disabled={disabled || isValidating}
         >
-          {isValidating ? 'Validando...' : 'Confirmar'}
+          {isValidating ? "Validando..." : "Confirmar"}
         </Button>
-        
+
         <Button
           size="small"
           variant="outlined"
@@ -210,17 +225,17 @@ export function CodigoUnidade({
 
   // Modo de exibição com opção de editar
   return (
-    <Box sx={{ display: 'flex', flex: 1, gap: 2, alignItems: 'center' }}>
+    <Box sx={{ display: "flex", flex: 1, gap: 2, alignItems: "center" }}>
       <Hash size={20} color={theme.palette.primary.main} />
-      
+
       {codigo ? (
-        <Chip 
+        <Chip
           label={`Código: ${codigo}`}
           size="small"
-          sx={{ 
-            backgroundColor: 'primary.main',
-            color: 'primary.contrastText',
-            fontWeight: 'bold'
+          sx={{
+            backgroundColor: "primary.main",
+            color: "primary.contrastText",
+            fontWeight: "bold",
           }}
         />
       ) : (
@@ -228,27 +243,33 @@ export function CodigoUnidade({
           Será gerado automaticamente
         </Typography>
       )}
-      
-      <Box sx={{ display: 'flex', gap: 1 }}>
+
+      <Box sx={{ display: "flex", gap: 1 }}>
         <Tooltip title="Gerar código aleatório">
           <Button
             size="small"
             variant="outlined"
-            startIcon={isValidating ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
+            startIcon={
+              isValidating ? (
+                <CircularProgress size={16} />
+              ) : (
+                <RefreshCw size={16} />
+              )
+            }
             onClick={gerarCodigoAleatorio}
             disabled={disabled || isValidating}
           >
             Gerar
           </Button>
         </Tooltip>
-        
+
         <Tooltip title="Editar código manualmente">
           <Button
             size="small"
             variant="outlined"
             startIcon={<Hash size={16} />}
             onClick={() => {
-              setTempCodigo(codigo || '');
+              setTempCodigo(codigo || "");
               setIsEditingCodigo(true);
             }}
             disabled={disabled || isValidating}

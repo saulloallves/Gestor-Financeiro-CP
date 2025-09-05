@@ -3,7 +3,7 @@
 // Serviço de API para o módulo de Unidades
 // Integração com Supabase seguindo as diretrizes do projeto
 
-import { supabase } from './supabaseClient';
+import { supabase } from "./supabaseClient";
 import type {
   Unidade,
   CreateUnidadeData,
@@ -13,8 +13,8 @@ import type {
   UnidadePagination,
   UnidadeListResponse,
   FranqueadoPrincipal,
-  FranqueadoVinculado
-} from '../types/unidades';
+  FranqueadoVinculado,
+} from "../types/unidades";
 
 class UnidadesService {
   // ================================
@@ -26,45 +26,50 @@ class UnidadesService {
    */
   async getUnidades(
     filters: UnidadeFilter = {},
-    sort: UnidadeSort = { field: 'codigo_unidade', direction: 'asc' },
+    sort: UnidadeSort = { field: "codigo_unidade", direction: "asc" },
     pagination: UnidadePagination = { page: 1, limit: 50 }
   ): Promise<UnidadeListResponse> {
     try {
       let query = supabase
-        .from('unidades')
-        .select('*, franqueado_principal:franqueados(id, nome, email)', { count: 'exact' });
+        .from("unidades")
+        .select("*, franqueado_principal:franqueados(id, nome, email)", {
+          count: "exact",
+        });
 
       // Aplicar filtros
       if (filters.status && filters.status.length > 0) {
-        query = query.in('status', filters.status);
+        query = query.in("status", filters.status);
       }
 
       if (filters.cidade) {
-        query = query.ilike('endereco_cidade', `%${filters.cidade}%`);
+        query = query.ilike("endereco_cidade", `%${filters.cidade}%`);
       }
 
       if (filters.uf) {
-        query = query.eq('endereco_uf', filters.uf);
+        query = query.eq("endereco_uf", filters.uf);
       }
 
       if (filters.codigo_unidade) {
-        query = query.ilike('codigo_unidade', `%${filters.codigo_unidade}%`);
+        query = query.ilike("codigo_unidade", `%${filters.codigo_unidade}%`);
       }
 
       if (filters.nome_padrao) {
-        query = query.ilike('nome_padrao', `%${filters.nome_padrao}%`);
+        query = query.ilike("nome_padrao", `%${filters.nome_padrao}%`);
       }
 
       if (filters.multifranqueado !== undefined) {
-        query = query.eq('multifranqueado', filters.multifranqueado);
+        query = query.eq("multifranqueado", filters.multifranqueado);
       }
 
       if (filters.franqueado_principal_id) {
-        query = query.eq('franqueado_principal_id', filters.franqueado_principal_id);
+        query = query.eq(
+          "franqueado_principal_id",
+          filters.franqueado_principal_id
+        );
       }
 
       // Aplicar ordenação
-      query = query.order(sort.field, { ascending: sort.direction === 'asc' });
+      query = query.order(sort.field, { ascending: sort.direction === "asc" });
 
       // Aplicar paginação
       const from = (pagination.page - 1) * pagination.limit;
@@ -87,7 +92,7 @@ class UnidadesService {
         },
       };
     } catch (error) {
-      console.error('Erro no UnidadesService.getUnidades:', error);
+      console.error("Erro no UnidadesService.getUnidades:", error);
       throw error;
     }
   }
@@ -98,13 +103,15 @@ class UnidadesService {
   async getUnidadeById(id: string): Promise<Unidade | null> {
     try {
       const { data, error } = await supabase
-        .from('unidades')
-        .select('*, franqueado_principal:franqueados(id, nome, email, telefone, cpf)')
-        .eq('id', id)
+        .from("unidades")
+        .select(
+          "*, franqueado_principal:franqueados(id, nome, email, telefone, cpf)"
+        )
+        .eq("id", id)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        if (error.code === "PGRST116") {
           return null; // Não encontrado
         }
         throw new Error(`Erro ao buscar unidade: ${error.message}`);
@@ -112,7 +119,7 @@ class UnidadesService {
 
       return data as Unidade;
     } catch (error) {
-      console.error('Erro no UnidadesService.getUnidadeById:', error);
+      console.error("Erro no UnidadesService.getUnidadeById:", error);
       throw error;
     }
   }
@@ -123,13 +130,13 @@ class UnidadesService {
   async getUnidadeByCodigo(codigo: string): Promise<Unidade | null> {
     try {
       const { data, error } = await supabase
-        .from('unidades')
-        .select('*, franqueado_principal:franqueados(id, nome, email)')
-        .eq('codigo_unidade', codigo)
+        .from("unidades")
+        .select("*, franqueado_principal:franqueados(id, nome, email)")
+        .eq("codigo_unidade", codigo)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        if (error.code === "PGRST116") {
           return null; // Não encontrado
         }
         throw new Error(`Erro ao buscar unidade por código: ${error.message}`);
@@ -137,7 +144,7 @@ class UnidadesService {
 
       return data as Unidade;
     } catch (error) {
-      console.error('Erro no UnidadesService.getUnidadeByCodigo:', error);
+      console.error("Erro no UnidadesService.getUnidadeByCodigo:", error);
       throw error;
     }
   }
@@ -151,7 +158,7 @@ class UnidadesService {
    */
   async generateNextCode(): Promise<string> {
     try {
-      const { data, error } = await supabase.rpc('generate_next_unit_code');
+      const { data, error } = await supabase.rpc("generate_next_unit_code");
 
       if (error) {
         throw new Error(`Erro ao gerar código: ${error.message}`);
@@ -159,7 +166,7 @@ class UnidadesService {
 
       return data as string;
     } catch (error) {
-      console.error('Erro no UnidadesService.generateNextCode:', error);
+      console.error("Erro no UnidadesService.generateNextCode:", error);
       throw error;
     }
   }
@@ -170,14 +177,15 @@ class UnidadesService {
   async createUnidade(unidadeData: CreateUnidadeData): Promise<Unidade> {
     try {
       // Usar código fornecido ou gerar automaticamente com a função RPC do Supabase
-      const codigo = unidadeData.codigo_unidade || await this.generateNextCode();
+      const codigo =
+        unidadeData.codigo_unidade || (await this.generateNextCode());
 
       const { data, error } = await supabase
-        .from('unidades')
+        .from("unidades")
         .insert({
           ...unidadeData,
           codigo_unidade: codigo,
-          status: unidadeData.status || 'ativo',
+          status: unidadeData.status || "ativo",
           multifranqueado: unidadeData.multifranqueado || false,
         })
         .select()
@@ -189,7 +197,7 @@ class UnidadesService {
 
       return data as Unidade;
     } catch (error) {
-      console.error('Erro no UnidadesService.createUnidade:', error);
+      console.error("Erro no UnidadesService.createUnidade:", error);
       throw error;
     }
   }
@@ -202,9 +210,9 @@ class UnidadesService {
       const { id, ...updateData } = unidadeData;
 
       const { data, error } = await supabase
-        .from('unidades')
+        .from("unidades")
         .update(updateData)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -214,7 +222,7 @@ class UnidadesService {
 
       return data as Unidade;
     } catch (error) {
-      console.error('Erro no UnidadesService.updateUnidade:', error);
+      console.error("Erro no UnidadesService.updateUnidade:", error);
       throw error;
     }
   }
@@ -225,9 +233,9 @@ class UnidadesService {
   async updateStatus(id: string, status: string): Promise<Unidade> {
     try {
       const { data, error } = await supabase
-        .from('unidades')
+        .from("unidades")
         .update({ status })
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -237,7 +245,7 @@ class UnidadesService {
 
       return data as Unidade;
     } catch (error) {
-      console.error('Erro no UnidadesService.updateStatus:', error);
+      console.error("Erro no UnidadesService.updateStatus:", error);
       throw error;
     }
   }
@@ -251,13 +259,10 @@ class UnidadesService {
    */
   async isCnpjUnique(cnpj: string, excludeId?: string): Promise<boolean> {
     try {
-      let query = supabase
-        .from('unidades')
-        .select('id')
-        .eq('cnpj', cnpj);
+      let query = supabase.from("unidades").select("id").eq("cnpj", cnpj);
 
       if (excludeId) {
-        query = query.neq('id', excludeId);
+        query = query.neq("id", excludeId);
       }
 
       const { data, error } = await query;
@@ -268,7 +273,7 @@ class UnidadesService {
 
       return (data?.length || 0) === 0;
     } catch (error) {
-      console.error('Erro no UnidadesService.isCnpjUnique:', error);
+      console.error("Erro no UnidadesService.isCnpjUnique:", error);
       throw error;
     }
   }
@@ -279,12 +284,12 @@ class UnidadesService {
   async isCodigoUnique(codigo: string, excludeId?: string): Promise<boolean> {
     try {
       let query = supabase
-        .from('unidades')
-        .select('id')
-        .eq('codigo_unidade', codigo);
+        .from("unidades")
+        .select("id")
+        .eq("codigo_unidade", codigo);
 
       if (excludeId) {
-        query = query.neq('id', excludeId);
+        query = query.neq("id", excludeId);
       }
 
       const { data, error } = await query;
@@ -295,7 +300,7 @@ class UnidadesService {
 
       return (data?.length || 0) === 0;
     } catch (error) {
-      console.error('Erro no UnidadesService.isCodigoUnique:', error);
+      console.error("Erro no UnidadesService.isCodigoUnique:", error);
       throw error;
     }
   }
@@ -310,9 +315,9 @@ class UnidadesService {
   async getFranqueados(): Promise<FranqueadoPrincipal[]> {
     try {
       const { data, error } = await supabase
-        .from('franqueados')
-        .select('id, nome, email, telefone, cpf, tipo')
-        .order('nome');
+        .from("franqueados")
+        .select("id, nome, email, telefone, cpf, tipo")
+        .order("nome");
 
       if (error) {
         throw new Error(`Erro ao buscar franqueados: ${error.message}`);
@@ -320,7 +325,7 @@ class UnidadesService {
 
       return (data || []) as FranqueadoPrincipal[];
     } catch (error) {
-      console.error('Erro no UnidadesService.getFranqueados:', error);
+      console.error("Erro no UnidadesService.getFranqueados:", error);
       throw error;
     }
   }
@@ -328,11 +333,14 @@ class UnidadesService {
   /**
    * Buscar franqueados vinculados a uma unidade específica
    */
-  async getFranqueadosVinculados(unidadeId: string): Promise<FranqueadoVinculado[]> {
+  async getFranqueadosVinculados(
+    unidadeId: string
+  ): Promise<FranqueadoVinculado[]> {
     try {
       const { data, error } = await supabase
-        .from('franqueados_unidades')
-        .select(`
+        .from("franqueados_unidades")
+        .select(
+          `
           id,
           franqueado_id,
           unidade_id,
@@ -347,13 +355,16 @@ class UnidadesService {
             tipo,
             status
           )
-        `)
-        .eq('unidade_id', unidadeId)
-        .eq('ativo', true)
-        .order('data_vinculo', { ascending: false });
+        `
+        )
+        .eq("unidade_id", unidadeId)
+        .eq("ativo", true)
+        .order("data_vinculo", { ascending: false });
 
       if (error) {
-        throw new Error(`Erro ao buscar franqueados vinculados: ${error.message}`);
+        throw new Error(
+          `Erro ao buscar franqueados vinculados: ${error.message}`
+        );
       }
 
       return (data || []).map((vinculo: any) => ({
@@ -369,11 +380,11 @@ class UnidadesService {
           telefone: vinculo.franqueado.telefone,
           email: vinculo.franqueado.email,
           tipo: vinculo.franqueado.tipo,
-          status: vinculo.franqueado.status
-        }
+          status: vinculo.franqueado.status,
+        },
       }));
     } catch (error) {
-      console.error('Erro no UnidadesService.getFranqueadosVinculados:', error);
+      console.error("Erro no UnidadesService.getFranqueadosVinculados:", error);
       throw error;
     }
   }
@@ -388,38 +399,44 @@ class UnidadesService {
   async exportToCsv(filters: UnidadeFilter = {}): Promise<string> {
     try {
       // Buscar todas as unidades com os filtros aplicados
-      const response = await this.getUnidades(filters, { field: 'codigo_unidade', direction: 'asc' }, { page: 1, limit: 10000 });
-      
+      const response = await this.getUnidades(
+        filters,
+        { field: "codigo_unidade", direction: "asc" },
+        { page: 1, limit: 10000 }
+      );
+
       const headers = [
-        'Código',
-        'Nome da Unidade',
-        'CNPJ',
-        'Status',
-        'Telefone',
-        'Email',
-        'Cidade',
-        'UF',
-        'Franqueado Principal'
+        "Código",
+        "Nome da Unidade",
+        "CNPJ",
+        "Status",
+        "Telefone",
+        "Email",
+        "Cidade",
+        "UF",
+        "Franqueado Principal",
       ];
 
       const csvRows = [
-        headers.join(','),
-        ...response.data.map(unidade => [
-          unidade.codigo_unidade,
-          `"${unidade.nome_padrao}"`,
-          unidade.cnpj || '',
-          unidade.status,
-          unidade.telefone_comercial || '',
-          unidade.email_comercial || '',
-          unidade.endereco_cidade || '',
-          unidade.endereco_uf || '',
-          `"${(unidade as any).franqueado_principal?.nome || ''}"`
-        ].join(','))
+        headers.join(","),
+        ...response.data.map((unidade) =>
+          [
+            unidade.codigo_unidade,
+            `"${unidade.nome_padrao}"`,
+            unidade.cnpj || "",
+            unidade.status,
+            unidade.telefone_comercial || "",
+            unidade.email_comercial || "",
+            unidade.endereco_cidade || "",
+            unidade.endereco_uf || "",
+            `"${(unidade as any).franqueado_principal?.nome || ""}"`,
+          ].join(",")
+        ),
       ];
 
-      return csvRows.join('\n');
+      return csvRows.join("\n");
     } catch (error) {
-      console.error('Erro no UnidadesService.exportToCsv:', error);
+      console.error("Erro no UnidadesService.exportToCsv:", error);
       throw error;
     }
   }
@@ -436,26 +453,28 @@ class UnidadesService {
   }> {
     try {
       const [totalResult, statusResult, estadosResult] = await Promise.all([
-        supabase.from('unidades').select('id', { count: 'exact', head: true }),
-        supabase.from('unidades').select('status', { count: 'exact' }),
-        supabase.from('unidades').select('endereco_uf', { count: 'exact' })
+        supabase.from("unidades").select("id", { count: "exact", head: true }),
+        supabase.from("unidades").select("status", { count: "exact" }),
+        supabase.from("unidades").select("endereco_uf", { count: "exact" }),
       ]);
 
       if (totalResult.error || statusResult.error || estadosResult.error) {
-        throw new Error('Erro ao buscar estatísticas');
+        throw new Error("Erro ao buscar estatísticas");
       }
 
-      const statusCounts = statusResult.data?.reduce((acc: any, item: any) => {
-        acc[item.status] = (acc[item.status] || 0) + 1;
-        return acc;
-      }, {}) || {};
+      const statusCounts =
+        statusResult.data?.reduce((acc: any, item: any) => {
+          acc[item.status] = (acc[item.status] || 0) + 1;
+          return acc;
+        }, {}) || {};
 
-      const estadosCounts = estadosResult.data?.reduce((acc: any, item: any) => {
-        if (item.endereco_uf) {
-          acc[item.endereco_uf] = (acc[item.endereco_uf] || 0) + 1;
-        }
-        return acc;
-      }, {}) || {};
+      const estadosCounts =
+        estadosResult.data?.reduce((acc: any, item: any) => {
+          if (item.endereco_uf) {
+            acc[item.endereco_uf] = (acc[item.endereco_uf] || 0) + 1;
+          }
+          return acc;
+        }, {}) || {};
 
       return {
         total: totalResult.count || 0,
@@ -464,11 +483,11 @@ class UnidadesService {
         em_implantacao: statusCounts.em_implantacao || 0,
         por_estado: Object.entries(estadosCounts).map(([uf, count]) => ({
           uf,
-          count: count as number
-        }))
+          count: count as number,
+        })),
       };
     } catch (error) {
-      console.error('Erro no UnidadesService.getEstatisticas:', error);
+      console.error("Erro no UnidadesService.getEstatisticas:", error);
       throw error;
     }
   }

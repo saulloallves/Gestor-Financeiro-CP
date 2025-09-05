@@ -3,7 +3,7 @@
 // Serviço de API para o módulo de Franqueados
 // Integração com Supabase seguindo as diretrizes do projeto
 
-import { supabase } from './supabaseClient';
+import { supabase } from "./supabaseClient";
 import type {
   Franqueado,
   CreateFranqueadoData,
@@ -13,8 +13,8 @@ import type {
   FranqueadoPagination,
   FranqueadoListResponse,
   UnidadeParaVinculo,
-  FranqueadoRelatório
-} from '../types/franqueados';
+  FranqueadoRelatório,
+} from "../types/franqueados";
 
 class FranqueadosService {
   // ================================
@@ -26,13 +26,12 @@ class FranqueadosService {
    */
   async getFranqueados(
     filters: FranqueadoFilter = {},
-    sort: FranqueadoSort = { field: 'nome', direction: 'asc' },
+    sort: FranqueadoSort = { field: "nome", direction: "asc" },
     pagination: FranqueadoPagination = { page: 1, limit: 50 }
   ): Promise<FranqueadoListResponse> {
     try {
-      let query = supabase
-        .from('franqueados')
-        .select(`
+      let query = supabase.from("franqueados").select(
+        `
           *,
           unidades_vinculadas:franqueados_unidades(
             id,
@@ -45,43 +44,45 @@ class FranqueadosService {
               status
             )
           )
-        `, { count: 'exact' });
+        `,
+        { count: "exact" }
+      );
 
       // Aplicar filtros
       if (filters.status && filters.status.length > 0) {
-        query = query.in('status', filters.status);
+        query = query.in("status", filters.status);
       }
 
       if (filters.tipo && filters.tipo.length > 0) {
-        query = query.in('tipo', filters.tipo);
+        query = query.in("tipo", filters.tipo);
       }
 
       if (filters.cidade) {
-        query = query.ilike('endereco_cidade', `%${filters.cidade}%`);
+        query = query.ilike("endereco_cidade", `%${filters.cidade}%`);
       }
 
       if (filters.estado) {
-        query = query.eq('endereco_estado', filters.estado);
+        query = query.eq("endereco_estado", filters.estado);
       }
 
       if (filters.nome) {
-        query = query.ilike('nome', `%${filters.nome}%`);
+        query = query.ilike("nome", `%${filters.nome}%`);
       }
 
       if (filters.cpf) {
-        query = query.ilike('cpf', `%${filters.cpf}%`);
+        query = query.ilike("cpf", `%${filters.cpf}%`);
       }
 
       if (filters.contrato_social !== undefined) {
-        query = query.eq('contrato_social', filters.contrato_social);
+        query = query.eq("contrato_social", filters.contrato_social);
       }
 
       if (filters.empreendedor_previo !== undefined) {
-        query = query.eq('empreendedor_previo', filters.empreendedor_previo);
+        query = query.eq("empreendedor_previo", filters.empreendedor_previo);
       }
 
       // Aplicar ordenação
-      query = query.order(sort.field, { ascending: sort.direction === 'asc' });
+      query = query.order(sort.field, { ascending: sort.direction === "asc" });
 
       // Aplicar paginação
       const from = (pagination.page - 1) * pagination.limit;
@@ -97,15 +98,16 @@ class FranqueadosService {
       // Processar dados para o formato esperado
       const processedData = (data || []).map((franqueado: any) => ({
         ...franqueado,
-        unidades_vinculadas: franqueado.unidades_vinculadas?.map((vinculo: any) => ({
-          id: vinculo.unidade.id,
-          codigo_unidade: vinculo.unidade.codigo_unidade,
-          nome_padrao: vinculo.unidade.nome_padrao,
-          status: vinculo.unidade.status,
-          data_vinculo: vinculo.data_vinculo,
-          ativo: vinculo.ativo,
-          franqueado_principal: false // TODO: implementar lógica
-        })) || []
+        unidades_vinculadas:
+          franqueado.unidades_vinculadas?.map((vinculo: any) => ({
+            id: vinculo.unidade.id,
+            codigo_unidade: vinculo.unidade.codigo_unidade,
+            nome_padrao: vinculo.unidade.nome_padrao,
+            status: vinculo.unidade.status,
+            data_vinculo: vinculo.data_vinculo,
+            ativo: vinculo.ativo,
+            franqueado_principal: false, // TODO: implementar lógica
+          })) || [],
       }));
 
       return {
@@ -118,7 +120,7 @@ class FranqueadosService {
         },
       };
     } catch (error) {
-      console.error('Erro no FranqueadosService.getFranqueados:', error);
+      console.error("Erro no FranqueadosService.getFranqueados:", error);
       throw error;
     }
   }
@@ -129,8 +131,9 @@ class FranqueadosService {
   async getFranqueadoById(id: string): Promise<Franqueado | null> {
     try {
       const { data, error } = await supabase
-        .from('franqueados')
-        .select(`
+        .from("franqueados")
+        .select(
+          `
           *,
           unidades_vinculadas:franqueados_unidades(
             id,
@@ -143,12 +146,13 @@ class FranqueadosService {
               status
             )
           )
-        `)
-        .eq('id', id)
+        `
+        )
+        .eq("id", id)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        if (error.code === "PGRST116") {
           return null; // Não encontrado
         }
         throw new Error(`Erro ao buscar franqueado: ${error.message}`);
@@ -157,20 +161,21 @@ class FranqueadosService {
       // Processar dados
       const processedData = {
         ...data,
-        unidades_vinculadas: data.unidades_vinculadas?.map((vinculo: any) => ({
-          id: vinculo.unidade.id,
-          codigo_unidade: vinculo.unidade.codigo_unidade,
-          nome_padrao: vinculo.unidade.nome_padrao,
-          status: vinculo.unidade.status,
-          data_vinculo: vinculo.data_vinculo,
-          ativo: vinculo.ativo,
-          franqueado_principal: false // TODO: implementar lógica
-        })) || []
+        unidades_vinculadas:
+          data.unidades_vinculadas?.map((vinculo: any) => ({
+            id: vinculo.unidade.id,
+            codigo_unidade: vinculo.unidade.codigo_unidade,
+            nome_padrao: vinculo.unidade.nome_padrao,
+            status: vinculo.unidade.status,
+            data_vinculo: vinculo.data_vinculo,
+            ativo: vinculo.ativo,
+            franqueado_principal: false, // TODO: implementar lógica
+          })) || [],
       };
 
       return processedData as Franqueado;
     } catch (error) {
-      console.error('Erro no FranqueadosService.getFranqueadoById:', error);
+      console.error("Erro no FranqueadosService.getFranqueadoById:", error);
       throw error;
     }
   }
@@ -181,8 +186,9 @@ class FranqueadosService {
   async getFranqueadoByCpf(cpf: string): Promise<Franqueado | null> {
     try {
       const { data, error } = await supabase
-        .from('franqueados')
-        .select(`
+        .from("franqueados")
+        .select(
+          `
           *,
           unidades_vinculadas:franqueados_unidades(
             id,
@@ -195,12 +201,13 @@ class FranqueadosService {
               status
             )
           )
-        `)
-        .eq('cpf', cpf)
+        `
+        )
+        .eq("cpf", cpf)
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        if (error.code === "PGRST116") {
           return null; // Não encontrado
         }
         throw new Error(`Erro ao buscar franqueado por CPF: ${error.message}`);
@@ -209,20 +216,21 @@ class FranqueadosService {
       // Processar dados
       const processedData = {
         ...data,
-        unidades_vinculadas: data.unidades_vinculadas?.map((vinculo: any) => ({
-          id: vinculo.unidade.id,
-          codigo_unidade: vinculo.unidade.codigo_unidade,
-          nome_padrao: vinculo.unidade.nome_padrao,
-          status: vinculo.unidade.status,
-          data_vinculo: vinculo.data_vinculo,
-          ativo: vinculo.ativo,
-          franqueado_principal: false // TODO: implementar lógica
-        })) || []
+        unidades_vinculadas:
+          data.unidades_vinculadas?.map((vinculo: any) => ({
+            id: vinculo.unidade.id,
+            codigo_unidade: vinculo.unidade.codigo_unidade,
+            nome_padrao: vinculo.unidade.nome_padrao,
+            status: vinculo.unidade.status,
+            data_vinculo: vinculo.data_vinculo,
+            ativo: vinculo.ativo,
+            franqueado_principal: false, // TODO: implementar lógica
+          })) || [],
       };
 
       return processedData as Franqueado;
     } catch (error) {
-      console.error('Erro no FranqueadosService.getFranqueadoByCpf:', error);
+      console.error("Erro no FranqueadosService.getFranqueadoByCpf:", error);
       throw error;
     }
   }
@@ -234,29 +242,34 @@ class FranqueadosService {
   /**
    * Criar novo franqueado
    */
-  async createFranqueado(franqueadoData: CreateFranqueadoData): Promise<Franqueado> {
+  async createFranqueado(
+    franqueadoData: CreateFranqueadoData
+  ): Promise<Franqueado> {
     try {
       const { unidades_vinculadas, ...dadosFranqueado } = franqueadoData;
 
       // Função auxiliar para limpar valores vazios
       const limparCampo = (valor: any) => {
-        if (valor === '' || valor === undefined) return null;
+        if (valor === "" || valor === undefined) return null;
         return valor;
       };
 
       // Usar a função personalizada que cria o usuário automaticamente
-      const { data, error } = await supabase
-        .rpc('create_franqueado_with_auth', {
+      const { data, error } = await supabase.rpc(
+        "create_franqueado_with_auth",
+        {
           p_nome: dadosFranqueado.nome,
           p_cpf: dadosFranqueado.cpf,
-          p_telefone: dadosFranqueado.telefone || '',
-          p_email_pessoal: dadosFranqueado.email_pessoal || '',
+          p_telefone: dadosFranqueado.telefone || "",
+          p_email_pessoal: dadosFranqueado.email_pessoal || "",
           p_nome_completo: dadosFranqueado.nome, // Usar nome como nome_completo por padrão
-          p_whatsapp: limparCampo(dadosFranqueado.whatsapp) || limparCampo(dadosFranqueado.telefone),
+          p_whatsapp:
+            limparCampo(dadosFranqueado.whatsapp) ||
+            limparCampo(dadosFranqueado.telefone),
           p_email_comercial: limparCampo(dadosFranqueado.email_comercial),
-          p_tipo: dadosFranqueado.tipo || 'principal',
+          p_tipo: dadosFranqueado.tipo || "principal",
           p_prolabore: limparCampo(dadosFranqueado.prolabore),
-          p_nacionalidade: dadosFranqueado.nacionalidade || 'Brasileira',
+          p_nacionalidade: dadosFranqueado.nacionalidade || "Brasileira",
           p_data_nascimento: limparCampo(dadosFranqueado.data_nascimento),
           p_endereco_rua: limparCampo(dadosFranqueado.endereco_rua),
           p_endereco_numero: limparCampo(dadosFranqueado.endereco_numero),
@@ -266,48 +279,56 @@ class FranqueadosService {
           p_endereco_estado: limparCampo(dadosFranqueado.endereco_estado),
           p_endereco_cep: limparCampo(dadosFranqueado.endereco_cep),
           p_contrato_social: dadosFranqueado.contrato_social || false,
-          p_disponibilidade: dadosFranqueado.disponibilidade || 'integral',
+          p_disponibilidade: dadosFranqueado.disponibilidade || "integral",
           p_profissao_anterior: limparCampo(dadosFranqueado.profissao_anterior),
           p_empreendedor_previo: dadosFranqueado.empreendedor_previo || false,
-          p_status: dadosFranqueado.status || 'ativo'
-        });
+          p_status: dadosFranqueado.status || "ativo",
+        }
+      );
 
       if (error) {
         throw new Error(`Erro ao criar franqueado: ${error.message}`);
       }
 
       if (!data || data.length === 0) {
-        throw new Error('Erro ao criar franqueado: nenhum dado retornado');
+        throw new Error("Erro ao criar franqueado: nenhum dado retornado");
       }
 
       const resultado = data[0];
-      
+
       // Buscar o franqueado criado com todos os dados
       const { data: franqueadoCriado, error: errorBusca } = await supabase
-        .from('franqueados')
-        .select('*')
-        .eq('id', resultado.franqueado_id)
+        .from("franqueados")
+        .select("*")
+        .eq("id", resultado.franqueado_id)
         .single();
 
       if (errorBusca) {
-        throw new Error(`Erro ao buscar franqueado criado: ${errorBusca.message}`);
+        throw new Error(
+          `Erro ao buscar franqueado criado: ${errorBusca.message}`
+        );
       }
 
       // Se há unidades para vincular, criar os vínculos
       if (unidades_vinculadas && unidades_vinculadas.length > 0) {
-        await this.vincularUnidades(resultado.franqueado_id, unidades_vinculadas);
+        await this.vincularUnidades(
+          resultado.franqueado_id,
+          unidades_vinculadas
+        );
       }
 
       // Log da senha temporária para o console (em produção, deveria ser enviada por email)
-      console.log('🎉 Franqueado criado com sucesso!');
-      console.log('📧 Email:', resultado.email);
-      console.log('🔐 Senha temporária:', resultado.temporary_password);
-      console.log('⚠️  IMPORTANTE: Informe a senha temporária ao franqueado para primeiro acesso.');
-      console.log('💡 A senha segue o padrão: CP + últimos 6 dígitos do CPF');
+      console.log("🎉 Franqueado criado com sucesso!");
+      console.log("📧 Email:", resultado.email);
+      console.log("🔐 Senha temporária:", resultado.temporary_password);
+      console.log(
+        "⚠️  IMPORTANTE: Informe a senha temporária ao franqueado para primeiro acesso."
+      );
+      console.log("💡 A senha segue o padrão: CP + últimos 6 dígitos do CPF");
 
       return franqueadoCriado as Franqueado;
     } catch (error) {
-      console.error('Erro no FranqueadosService.createFranqueado:', error);
+      console.error("Erro no FranqueadosService.createFranqueado:", error);
       throw error;
     }
   }
@@ -315,14 +336,16 @@ class FranqueadosService {
   /**
    * Atualizar franqueado existente
    */
-  async updateFranqueado(franqueadoData: UpdateFranqueadoData): Promise<Franqueado> {
+  async updateFranqueado(
+    franqueadoData: UpdateFranqueadoData
+  ): Promise<Franqueado> {
     try {
       const { id, unidades_vinculadas, ...updateData } = franqueadoData;
 
       const { data, error } = await supabase
-        .from('franqueados')
+        .from("franqueados")
         .update(updateData)
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -337,7 +360,7 @@ class FranqueadosService {
 
       return data as Franqueado;
     } catch (error) {
-      console.error('Erro no FranqueadosService.updateFranqueado:', error);
+      console.error("Erro no FranqueadosService.updateFranqueado:", error);
       throw error;
     }
   }
@@ -348,9 +371,9 @@ class FranqueadosService {
   async updateStatus(id: string, status: string): Promise<Franqueado> {
     try {
       const { data, error } = await supabase
-        .from('franqueados')
+        .from("franqueados")
         .update({ status })
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
@@ -360,7 +383,7 @@ class FranqueadosService {
 
       return data as Franqueado;
     } catch (error) {
-      console.error('Erro no FranqueadosService.updateStatus:', error);
+      console.error("Erro no FranqueadosService.updateStatus:", error);
       throw error;
     }
   }
@@ -374,13 +397,10 @@ class FranqueadosService {
    */
   async isCpfUnique(cpf: string, excludeId?: string): Promise<boolean> {
     try {
-      let query = supabase
-        .from('franqueados')
-        .select('id')
-        .eq('cpf', cpf);
+      let query = supabase.from("franqueados").select("id").eq("cpf", cpf);
 
       if (excludeId) {
-        query = query.neq('id', excludeId);
+        query = query.neq("id", excludeId);
       }
 
       const { data, error } = await query;
@@ -391,7 +411,7 @@ class FranqueadosService {
 
       return (data?.length || 0) === 0;
     } catch (error) {
-      console.error('Erro no FranqueadosService.isCpfUnique:', error);
+      console.error("Erro no FranqueadosService.isCpfUnique:", error);
       throw error;
     }
   }
@@ -406,17 +426,19 @@ class FranqueadosService {
   async getUnidadesParaVinculo(): Promise<UnidadeParaVinculo[]> {
     try {
       const { data, error } = await supabase
-        .from('unidades')
-        .select(`
+        .from("unidades")
+        .select(
+          `
           id,
           codigo_unidade,
           nome_padrao,
           status,
           franqueado_principal_id,
           franqueado_principal:franqueados(nome)
-        `)
-        .eq('status', 'ativo')
-        .order('codigo_unidade');
+        `
+        )
+        .eq("status", "ativo")
+        .order("codigo_unidade");
 
       if (error) {
         throw new Error(`Erro ao buscar unidades: ${error.message}`);
@@ -428,10 +450,13 @@ class FranqueadosService {
         nome_padrao: unidade.nome_padrao,
         status: unidade.status,
         franqueado_principal_id: unidade.franqueado_principal_id,
-        franqueado_principal_nome: unidade.franqueado_principal?.nome
+        franqueado_principal_nome: unidade.franqueado_principal?.nome,
       }));
     } catch (error) {
-      console.error('Erro no FranqueadosService.getUnidadesParaVinculo:', error);
+      console.error(
+        "Erro no FranqueadosService.getUnidadesParaVinculo:",
+        error
+      );
       throw error;
     }
   }
@@ -439,23 +464,26 @@ class FranqueadosService {
   /**
    * Vincular franqueado a unidades
    */
-  async vincularUnidades(franqueadoId: string, unidadeIds: string[]): Promise<void> {
+  async vincularUnidades(
+    franqueadoId: string,
+    unidadeIds: string[]
+  ): Promise<void> {
     try {
-      const vinculos = unidadeIds.map(unidadeId => ({
+      const vinculos = unidadeIds.map((unidadeId) => ({
         franqueado_id: franqueadoId,
         unidade_id: unidadeId,
-        ativo: true
+        ativo: true,
       }));
 
       const { error } = await supabase
-        .from('franqueados_unidades')
+        .from("franqueados_unidades")
         .insert(vinculos);
 
       if (error) {
         throw new Error(`Erro ao vincular unidades: ${error.message}`);
       }
     } catch (error) {
-      console.error('Erro no FranqueadosService.vincularUnidades:', error);
+      console.error("Erro no FranqueadosService.vincularUnidades:", error);
       throw error;
     }
   }
@@ -463,27 +491,30 @@ class FranqueadosService {
   /**
    * Atualizar vínculos de unidades
    */
-  async atualizarVinculosUnidades(franqueadoId: string, unidadeIds: string[]): Promise<void> {
+  async atualizarVinculosUnidades(
+    franqueadoId: string,
+    unidadeIds: string[]
+  ): Promise<void> {
     try {
       // Primeiro, desativar todos os vínculos existentes
       await supabase
-        .from('franqueados_unidades')
+        .from("franqueados_unidades")
         .update({ ativo: false })
-        .eq('franqueado_id', franqueadoId);
+        .eq("franqueado_id", franqueadoId);
 
       // Depois, criar/reativar os vínculos necessários
       if (unidadeIds.length > 0) {
-        const vinculos = unidadeIds.map(unidadeId => ({
+        const vinculos = unidadeIds.map((unidadeId) => ({
           franqueado_id: franqueadoId,
           unidade_id: unidadeId,
-          ativo: true
+          ativo: true,
         }));
 
         const { error } = await supabase
-          .from('franqueados_unidades')
-          .upsert(vinculos, { 
-            onConflict: 'franqueado_id,unidade_id',
-            ignoreDuplicates: false 
+          .from("franqueados_unidades")
+          .upsert(vinculos, {
+            onConflict: "franqueado_id,unidade_id",
+            ignoreDuplicates: false,
           });
 
         if (error) {
@@ -491,7 +522,10 @@ class FranqueadosService {
         }
       }
     } catch (error) {
-      console.error('Erro no FranqueadosService.atualizarVinculosUnidades:', error);
+      console.error(
+        "Erro no FranqueadosService.atualizarVinculosUnidades:",
+        error
+      );
       throw error;
     }
   }
@@ -507,51 +541,57 @@ class FranqueadosService {
     try {
       // Buscar todos os franqueados com os filtros aplicados
       const response = await this.getFranqueados(
-        filters, 
-        { field: 'nome', direction: 'asc' }, 
+        filters,
+        { field: "nome", direction: "asc" },
         { page: 1, limit: 10000 }
       );
-      
+
       const headers = [
-        'Nome',
-        'CPF',
-        'Tipo',
-        'Status',
-        'Telefone',
-        'WhatsApp',
-        'Email Pessoal',
-        'Email Comercial',
-        'Cidade',
-        'Estado',
-        'Pró-labore',
-        'Contrato Social',
-        'Disponibilidade',
-        'Unidades Vinculadas'
+        "Nome",
+        "CPF",
+        "Tipo",
+        "Status",
+        "Telefone",
+        "WhatsApp",
+        "Email Pessoal",
+        "Email Comercial",
+        "Cidade",
+        "Estado",
+        "Pró-labore",
+        "Contrato Social",
+        "Disponibilidade",
+        "Unidades Vinculadas",
       ];
 
       const csvRows = [
-        headers.join(','),
-        ...response.data.map(franqueado => [
-          `"${franqueado.nome}"`,
-          franqueado.cpf || '',
-          franqueado.tipo,
-          franqueado.status,
-          franqueado.telefone || '',
-          franqueado.whatsapp || '',
-          franqueado.email_pessoal || '',
-          franqueado.email_comercial || '',
-          franqueado.endereco_cidade || '',
-          franqueado.endereco_estado || '',
-          franqueado.prolabore ? `R$ ${franqueado.prolabore.toFixed(2)}` : '',
-          franqueado.contrato_social ? 'Sim' : 'Não',
-          franqueado.disponibilidade,
-          `"${franqueado.unidades_vinculadas?.map(u => u.codigo_unidade).join(', ') || ''}"`
-        ].join(','))
+        headers.join(","),
+        ...response.data.map((franqueado) =>
+          [
+            `"${franqueado.nome}"`,
+            franqueado.cpf || "",
+            franqueado.tipo,
+            franqueado.status,
+            franqueado.telefone || "",
+            franqueado.whatsapp || "",
+            franqueado.email_pessoal || "",
+            franqueado.email_comercial || "",
+            franqueado.endereco_cidade || "",
+            franqueado.endereco_estado || "",
+            franqueado.prolabore ? `R$ ${franqueado.prolabore.toFixed(2)}` : "",
+            franqueado.contrato_social ? "Sim" : "Não",
+            franqueado.disponibilidade,
+            `"${
+              franqueado.unidades_vinculadas
+                ?.map((u) => u.codigo_unidade)
+                .join(", ") || ""
+            }"`,
+          ].join(",")
+        ),
       ];
 
-      return csvRows.join('\n');
+      return csvRows.join("\n");
     } catch (error) {
-      console.error('Erro no FranqueadosService.exportToCsv:', error);
+      console.error("Erro no FranqueadosService.exportToCsv:", error);
       throw error;
     }
   }
@@ -561,35 +601,60 @@ class FranqueadosService {
    */
   async getEstatisticas(): Promise<FranqueadoRelatório> {
     try {
-      const [totalResult, tipoResult, statusResult, estadosResult, prolaboreResult, empreendedorResult] = await Promise.all([
-        supabase.from('franqueados').select('id', { count: 'exact', head: true }),
-        supabase.from('franqueados').select('tipo', { count: 'exact' }),
-        supabase.from('franqueados').select('status', { count: 'exact' }),
-        supabase.from('franqueados').select('endereco_estado', { count: 'exact' }),
-        supabase.from('franqueados').select('prolabore', { count: 'exact' }).not('prolabore', 'is', null),
-        supabase.from('franqueados').select('empreendedor_previo', { count: 'exact' }).eq('empreendedor_previo', true)
+      const [
+        totalResult,
+        tipoResult,
+        statusResult,
+        estadosResult,
+        prolaboreResult,
+        empreendedorResult,
+      ] = await Promise.all([
+        supabase
+          .from("franqueados")
+          .select("id", { count: "exact", head: true }),
+        supabase.from("franqueados").select("tipo", { count: "exact" }),
+        supabase.from("franqueados").select("status", { count: "exact" }),
+        supabase
+          .from("franqueados")
+          .select("endereco_estado", { count: "exact" }),
+        supabase
+          .from("franqueados")
+          .select("prolabore", { count: "exact" })
+          .not("prolabore", "is", null),
+        supabase
+          .from("franqueados")
+          .select("empreendedor_previo", { count: "exact" })
+          .eq("empreendedor_previo", true),
       ]);
 
-      if (totalResult.error || tipoResult.error || statusResult.error || estadosResult.error) {
-        throw new Error('Erro ao buscar estatísticas');
+      if (
+        totalResult.error ||
+        tipoResult.error ||
+        statusResult.error ||
+        estadosResult.error
+      ) {
+        throw new Error("Erro ao buscar estatísticas");
       }
 
-      const tipoCounts = tipoResult.data?.reduce((acc: any, item: any) => {
-        acc[item.tipo] = (acc[item.tipo] || 0) + 1;
-        return acc;
-      }, {}) || {};
+      const tipoCounts =
+        tipoResult.data?.reduce((acc: any, item: any) => {
+          acc[item.tipo] = (acc[item.tipo] || 0) + 1;
+          return acc;
+        }, {}) || {};
 
-      const statusCounts = statusResult.data?.reduce((acc: any, item: any) => {
-        acc[item.status] = (acc[item.status] || 0) + 1;
-        return acc;
-      }, {}) || {};
+      const statusCounts =
+        statusResult.data?.reduce((acc: any, item: any) => {
+          acc[item.status] = (acc[item.status] || 0) + 1;
+          return acc;
+        }, {}) || {};
 
-      const estadosCounts = estadosResult.data?.reduce((acc: any, item: any) => {
-        if (item.endereco_estado) {
-          acc[item.endereco_estado] = (acc[item.endereco_estado] || 0) + 1;
-        }
-        return acc;
-      }, {}) || {};
+      const estadosCounts =
+        estadosResult.data?.reduce((acc: any, item: any) => {
+          if (item.endereco_estado) {
+            acc[item.endereco_estado] = (acc[item.endereco_estado] || 0) + 1;
+          }
+          return acc;
+        }, {}) || {};
 
       return {
         total_franqueados: totalResult.count || 0,
@@ -597,22 +662,22 @@ class FranqueadosService {
           principal: tipoCounts.principal || 0,
           familiar: tipoCounts.familiar || 0,
           investidor: tipoCounts.investidor || 0,
-          parceiro: tipoCounts.parceiro || 0
+          parceiro: tipoCounts.parceiro || 0,
         },
         por_status: {
           ativo: statusCounts.ativo || 0,
-          inativo: statusCounts.inativo || 0
+          inativo: statusCounts.inativo || 0,
         },
         por_estado: Object.entries(estadosCounts).map(([estado, count]) => ({
           estado,
-          count: count as number
+          count: count as number,
         })),
         com_prolabore: prolaboreResult.count || 0,
         empreendedores_previos: empreendedorResult.count || 0,
-        multifranqueados: 0 // TODO: implementar query para multifranqueados
+        multifranqueados: 0, // TODO: implementar query para multifranqueados
       };
     } catch (error) {
-      console.error('Erro no FranqueadosService.getEstatisticas:', error);
+      console.error("Erro no FranqueadosService.getEstatisticas:", error);
       throw error;
     }
   }

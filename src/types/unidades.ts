@@ -1,7 +1,11 @@
 // Tipos para o módulo de Unidades - Cresci e Perdi
 // Baseado na especificação do módulo 2.1
 
-export type StatusUnidade = 'ativo' | 'em_implantacao' | 'suspenso' | 'cancelado';
+export type StatusUnidade =
+  | "ativo"
+  | "em_implantacao"
+  | "suspenso"
+  | "cancelado";
 
 export interface Unidade {
   id: string;
@@ -9,12 +13,12 @@ export interface Unidade {
   nome_grupo?: string;
   nome_padrao: string;
   cnpj?: string;
-  
+
   // Contato da unidade
   telefone_comercial?: string;
   email_comercial?: string;
   instagram?: string;
-  
+
   // Endereço completo
   endereco_rua?: string;
   endereco_numero?: string;
@@ -25,19 +29,19 @@ export interface Unidade {
   endereco_uf?: string;
   endereco_cep?: string;
   endereco?: string; // Campo legado, pode ser removido futuramente
-  
+
   // Horários de funcionamento
   horario_seg_sex?: string;
   horario_sabado?: string;
   horario_domingo?: string;
-  
+
   // Status e configurações
   status: StatusUnidade;
   multifranqueado: boolean;
-  
+
   // Relacionamentos
   franqueado_principal_id?: string;
-  
+
   // Metadados
   created_at: string;
   updated_at: string;
@@ -49,12 +53,12 @@ export interface CreateUnidadeData {
   nome_padrao: string;
   cnpj?: string;
   codigo_unidade?: string; // Código opcional que pode ser fornecido pelo usuário
-  
+
   // Contato da unidade
   telefone_comercial?: string;
   email_comercial?: string;
   instagram?: string;
-  
+
   // Endereço completo
   endereco_rua?: string;
   endereco_numero?: string;
@@ -64,16 +68,16 @@ export interface CreateUnidadeData {
   endereco_estado?: string;
   endereco_uf?: string;
   endereco_cep?: string;
-  
+
   // Horários de funcionamento
   horario_seg_sex?: string;
   horario_sabado?: string;
   horario_domingo?: string;
-  
+
   // Status e configurações
   status?: StatusUnidade;
   multifranqueado?: boolean;
-  
+
   // Relacionamentos
   franqueado_principal_id?: string;
 }
@@ -97,7 +101,7 @@ export interface UnidadeFilter {
 // Tipo para ordenação
 export interface UnidadeSort {
   field: keyof Unidade;
-  direction: 'asc' | 'desc';
+  direction: "asc" | "desc";
 }
 
 // Tipo para busca e paginação
@@ -138,7 +142,7 @@ export interface UnidadeAuditLog {
   id: string;
   unidade_id: string;
   usuario_id: string;
-  acao: 'create' | 'update' | 'delete' | 'status_change';
+  acao: "create" | "update" | "delete" | "status_change";
   dados_anteriores?: Partial<Unidade>;
   dados_novos?: Partial<Unidade>;
   observacoes?: string;

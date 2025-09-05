@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Card,
@@ -44,7 +44,7 @@ export function LoginPage() {
   // Redireciona para o dashboard se já estiver logado
   useEffect(() => {
     if (usuario) {
-      navigate('/dashboard', { replace: true });
+      navigate("/dashboard", { replace: true });
     }
   }, [usuario, navigate]);
 
