@@ -6,7 +6,8 @@ import tseslint from "typescript-eslint";
 import { globalIgnores } from "eslint/config";
 
 export default tseslint.config([
-  globalIgnores(["dist"]),
+  // Ignora arquivos fora do app (ex.: funções Deno do Supabase)
+  globalIgnores(["dist", "supabase/functions/**"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [
