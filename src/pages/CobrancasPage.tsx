@@ -21,12 +21,12 @@ import {
   MessageSquare,
   Plus,
   Download,
-  X,
   Clock,
   AlertTriangle,
   DollarSign,
   CheckCircle,
   RefreshCw,
+  Filter,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
@@ -192,7 +192,8 @@ export function CobrancasPage() {
     {
       field: 'id',
       headerName: 'Código',
-      width: 120,
+      flex: 0.8,
+      minWidth: 120,
       renderCell: (params) => (
         <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 500 }}>
           #{params.value?.slice(-8) || 'N/A'}
@@ -202,7 +203,8 @@ export function CobrancasPage() {
     {
       field: 'observacoes',
       headerName: 'Descrição',
-      width: 250,
+      flex: 2,
+      minWidth: 200,
       renderCell: (params) => (
         <Typography variant="body2" sx={{ color: 'text.primary' }}>
           {params.value || '-'}
@@ -212,7 +214,8 @@ export function CobrancasPage() {
     {
       field: 'tipo_cobranca',
       headerName: 'Tipo',
-      width: 130,
+      flex: 0.8,
+      minWidth: 120,
       renderCell: (params) => (
         <Chip
           label={tipoLabels[params.value as TipoCobranca]}
@@ -229,7 +232,8 @@ export function CobrancasPage() {
     {
       field: 'unidade',
       headerName: 'Unidade',
-      width: 200,
+      flex: 1.5,
+      minWidth: 180,
       valueGetter: (_value, row: Cobranca) => row.unidade?.nome_padrao || '-',
       renderCell: (params) => (
         <Typography variant="body2" sx={{ color: 'text.primary' }}>
@@ -240,7 +244,8 @@ export function CobrancasPage() {
     {
       field: 'valor_atualizado',
       headerName: 'Valor',
-      width: 120,
+      flex: 0.8,
+      minWidth: 120,
       renderCell: (params) => (
         <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
           {formatCurrency(params.value)}
@@ -250,7 +255,8 @@ export function CobrancasPage() {
     {
       field: 'vencimento',
       headerName: 'Vencimento',
-      width: 130,
+      flex: 0.8,
+      minWidth: 120,
       renderCell: (params) => (
         <Typography variant="body2" sx={{ color: 'text.primary' }}>
           {formatDate(params.value)}
@@ -260,7 +266,8 @@ export function CobrancasPage() {
     {
       field: 'status',
       headerName: 'Status',
-      width: 130,
+      flex: 0.8,
+      minWidth: 120,
       renderCell: (params) => (
         <Chip
           label={statusLabels[params.value as StatusCobranca]}
@@ -275,7 +282,8 @@ export function CobrancasPage() {
       field: 'actions',
       type: 'actions',
       headerName: 'Ações',
-      width: 150,
+      flex: 0.6,
+      minWidth: 100,
       getActions: (params) => [
         <GridActionsCellItem
           key="edit"
@@ -312,53 +320,164 @@ export function CobrancasPage() {
   const unidadesList = unidades?.data || [];
 
   return (
-    <Box sx={{ padding: theme.spacing(3) }}>
-      {/* Header */}
-      <Box sx={{ marginBottom: theme.spacing(4) }}>
-        <Typography variant="h4" component="h1" sx={{ color: 'text.primary', fontWeight: 600, marginBottom: 1 }}>
-          Gestão de Cobranças
-        </Typography>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Gerencie todas as cobranças da sua rede de franquias
-        </Typography>
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "100%",
+        overflow: "hidden",
+        padding: theme.spacing(3),
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: { xs: "flex-start", md: "center" },
+          flexDirection: { xs: "column", md: "row" },
+          gap: { xs: 2, md: 0 },
+          marginBottom: theme.spacing(3),
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ fontWeight: 700, color: "text.primary" }}
+          >
+            Gestão de Cobranças
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+            Gerencie todas as cobranças da sua rede de franquias
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            flexDirection: { xs: "column", sm: "row" },
+            width: { xs: "100%", md: "auto" },
+          }}
+        >
+          <Button
+            variant="outlined"
+            startIcon={<Download size={20} />}
+            onClick={handleExport}
+            disabled={isExporting}
+            sx={{ minWidth: 140 }}
+          >
+            Exportar
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={() => setFormAberto(true)}
+            sx={{ minWidth: 160 }}
+          >
+            Nova Cobrança
+          </Button>
+        </Box>
       </Box>
 
-      {/* Filtros */}
-      <Card sx={{ marginBottom: theme.spacing(3) }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 3 }}>
-            <Search color={theme.palette.primary.main} />
+      <Card
+        sx={{
+          marginBottom: theme.spacing(3),
+          width: "100%",
+          borderRadius: 3,
+          backgroundColor: "background.paper",
+          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+          border: "1px solid",
+          borderColor: "divider",
+          borderLeft: "6px solid",
+          borderLeftColor: "primary.main",
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              mb: 3,
+            }}
+          >
+            <Box
+              sx={{
+                backgroundColor: "primary.main",
+                borderRadius: 3,
+                p: 1.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Filter size={24} color="white" />
+            </Box>
             <Box>
-              <Typography variant="h6" sx={{ color: 'text.primary', marginBottom: 0.5 }}>
-                Filtrar Cobranças
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  color: "text.primary",
+                  mb: 0.5,
+                }}
+              >
+                Filtros de Pesquisa
               </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Use os filtros abaixo para encontrar cobranças específicas
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Use os filtros para encontrar cobranças específicas
               </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              flexWrap: "wrap",
+              alignItems: "flex-end",
+            }}
+          >
             <TextField
-              label="Pesquisar"
-              variant="outlined"
-              size="small"
+              placeholder="Buscar por código, descrição..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Código, descrição..."
-              sx={{ minWidth: 200 }}
+              InputProps={{
+                startAdornment: (
+                  <Box
+                    sx={{
+                      marginRight: 1,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Search size={20} color={theme.palette.text.secondary} />
+                  </Box>
+                ),
+              }}
+              size="small"
+              sx={{
+                flex: "1 1 300px",
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
             />
 
             <TextField
               select
               label="Status"
-              variant="outlined"
-              size="small"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusCobranca | '')}
-              sx={{ minWidth: 150 }}
+              size="small"
+              sx={{
+                minWidth: 150,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
             >
-              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="">Todos os status</MenuItem>
               {Object.entries(statusLabels).map(([key, label]) => (
                 <MenuItem key={key} value={key}>
                   {label}
@@ -369,13 +488,17 @@ export function CobrancasPage() {
             <TextField
               select
               label="Tipo"
-              variant="outlined"
-              size="small"
               value={tipoFilter}
               onChange={(e) => setTipoFilter(e.target.value as TipoCobranca | '')}
-              sx={{ minWidth: 150 }}
+              size="small"
+              sx={{
+                minWidth: 150,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
             >
-              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="">Todos os tipos</MenuItem>
               {Object.entries(tipoLabels).map(([key, label]) => (
                 <MenuItem key={key} value={key}>
                   {label}
@@ -386,13 +509,17 @@ export function CobrancasPage() {
             <TextField
               select
               label="Unidade"
-              variant="outlined"
-              size="small"
               value={unidadeFilter}
               onChange={(e) => setUnidadeFilter(e.target.value)}
-              sx={{ minWidth: 200 }}
+              size="small"
+              sx={{
+                minWidth: 200,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
             >
-              <MenuItem value="">Todas</MenuItem>
+              <MenuItem value="">Todas as unidades</MenuItem>
               {unidadesList.map((unidade) => (
                 <MenuItem key={unidade.id} value={unidade.id}>
                   {unidade.nome_padrao}
@@ -400,127 +527,285 @@ export function CobrancasPage() {
               ))}
             </TextField>
 
-            <Button
-              variant="contained"
-              onClick={handleSearch}
-              startIcon={<Search size={16} />}
-              sx={{ minWidth: 120 }}
-            >
-              Filtrar
-            </Button>
-
-            <Button
-              variant="outlined"
-              onClick={handleClearFilters}
-              startIcon={<X size={16} />}
-            >
-              Limpar
-            </Button>
-
-            <Button
-              variant="outlined"
-              onClick={handleAtualizarValores}
-              startIcon={<RefreshCw size={16} />}
-              disabled={atualizarValores.isPending}
-            >
-              Atualizar Valores
-            </Button>
+            <Box sx={{ display: "flex", gap: 1.5 }}>
+              <Button
+                variant="contained"
+                startIcon={<Search size={16} />}
+                onClick={handleSearch}
+                size="medium"
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  fontWeight: 500,
+                  textTransform: "none",
+                }}
+              >
+                Buscar
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handleClearFilters}
+                size="medium"
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  fontWeight: 500,
+                  textTransform: "none",
+                }}
+              >
+                Limpar
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handleAtualizarValores}
+                startIcon={<RefreshCw size={16} />}
+                disabled={atualizarValores.isPending}
+                size="medium"
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  fontWeight: 500,
+                  textTransform: "none",
+                }}
+              >
+                Atualizar Valores
+              </Button>
+            </Box>
           </Box>
         </CardContent>
       </Card>
 
-      {/* Estatísticas */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 3, marginBottom: 3 }}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                  {estatisticas?.totalCobrancas || 0}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Total de Cobranças
-                </Typography>
-              </Box>
-              <DollarSign size={24} color={theme.palette.primary.main} />
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+          gap: 3,
+          marginBottom: theme.spacing(3),
+        }}
+      >
+        <Card
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            backgroundColor: "background.paper",
+            color: "text.primary",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+            border: "1px solid",
+            borderColor: "divider",
+            borderLeft: "6px solid #667eea",
+            transition: "all 0.3s ease-in-out",
+            "&:hover": {
+              transform: "translateY(-4px)",
+              boxShadow: "0 8px 25px rgba(102, 126, 234, 0.15)",
+              borderLeftColor: "#5a67d8",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
+              >
+                {estatisticas?.totalCobrancas || 0}
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ color: "text.secondary", fontWeight: 500 }}
+              >
+                Total de Cobranças
+              </Typography>
             </Box>
-          </CardContent>
+            <Box
+              sx={{
+                backgroundColor: "rgba(102, 126, 234, 0.1)",
+                borderRadius: 3,
+                p: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <DollarSign size={32} color="#667eea" />
+            </Box>
+          </Box>
         </Card>
 
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 600 }}>
-                  {formatCurrency(estatisticas?.cobrancasPagas || 0)}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Valor Pago
-                </Typography>
-              </Box>
-              <CheckCircle size={24} color={theme.palette.success.main} />
+        <Card
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            backgroundColor: "background.paper",
+            color: "text.primary",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+            border: "1px solid",
+            borderColor: "divider",
+            borderLeft: "6px solid #11998e",
+            transition: "all 0.3s ease-in-out",
+            "&:hover": {
+              transform: "translateY(-4px)",
+              boxShadow: "0 8px 25px rgba(17, 153, 142, 0.15)",
+              borderLeftColor: "#0d7377",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
+              >
+                {formatCurrency(estatisticas?.cobrancasPagas || 0)}
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ color: "text.secondary", fontWeight: 500 }}
+              >
+                Valor Pago
+              </Typography>
             </Box>
-          </CardContent>
+            <Box
+              sx={{
+                backgroundColor: "rgba(17, 153, 142, 0.1)",
+                borderRadius: 3,
+                p: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <CheckCircle size={32} color="#11998e" />
+            </Box>
+          </Box>
         </Card>
 
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 600 }}>
-                  {formatCurrency(estatisticas?.valorTotalEmAberto || 0)}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Valor Pendente
-                </Typography>
-              </Box>
-              <Clock size={24} color={theme.palette.warning.main} />
+        <Card
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            backgroundColor: "background.paper",
+            color: "text.primary",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+            border: "1px solid",
+            borderColor: "divider",
+            borderLeft: "6px solid #ffa726",
+            transition: "all 0.3s ease-in-out",
+            "&:hover": {
+              transform: "translateY(-4px)",
+              boxShadow: "0 8px 25px rgba(255, 167, 38, 0.15)",
+              borderLeftColor: "#ff9800",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
+              >
+                {formatCurrency(estatisticas?.valorTotalEmAberto || 0)}
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ color: "text.secondary", fontWeight: 500 }}
+              >
+                Valor Pendente
+              </Typography>
             </Box>
-          </CardContent>
+            <Box
+              sx={{
+                backgroundColor: "rgba(255, 167, 38, 0.1)",
+                borderRadius: 3,
+                p: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Clock size={32} color="#ffa726" />
+            </Box>
+          </Box>
         </Card>
 
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4" sx={{ color: 'error.main', fontWeight: 600 }}>
-                  {formatCurrency(estatisticas?.valorTotalVencido || 0)}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Valor Vencido
-                </Typography>
-              </Box>
-              <AlertTriangle size={24} color={theme.palette.error.main} />
+        <Card
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            backgroundColor: "background.paper",
+            color: "text.primary",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+            border: "1px solid",
+            borderColor: "divider",
+            borderLeft: "6px solid #f44336",
+            transition: "all 0.3s ease-in-out",
+            "&:hover": {
+              transform: "translateY(-4px)",
+              boxShadow: "0 8px 25px rgba(244, 67, 54, 0.15)",
+              borderLeftColor: "#d32f2f",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
+              >
+                {formatCurrency(estatisticas?.valorTotalVencido || 0)}
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ color: "text.secondary", fontWeight: 500 }}
+              >
+                Valor Vencido
+              </Typography>
             </Box>
-          </CardContent>
+            <Box
+              sx={{
+                backgroundColor: "rgba(244, 67, 54, 0.1)",
+                borderRadius: 3,
+                p: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <AlertTriangle size={32} color="#f44336" />
+            </Box>
+          </Box>
         </Card>
       </Box>
 
-      {/* Ações */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
         <Typography variant="h6" sx={{ color: 'text.primary' }}>
           Lista de Cobranças ({cobrancas.length})
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<Download size={16} />}
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            Exportar
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={16} />}
-            onClick={() => setFormAberto(true)}
-          >
-            Nova Cobrança
-          </Button>
-        </Box>
       </Box>
 
-      {/* Tabela */}
       <Card>
         <DataGrid
           rows={cobrancas}
@@ -547,7 +832,6 @@ export function CobrancasPage() {
         />
       </Card>
 
-      {/* Modal do Formulário */}
       <CobrancaForm
         open={formAberto}
         onClose={handleFecharForm}
