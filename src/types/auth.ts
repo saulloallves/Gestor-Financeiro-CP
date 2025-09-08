@@ -32,7 +32,7 @@ export interface UsuarioInterno {
   nome: string;
   email: string;
   telefone?: string;
-  perfil: "operador" | "gestor" | "juridico" | "admin";
+  perfil?: "operador" | "gestor" | "juridico" | "admin";
   equipe_id?: string;
   status: "ativo" | "inativo";
   ultimo_login?: string;

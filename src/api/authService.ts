@@ -11,6 +11,7 @@ interface UsuarioInternoData {
   nome: string;
   email: string;
   perfil: string;
+  status: string;
 }
 
 interface FranqueadoData {
@@ -79,7 +80,8 @@ export class AuthService {
         id: String(user.id), // converte number para string
         nome: user.nome,
         email: user.email,
-        perfil: user.perfil as "admin" | "cobranca" | "gestao",
+        perfil: user.perfil as "operador" | "gestor" | "juridico" | "admin",
+        status: user.status as "ativo" | "inativo",
       };
     } catch (error) {
       console.error("Erro no login interno:", error);
@@ -223,7 +225,8 @@ export class AuthService {
           id: String(user.id),
           nome: user.nome,
           email: user.email,
-          perfil: user.perfil as "admin" | "cobranca" | "gestao",
+          perfil: user.perfil as "operador" | "gestor" | "juridico" | "admin",
+          status: user.status as "ativo" | "inativo",
         };
       }
 
