@@ -85,23 +85,19 @@ export function useCreateUsuarioInterno() {
   return useMutation({
     mutationFn: async (usuario: UsuarioInternoCreate) => {
       const resultado = await UsuariosInternosService.criarUsuario(usuario);
-      
-      // 🔑 TEMPORÁRIO: Capturar senha do resultado se disponível
-      // A senha vem no log do console, mas vamos tentar uma abordagem visual também
-      
       return resultado;
     },
     onSuccess: (novoUsuario) => {
       // Invalidar queries relacionadas
       queryClient.invalidateQueries({ queryKey: usuariosInternosKeys.all });
       
-      // Toast de sucesso com instruções sobre a senha
+      // Toast de sucesso com informações sobre o envio do email
       toast.success(
         `Usuário "${novoUsuario.nome}" criado com sucesso!\n\n` +
-        `🔑 IMPORTANTE: Verifique o console do navegador (F12) para ver a senha temporária gerada.\n` +
-        `A senha será necessária para o primeiro login.`,
+        `As credenciais de acesso foram enviadas por email para: ${novoUsuario.email}\n` +
+        `O usuário receberá um email com login e senha temporária.`,
         {
-          duration: 8000, // 8 segundos para dar tempo de ler
+          duration: 6000,
         }
       );
     },

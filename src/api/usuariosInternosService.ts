@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { sendCredentialsEmail } from "./emailService";
 import type {
   UsuarioInterno,
   UsuarioInternoCreate,
@@ -181,12 +182,21 @@ export class UsuariosInternosService {
         throw new Error(result.message || result.error || 'Erro desconhecido ao criar usuário');
       }
 
-      // 🔑 TEMPORÁRIO: Exibir senha gerada no console
+      // 🔑 Enviar senha temporária por email
       if (result.senha_temporaria) {
-        console.log('🔑 SENHA TEMPORÁRIA GERADA (REMOVER EM PRODUÇÃO):');
-        console.log(`📧 Email: ${result.email}`);
-        console.log(`🔐 Senha: ${result.senha_temporaria}`);
-        console.log('⚠️  IMPORTANTE: Guarde esta senha, ela não será exibida novamente!');
+        try {
+          await sendCredentialsEmail(
+            result.email || usuario.email,
+            usuario.nome,
+            result.email || usuario.email,
+            result.senha_temporaria
+          );
+
+          console.log(`✅ Email com credenciais enviado para: ${result.email || usuario.email}`);
+        } catch (emailError) {
+          console.error('❌ Erro ao enviar email com credenciais:', emailError);
+          // Não falha a criação do usuário se o email não for enviado
+        }
       }
 
       // Buscar o usuário criado para retornar os dados completos
