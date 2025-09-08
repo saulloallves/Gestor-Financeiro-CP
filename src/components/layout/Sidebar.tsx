@@ -107,21 +107,21 @@ const menuItems: MenuItem[] = [
     children: [
       {
         id: "cobrancas-pendentes",
-        title: "Pendentes",
+        title: "Visão Geral",
         icon: Clock,
-        path: "/cobrancas/pendentes",
+        path: "/cobrancas/geral",
       },
       {
-        id: "cobrancas-vencidas",
-        title: "Vencidas",
+        id: "cobrancas-atrasadas",
+        title: "Atrasadas",
         icon: AlertCircle,
-        path: "/cobrancas/vencidas",
+        path: "/cobrancas/atrasadas",
       },
       {
-        id: "cobrancas-pagas",
-        title: "Pagas",
+        id: "cobrancas-quitadas",
+        title: "Quitadas",
         icon: CheckCircle,
-        path: "/cobrancas/pagas",
+        path: "/cobrancas/quitadas",
       },
     ],
   },
@@ -162,7 +162,7 @@ export function Sidebar({
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [expandedItems, setExpandedItems] = useState<string[]>(["cobrancas"]);
+  const [expandedItems, setExpandedItems] = useState<string[]>([""]);
 
   // Estados para controle do sidebar
   const [isHovered, setIsHovered] = useState(false);
