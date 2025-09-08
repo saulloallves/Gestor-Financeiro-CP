@@ -3,6 +3,9 @@ import { ThemeProvider } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
 import { Toaster } from "react-hot-toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { ptBR } from "date-fns/locale";
 import theme from "./styles/theme";
 import { router } from "./router/index.tsx";
 
@@ -20,20 +23,22 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: "#222",
-              color: "#fff",
-            },
-          }}
-        />
+        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+          <CssBaseline />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: "#222",
+                color: "#fff",
+              },
+            }}
+          />
 
-        {/* Router Provider para gerenciar as rotas */}
-        <RouterProvider router={router} />
+          {/* Router Provider para gerenciar as rotas */}
+          <RouterProvider router={router} />
+        </LocalizationProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

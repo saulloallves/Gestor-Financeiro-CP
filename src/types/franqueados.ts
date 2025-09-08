@@ -49,6 +49,7 @@ export interface Franqueado {
   // Status e Metadados
   status: StatusFranqueado;
   user_id?: string; // Referência ao auth.users para login
+  asaas_customer_id?: string; // ID do cliente no sistema ASAAS
   created_at: string;
   updated_at: string;
 
