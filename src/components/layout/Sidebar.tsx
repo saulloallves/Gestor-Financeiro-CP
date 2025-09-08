@@ -16,12 +16,12 @@ import {
   LayoutDashboard,
   CreditCard,
   Users,
-  FileText,
-  BarChart3,
+  // FileText,
+  // BarChart3,
   ChevronDown,
   ChevronRight,
-  TrendingUp,
-  AlertCircle,
+  // TrendingUp,
+  // AlertCircle,
   Building,
   Pin,
   PinOff,
@@ -109,32 +109,32 @@ const menuItems: MenuItem[] = [
       },
     ],
   },
-  {
-    id: "relatorios",
-    title: "Relatórios",
-    icon: BarChart3,
-    path: "/relatorios",
-    children: [
-      {
-        id: "relatorios-financeiro",
-        title: "Financeiro",
-        icon: TrendingUp,
-        path: "/relatorios/financeiro",
-      },
-      {
-        id: "relatorios-inadimplencia",
-        title: "Inadimplência",
-        icon: AlertCircle,
-        path: "/relatorios/inadimplencia",
-      },
-    ],
-  },
-  {
-    id: "documentos",
-    title: "Documentos",
-    icon: FileText,
-    path: "/documentos",
-  },
+  // {
+  //   id: "relatorios",
+  //   title: "Relatórios",
+  //   icon: BarChart3,
+  //   path: "/relatorios",
+  //   children: [
+  //     {
+  //       id: "relatorios-financeiro",
+  //       title: "Financeiro",
+  //       icon: TrendingUp,
+  //       path: "/relatorios/financeiro",
+  //     },
+  //     {
+  //       id: "relatorios-inadimplencia",
+  //       title: "Inadimplência",
+  //       icon: AlertCircle,
+  //       path: "/relatorios/inadimplencia",
+  //     },
+  //   ],
+  // },
+  // {
+  //   id: "documentos",
+  //   title: "Documentos",
+  //   icon: FileText,
+  //   path: "/documentos",
+  // },
 ];
 
 export function Sidebar({
@@ -240,7 +240,7 @@ export function Sidebar({
                 mb: level === 0 ? theme.spacing(0.5) : theme.spacing(0.25),
                 backgroundColor: isActive ? "primary.main" : "transparent",
                 color: isActive ? "primary.contrastText" : "text.primary",
-                minHeight: 48,
+                minHeight: 50,
                 justifyContent: isExpanded ? "flex-start" : "center",
                 "&:hover": {
                   backgroundColor: isActive
