@@ -29,6 +29,7 @@ export type LoginUnidadeData = z.infer<typeof loginUnidadeSchema>;
 // Types para o usuário logado
 export interface UsuarioInterno {
   id: string;
+  user_id?: string; // ID do auth.users para funcionalidades de primeiro acesso
   nome: string;
   email: string;
   telefone?: string;
@@ -36,6 +37,12 @@ export interface UsuarioInterno {
   equipe_id?: string;
   status: "ativo" | "inativo";
   ultimo_login?: string;
+  
+  // Campos de controle de primeiro acesso
+  primeiro_acesso?: boolean;
+  senha_temporaria?: boolean;
+  data_criacao?: string;
+  data_ultima_senha?: string;
 }
 
 export interface UnidadeVinculada {

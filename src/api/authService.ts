@@ -7,11 +7,17 @@ import type {
 } from "../types/auth";
 
 interface UsuarioInternoData {
-  id: number;
+  id: string;
+  user_id: string;
   nome: string;
   email: string;
+  telefone?: string;
   perfil: string;
   status: string;
+  primeiro_acesso?: boolean;
+  senha_temporaria?: boolean;
+  data_criacao?: string;
+  data_ultima_senha?: string;
 }
 
 interface FranqueadoData {
@@ -56,9 +62,9 @@ export class AuthService {
       // 3. Usa função customizada que bypassa RLS
       const { data: userData, error: userError } = (await supabase.rpc(
         "get_internal_user_data",
-        { user_uuid: authData.user.id }
+        { p_user_id: authData.user.id }
       )) as {
-        data: UsuarioInternoData[] | null;
+        data: UsuarioInternoData | null;
         error: Error | null;
       };
 
@@ -68,20 +74,24 @@ export class AuthService {
         throw new Error(`Erro na consulta: ${userError.message}`);
       }
 
-      if (!userData || userData.length === 0) {
+      if (!userData) {
         await supabase.auth.signOut();
         throw new Error(
           "Usuário não autorizado para acesso interno - não encontrado na tabela"
         );
       }
 
-      const user = userData[0]; // pega o primeiro resultado
       return {
-        id: String(user.id), // converte number para string
-        nome: user.nome,
-        email: user.email,
-        perfil: user.perfil as "operador" | "gestor" | "juridico" | "admin",
-        status: user.status as "ativo" | "inativo",
+        id: userData.id,
+        user_id: userData.user_id,
+        nome: userData.nome,
+        email: userData.email,
+        perfil: userData.perfil as "operador" | "gestor" | "juridico" | "admin",
+        status: (userData.status as "ativo" | "inativo") || "ativo",
+        primeiro_acesso: userData.primeiro_acesso,
+        senha_temporaria: userData.senha_temporaria,
+        data_criacao: userData.data_criacao,
+        data_ultima_senha: userData.data_ultima_senha,
       };
     } catch (error) {
       console.error("Erro no login interno:", error);
@@ -223,10 +233,12 @@ export class AuthService {
         const user = userData[0];
         return {
           id: String(user.id),
+          user_id: user.user_id, // Agora vem diretamente da função
           nome: user.nome,
           email: user.email,
+          telefone: user.telefone,
           perfil: user.perfil as "operador" | "gestor" | "juridico" | "admin",
-          status: user.status as "ativo" | "inativo",
+          status: "ativo" as const, // Padrão por enquanto
         };
       }
 

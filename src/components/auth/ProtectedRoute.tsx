@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { Box } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import { useAuthStore } from "../../store/authStore";
+import { useAuthState } from "../../hooks/useAuthState";
+import { PrimeiraSenhaModal } from "./PrimeiraSenhaModal.tsx";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -14,22 +16,67 @@ export function ProtectedRoute({
   requiredType,
 }: ProtectedRouteProps) {
   const { usuario, tipoAcesso, initializeAuth } = useAuthStore();
+  
+  const {
+    isLoading: isLoadingAuthState,
+    precisaTrocarSenha,
+    primeiroAcesso,
+    senhaTemporaria,
+    verificarPrimeiroAcesso
+  } = useAuthState();
 
-  // Inicializa a autenticação quando o componente monta
   useEffect(() => {
     if (!usuario) {
       initializeAuth();
     }
   }, [usuario, initializeAuth]);
 
-  // Se não tem usuário, redireciona para login
+  useEffect(() => {
+    if (usuario && tipoAcesso === 'interno') {
+      verificarPrimeiroAcesso();
+    }
+  }, [usuario, tipoAcesso, verificarPrimeiroAcesso]);
+
+  if (isLoadingAuthState) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          gap: 2,
+          backgroundColor: 'background.default'
+        }}
+      >
+        <CircularProgress size={40} color="primary" />
+        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          Verificando autenticação...
+        </Typography>
+      </Box>
+    );
+  }
+
   if (!usuario) {
     return <Navigate to="/login" replace />;
   }
 
-  // Se tem tipo específico requerido e não confere, redireciona
   if (requiredType && tipoAcesso !== requiredType) {
     return <Navigate to="/unauthorized" replace />;
+  }
+
+  if (usuario && tipoAcesso === 'interno' && precisaTrocarSenha) {
+    return (
+      <>
+        {children}
+        <PrimeiraSenhaModal
+          open={true}
+          primeiroAcesso={primeiroAcesso}
+          senhaTemporaria={senhaTemporaria}
+        />
+      </>
+    );
   }
 
   return <>{children}</>;

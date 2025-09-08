@@ -7,6 +7,8 @@ import type {
   UsuarioInternoListItem,
   FiltrosUsuarios,
   EstatisticasUsuarios,
+  TrocarSenhaPrimeiroAcesso,
+  ResultadoTrocaSenha,
 } from "../types/equipes";
 
 // ==============================================
@@ -406,6 +408,117 @@ export class UsuariosInternosService {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido ao limpar usuários órfãos',
         message: 'Falha na limpeza de usuários órfãos'
+      };
+    }
+  }
+
+  // ==============================================
+  // MÉTODOS PARA CONTROLE DE PRIMEIRO ACESSO
+  // ==============================================
+
+  // Trocar senha durante primeiro acesso
+  static async trocarSenhaPrimeiroAcesso(
+    userId: string, 
+    dadosSenha: TrocarSenhaPrimeiroAcesso
+  ): Promise<ResultadoTrocaSenha> {
+    try {
+      // Validar se as senhas coincidem
+      if (dadosSenha.nova_senha !== dadosSenha.confirmar_senha) {
+        return {
+          success: false,
+          error: 'As senhas não coincidem'
+        };
+      }
+
+      // Validar força da senha
+      if (dadosSenha.nova_senha.length < 8) {
+        return {
+          success: false,
+          error: 'A senha deve ter no mínimo 8 caracteres'
+        };
+      }
+
+      // Chamar função do banco para trocar senha
+      const { data, error } = await supabase.rpc('trocar_senha_primeiro_acesso', {
+        p_user_id: userId,
+        p_nova_senha: dadosSenha.nova_senha
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Verificar se data é string (JSON) e fazer parse se necessário
+      let result = data;
+      if (typeof data === 'string') {
+        try {
+          result = JSON.parse(data);
+        } catch {
+          throw new Error('Resposta da função em formato inválido');
+        }
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('Erro ao trocar senha de primeiro acesso:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Erro desconhecido ao trocar senha'
+      };
+    }
+  }
+
+  // Marcar primeiro acesso como completo
+  static async marcarPrimeiroAcessoCompleto(userId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.rpc('marcar_primeiro_acesso_completo', {
+        p_user_id: userId
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return data === true;
+
+    } catch (error) {
+      console.error('Erro ao marcar primeiro acesso como completo:', error);
+      return false;
+    }
+  }
+
+  // Verificar se usuário precisa trocar senha
+  static async verificarPrecisaTrocarSenha(userId: string): Promise<{
+    precisa_trocar: boolean;
+    primeiro_acesso: boolean;
+    senha_temporaria: boolean;
+  }> {
+    try {
+      const { data, error } = await supabase
+        .from('usuarios_internos')
+        .select('primeiro_acesso, senha_temporaria')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      const precisaTrocar = data.primeiro_acesso || data.senha_temporaria;
+
+      return {
+        precisa_trocar: precisaTrocar,
+        primeiro_acesso: data.primeiro_acesso || false,
+        senha_temporaria: data.senha_temporaria || false
+      };
+
+    } catch (error) {
+      console.error('Erro ao verificar se precisa trocar senha:', error);
+      return {
+        precisa_trocar: false,
+        primeiro_acesso: false,
+        senha_temporaria: false
       };
     }
   }

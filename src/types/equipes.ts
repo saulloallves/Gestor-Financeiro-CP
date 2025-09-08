@@ -95,6 +95,12 @@ export interface UsuarioInterno {
   created_at: string;
   updated_at: string;
   
+  // Campos de controle de primeiro acesso
+  primeiro_acesso?: boolean;
+  senha_temporaria?: boolean;
+  data_criacao?: string;
+  data_ultima_senha?: string;
+  
   // Relacionamentos
   equipe?: Equipe;
 }
@@ -116,6 +122,21 @@ export interface UsuarioInternoUpdate {
   perfil?: PerfilUsuario;
   equipe_id?: string;
   status?: StatusUsuario;
+}
+
+// ==============================================
+// TYPES PARA CONTROLE DE PRIMEIRO ACESSO
+// ==============================================
+
+export interface TrocarSenhaPrimeiroAcesso {
+  nova_senha: string;
+  confirmar_senha: string;
+}
+
+export interface ResultadoTrocaSenha {
+  success: boolean;
+  error?: string;
+  message?: string;
 }
 
 // ==============================================
