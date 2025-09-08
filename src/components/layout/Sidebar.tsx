@@ -383,7 +383,7 @@ export function Sidebar({
             alt="Cresci e Perdi"
             sx={{
               height: isExpanded ? 40 : 32,
-              width: isExpanded ? "auto" : 32,
+              width: isExpanded ? "auto" : 100,
               objectFit: "contain",
               transition: theme.transitions.create(["height", "width"], {
                 duration: theme.transitions.duration.standard,
@@ -445,10 +445,12 @@ export function Sidebar({
             sx={{
               color: "text.secondary",
               fontSize: "0.7rem",
+              fontWeight: 900,
               textAlign: "center",
               display: "block",
             }}
           >
+            Versão 1.0.0<br />
             © 2025 Cresci e Perdi
           </Typography>
         </Box>

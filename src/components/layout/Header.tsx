@@ -18,6 +18,7 @@ import {
   LogOut,
   User,
   HelpCircle,
+  CircleDollarSign,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
@@ -59,7 +60,9 @@ export function Header({ sidebarWidth }: HeaderProps) {
       position="fixed"
       sx={{
         width: `calc(100% - ${sidebarWidth}px)`,
+        height: 80,
         left: `${sidebarWidth}px`,
+        paddingTop: theme.spacing(1),
         zIndex: theme.zIndex.drawer - 1,
         transition: theme.transitions.create(['width', 'left'], {
           easing: theme.transitions.easing.easeInOut,
@@ -80,16 +83,20 @@ export function Header({ sidebarWidth }: HeaderProps) {
         }}
       >
         {/* Título */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircleDollarSign 
+            size={28} 
+            style={{ color: theme.palette.text.primary }}
+          />
           <Typography
             variant="h6"
             component="h1"
             sx={{
-              fontWeight: 600,
+              fontWeight: 500,
               display: { xs: 'none', sm: 'block' },
             }}
           >
-            Gestor Financeiro CP
+            Sistema de Cobrança Autônomo
           </Typography>
         </Box>
 
