@@ -1,7 +1,7 @@
 // Página de Listagem de Unidades - Módulo 2.1
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -22,6 +22,7 @@ import {
   DataGrid,
   type GridColDef,
   GridActionsCellItem,
+  type GridPaginationModel,
 } from "@mui/x-data-grid";
 import { ptBR } from "@mui/x-data-grid/locales";
 import { useTheme } from "@mui/material/styles";
@@ -40,7 +41,7 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
-import { useUnidadesPage } from "../hooks/useUnidades";
+import { useUnidadesPage, useEstatisticasUnidades } from "../hooks/useUnidades";
 import { UnidadeForm } from "../components/UnidadeForm";
 import { getStatusLabel, getStatusColor } from "../utils/statusMask";
 import type { Unidade, StatusUnidade } from "../types/unidades";
@@ -54,6 +55,12 @@ export function UnidadesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUnidade, setSelectedUnidade] = useState<Unidade | null>(null);
+
+  // Estado de paginação do DataGrid
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 20,
+  });
 
   // Handlers do modal
   const handleCreateUnidade = () => {
@@ -71,17 +78,42 @@ export function UnidadesPage() {
     setSelectedUnidade(null);
   };
 
+  // Hook para estatísticas reais
+  const { data: estatisticas, isLoading: isLoadingStats } = useEstatisticasUnidades();
+
   const {
     unidades,
-    totalUnidades,
     isLoading,
     isError,
     isExporting,
     filters,
     handleFilterChange,
     handleExport,
+    handlePageChange,
+    handlePageSizeChange,
+    pagination,
     refetch,
   } = useUnidadesPage();
+
+  // Handler para mudança de paginação do DataGrid
+  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
+    // Se apenas a página mudou
+    if (newModel.pageSize === paginationModel.pageSize) {
+      handlePageChange(newModel.page + 1); // DataGrid usa base 0, backend usa base 1
+    } else {
+      // Se o tamanho da página mudou, resetar para primeira página
+      handlePageSizeChange(newModel.pageSize);
+    }
+    setPaginationModel(newModel);
+  };
+
+  // Sincronizar estado do DataGrid com estado do hook
+  useEffect(() => {
+    setPaginationModel({
+      page: pagination.page - 1, // Backend usa base 1, DataGrid usa base 0
+      pageSize: pagination.limit,
+    });
+  }, [pagination.page, pagination.limit]);
 
   // Função para aplicar filtros de busca
   const handleSearch = () => {
@@ -437,10 +469,10 @@ export function UnidadesPage() {
               }}
             >
               <MenuItem value="">Todos os status</MenuItem>
-              <MenuItem value="ativo">Ativo</MenuItem>
-              <MenuItem value="em_implantacao">Em Implantação</MenuItem>
-              <MenuItem value="suspenso">Suspenso</MenuItem>
-              <MenuItem value="cancelado">Cancelado</MenuItem>
+              <MenuItem value="OPERAÇÃO">Operação</MenuItem>
+              <MenuItem value="IMPLANTAÇÃO">Implantação</MenuItem>
+              <MenuItem value="SUSPENSO">Suspenso</MenuItem>
+              <MenuItem value="CANCELADO">Cancelado</MenuItem>
             </TextField>
 
             <Box sx={{ display: "flex", gap: 1.5 }}>
@@ -516,7 +548,11 @@ export function UnidadesPage() {
                 variant="h3"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
-                {totalUnidades}
+                {isLoadingStats ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  estatisticas?.total || 0
+                )}
               </Typography>
               <Typography
                 variant="body1"
@@ -571,7 +607,11 @@ export function UnidadesPage() {
                 variant="h3"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
-                {unidades.filter((u) => u.status === "ativo").length}
+                {isLoadingStats ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  estatisticas?.ativas || 0
+                )}
               </Typography>
               <Typography
                 variant="body1"
@@ -626,7 +666,11 @@ export function UnidadesPage() {
                 variant="h3"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
-                {unidades.filter((u) => u.status === "em_implantacao").length}
+                {isLoadingStats ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  estatisticas?.em_implantacao || 0
+                )}
               </Typography>
               <Typography
                 variant="body1"
@@ -681,7 +725,11 @@ export function UnidadesPage() {
                 variant="h3"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
-                {unidades.filter((u) => u.status === "cancelado").length}
+                {isLoadingStats ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  estatisticas?.canceladas || 0
+                )}
               </Typography>
               <Typography
                 variant="body1"
@@ -730,12 +778,11 @@ export function UnidadesPage() {
             rows={unidades}
             columns={columns}
             loading={isLoading}
-            pageSizeOptions={[10, 20, 50]}
-            initialState={{
-              pagination: {
-                paginationModel: { pageSize: 20 },
-              },
-            }}
+            rowCount={estatisticas?.total || 0}
+            paginationModel={paginationModel}
+            onPaginationModelChange={handlePaginationModelChange}
+            paginationMode="server"
+            pageSizeOptions={[10, 20, 50, 100]}
             localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
             sx={{
               border: "none",

@@ -141,7 +141,7 @@ const unidadeSchema = z.object({
   horario_domingo: z.string().optional(),
 
   // Configurações
-  status: z.enum(["ativo", "em_implantacao", "suspenso", "cancelado"] as const),
+  status: z.enum(["OPERAÇÃO", "IMPLANTAÇÃO", "SUSPENSO", "CANCELADO"] as const),
   multifranqueado: z.boolean(),
   franqueado_principal_id: z.string().optional(),
 });
@@ -206,7 +206,7 @@ export function UnidadeForm({
       horario_seg_sex: "",
       horario_sabado: "",
       horario_domingo: "",
-      status: "ativo",
+      status: "OPERAÇÃO",
       multifranqueado: false,
       franqueado_principal_id: undefined,
     },
@@ -311,13 +311,13 @@ export function UnidadeForm({
     status: string
   ): "default" | "success" | "warning" | "error" => {
     switch (status) {
-      case "ativo":
+      case "OPERAÇÃO":
         return "success";
-      case "em_implantacao":
+      case "IMPLANTAÇÃO":
         return "warning";
-      case "suspenso":
+      case "SUSPENSO":
         return "error";
-      case "cancelado":
+      case "CANCELADO":
         return "default";
       default:
         return "default";
@@ -546,10 +546,10 @@ export function UnidadeForm({
                       helperText={errors.status?.message}
                       fullWidth
                     >
-                      <MenuItem value="ativo">Ativo</MenuItem>
-                      <MenuItem value="em_implantacao">Em Implantação</MenuItem>
-                      <MenuItem value="suspenso">Suspenso</MenuItem>
-                      <MenuItem value="cancelado">Cancelado</MenuItem>
+                      <MenuItem value="OPERAÇÃO">Operação</MenuItem>
+                      <MenuItem value="IMPLANTAÇÃO">Implantação</MenuItem>
+                      <MenuItem value="SUSPENSO">Suspenso</MenuItem>
+                      <MenuItem value="CANCELADO">Cancelado</MenuItem>
                     </TextField>
                   )}
                 />

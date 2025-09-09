@@ -2,10 +2,10 @@
 // Baseado na especificação do módulo 2.1
 
 export type StatusUnidade =
-  | "ativo"
-  | "em_implantacao"
-  | "suspenso"
-  | "cancelado";
+  | "OPERAÇÃO"
+  | "IMPLANTAÇÃO"
+  | "SUSPENSO"
+  | "CANCELADO";
 
 export interface Unidade {
   id: string;

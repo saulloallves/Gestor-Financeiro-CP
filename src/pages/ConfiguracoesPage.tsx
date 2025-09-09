@@ -13,14 +13,28 @@ import {
   Select,
   MenuItem,
   Divider,
-  Chip
+  Chip,
+  Tabs,
+  Tab,
+  CircularProgress,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { Settings, RefreshCw, Save, CheckCircle, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
+import { 
+  Settings, 
+  RefreshCw, 
+  Save, 
+  CheckCircle, 
+  DollarSign, 
+  TrendingUp, 
+  AlertTriangle, 
+  Wrench,
+  Cog,
+} from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useConfiguracoes } from '../hooks/useConfiguracoes';
+import { useDebugFormatarCnpjs } from '../hooks/useUnidades';
 import type { AtualizarConfiguracaoData } from '../types/configuracoes';
 
 const configSchema = z.object({
@@ -41,6 +55,7 @@ type ConfigForm = z.infer<typeof configSchema>;
 export default function ConfiguracoesPage() {
   const theme = useTheme();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
   const {
     configuracao,
@@ -51,6 +66,9 @@ export default function ConfiguracoesPage() {
     isUpdating,
     updateError,
   } = useConfiguracoes();
+
+  // Hook de debug para formatar CNPJs
+  const debugFormatarCnpjs = useDebugFormatarCnpjs();
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<ConfigForm>({
     resolver: zodResolver(configSchema),
@@ -144,10 +162,10 @@ export default function ConfiguracoesPage() {
             component="h1"
             sx={{ fontWeight: 700, color: "text.primary" }}
           >
-            Configurações de Cobrança
+            Configurações Gerais
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            Configure parâmetros e regras de cálculo para cobranças
+            Gerencie configurações do sistema e parâmetros de cobrança
           </Typography>
         </Box>
 
@@ -162,7 +180,160 @@ export default function ConfiguracoesPage() {
         </Button>
       </Box>
 
-      {/* Cards de Informações Rápidas */}
+      {/* Abas de Configurações */}
+      <Box sx={{ marginBottom: theme.spacing(3) }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, newValue) => setActiveTab(newValue)}
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'primary.main',
+            },
+          }}
+        >
+          <Tab
+            icon={<Cog size={20} />}
+            iconPosition="start"
+            label="Configurações Gerais"
+            sx={{
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '1rem',
+              minHeight: 64,
+              '&.Mui-selected': {
+                color: 'primary.main',
+              },
+            }}
+          />
+          <Tab
+            icon={<DollarSign size={20} />}
+            iconPosition="start"
+            label="Configurações de Cobrança"
+            sx={{
+              textTransform: 'none',
+              fontWeight: 500,
+              fontSize: '1rem',
+              minHeight: 64,
+              '&.Mui-selected': {
+                color: 'primary.main',
+              },
+            }}
+          />
+        </Tabs>
+      </Box>
+
+      {/* Conteúdo das Abas */}
+      {activeTab === 0 && (
+        <Box>
+          {/* Card de Ferramentas de Debug */}
+          <Card
+            sx={{
+              borderRadius: 3,
+              backgroundColor: "background.paper",
+              boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+              border: "1px solid",
+              borderColor: "divider",
+              borderLeft: "6px solid",
+              borderLeftColor: "warning.main",
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              {/* Cabeçalho da seção */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  mb: 3,
+                }}
+              >
+                <Box
+                  sx={{
+                    backgroundColor: "warning.main",
+                    borderRadius: 3,
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Wrench size={24} color="white" />
+                </Box>
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      color: "text.primary",
+                      mb: 0.5,
+                    }}
+                  >
+                    Ferramentas de Debug
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Ferramentas para manutenção e correção de dados
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Área de Debug */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <strong>⚠️ Atenção:</strong> As ferramentas abaixo são destinadas apenas para correção pontual de dados. 
+                  Use com cautela e apenas quando necessário.
+                </Alert>
+
+                <Box sx={{ p: 3, border: 1, borderColor: 'warning.main', borderRadius: 2, backgroundColor: 'rgba(255, 167, 38, 0.05)' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'warning.dark' }}>
+                    Formatação de CNPJs
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+                    Esta ferramenta irá formatar todos os CNPJs das unidades no banco de dados, 
+                    aplicando a máscara padrão (XX.XXX.XXX/XXXX-XX). Útil para corrigir dados importados sem formatação.
+                  </Typography>
+                  
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    startIcon={<Wrench size={20} />}
+                    onClick={() => {
+                      if (window.confirm(
+                        "⚠️ ATENÇÃO: Esta operação irá formatar TODOS os CNPJs das unidades no banco de dados.\n\n" +
+                        "Esta ação deve ser executada apenas UMA VEZ para corrigir dados importados.\n\n" +
+                        "Você tem certeza que deseja continuar?"
+                      )) {
+                        debugFormatarCnpjs.mutate();
+                      }
+                    }}
+                    disabled={debugFormatarCnpjs.isPending}
+                    sx={{ 
+                      minWidth: 200,
+                      fontWeight: 500,
+                      textTransform: 'none',
+                    }}
+                  >
+                    {debugFormatarCnpjs.isPending ? (
+                      <>
+                        <CircularProgress size={16} sx={{ mr: 1 }} />
+                        Formatando...
+                      </>
+                    ) : (
+                      "Formatar Todos os CNPJs"
+                    )}
+                  </Button>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
+
+      {/* Aba de Configurações de Cobrança */}
+      {activeTab === 1 && (
+        <>
+          {/* Cards de Informações Rápidas - Aba Cobrança */}
       <Box
         sx={{
           display: "grid",
@@ -593,19 +764,21 @@ export default function ConfiguracoesPage() {
         </Box>
       </Box>
 
+        {updateError && (
+          <Snackbar open={!!updateError} autoHideDuration={6000}>
+            <Alert severity="error">
+              Erro: {updateError.message}
+            </Alert>
+          </Snackbar>
+        )}
+        </>
+      )}
+
       <Snackbar open={showSuccess} autoHideDuration={6000} onClose={() => setShowSuccess(false)}>
         <Alert onClose={() => setShowSuccess(false)} severity="success">
           Configurações salvas com sucesso!
         </Alert>
       </Snackbar>
-
-      {updateError && (
-        <Snackbar open={!!updateError} autoHideDuration={6000}>
-          <Alert severity="error">
-            Erro: {updateError.message}
-          </Alert>
-        </Snackbar>
-      )}
     </Box>
   );
 }

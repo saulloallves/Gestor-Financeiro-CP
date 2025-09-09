@@ -4,6 +4,7 @@
 // Integração com Supabase seguindo as diretrizes do projeto
 
 import { supabase } from "./supabaseClient";
+import { formatarCnpj } from "../utils/validations";
 import type {
   Unidade,
   CreateUnidadeData,
@@ -185,7 +186,7 @@ class UnidadesService {
         .insert({
           ...unidadeData,
           codigo_unidade: codigo,
-          status: unidadeData.status || "ativo",
+          status: unidadeData.status || "OPERAÇÃO",
           multifranqueado: unidadeData.multifranqueado || false,
         })
         .select()
@@ -449,6 +450,8 @@ class UnidadesService {
     ativas: number;
     inativas: number;
     em_implantacao: number;
+    suspensas: number;
+    canceladas: number;
     por_estado: { uf: string; count: number }[];
   }> {
     try {
@@ -478,9 +481,11 @@ class UnidadesService {
 
       return {
         total: totalResult.count || 0,
-        ativas: statusCounts.ativo || 0,
-        inativas: statusCounts.inativo || 0,
-        em_implantacao: statusCounts.em_implantacao || 0,
+        ativas: statusCounts["OPERAÇÃO"] || 0,
+        inativas: 0,
+        em_implantacao: statusCounts["IMPLANTAÇÃO"] || 0,
+        suspensas: statusCounts["SUSPENSO"] || 0,
+        canceladas: statusCounts["CANCELADO"] || 0,
         por_estado: Object.entries(estadosCounts).map(([uf, count]) => ({
           uf,
           count: count as number,
@@ -488,6 +493,143 @@ class UnidadesService {
       };
     } catch (error) {
       console.error("Erro no UnidadesService.getEstatisticas:", error);
+      throw error;
+    }
+  }
+
+  // ================================
+  // FUNÇÕES DE DEBUG/MANUTENÇÃO
+  // ================================
+
+  /**
+   * Função de debug para formatar todos os CNPJs das unidades no banco
+   * Esta função deve ser usada apenas uma vez para corrigir dados importados
+   */
+  async debugFormatarTodosCnpjs(): Promise<{
+    total: number;
+    processados: number;
+    erro: number;
+    detalhes: Array<{
+      id: string;
+      codigo_unidade: string;
+      cnpj_original: string;
+      cnpj_formatado: string;
+      status: 'sucesso' | 'erro';
+      erro_detalhes?: string;
+    }>;
+  }> {
+    try {
+      console.log("🔧 [DEBUG] Iniciando formatação de todos os CNPJs...");
+
+      // Buscar todas as unidades que possuem CNPJ
+      const { data: unidades, error: selectError } = await supabase
+        .from("unidades")
+        .select("id, codigo_unidade, cnpj")
+        .not("cnpj", "is", null)
+        .neq("cnpj", "");
+
+      if (selectError) {
+        throw new Error(`Erro ao buscar unidades: ${selectError.message}`);
+      }
+
+      if (!unidades || unidades.length === 0) {
+        return {
+          total: 0,
+          processados: 0,
+          erro: 0,
+          detalhes: [],
+        };
+      }
+
+      console.log(`🔧 [DEBUG] Encontradas ${unidades.length} unidades com CNPJ`);
+
+      const detalhes: Array<{
+        id: string;
+        codigo_unidade: string;
+        cnpj_original: string;
+        cnpj_formatado: string;
+        status: 'sucesso' | 'erro';
+        erro_detalhes?: string;
+      }> = [];
+
+      let processados = 0;
+      let erros = 0;
+
+      // Processar cada unidade
+      for (const unidade of unidades) {
+        try {
+          const cnpjOriginal = unidade.cnpj || "";
+          const cnpjFormatado = formatarCnpj(cnpjOriginal);
+
+          // Só atualizar se o CNPJ formatado for diferente do original
+          if (cnpjFormatado !== cnpjOriginal) {
+            const { error: updateError } = await supabase
+              .from("unidades")
+              .update({ cnpj: cnpjFormatado })
+              .eq("id", unidade.id);
+
+            if (updateError) {
+              console.error(`❌ [DEBUG] Erro ao atualizar unidade ${unidade.codigo_unidade}:`, updateError);
+              erros++;
+              detalhes.push({
+                id: unidade.id,
+                codigo_unidade: unidade.codigo_unidade,
+                cnpj_original: cnpjOriginal,
+                cnpj_formatado: cnpjFormatado,
+                status: 'erro',
+                erro_detalhes: updateError.message,
+              });
+            } else {
+              console.log(`✅ [DEBUG] Unidade ${unidade.codigo_unidade}: ${cnpjOriginal} → ${cnpjFormatado}`);
+              processados++;
+              detalhes.push({
+                id: unidade.id,
+                codigo_unidade: unidade.codigo_unidade,
+                cnpj_original: cnpjOriginal,
+                cnpj_formatado: cnpjFormatado,
+                status: 'sucesso',
+              });
+            }
+          } else {
+            console.log(`⏭️ [DEBUG] Unidade ${unidade.codigo_unidade}: CNPJ já está formatado`);
+            detalhes.push({
+              id: unidade.id,
+              codigo_unidade: unidade.codigo_unidade,
+              cnpj_original: cnpjOriginal,
+              cnpj_formatado: cnpjFormatado,
+              status: 'sucesso',
+            });
+          }
+        } catch (itemError) {
+          console.error(`❌ [DEBUG] Erro ao processar unidade ${unidade.codigo_unidade}:`, itemError);
+          erros++;
+          detalhes.push({
+            id: unidade.id,
+            codigo_unidade: unidade.codigo_unidade,
+            cnpj_original: unidade.cnpj || "",
+            cnpj_formatado: "",
+            status: 'erro',
+            erro_detalhes: itemError instanceof Error ? itemError.message : String(itemError),
+          });
+        }
+      }
+
+      const resultado = {
+        total: unidades.length,
+        processados: processados,
+        erro: erros,
+        detalhes,
+      };
+
+      console.log("🎉 [DEBUG] Formatação concluída:", {
+        total: resultado.total,
+        processados: resultado.processados,
+        erros: resultado.erro,
+      });
+
+      return resultado;
+    } catch (error) {
+      console.error("💥 [DEBUG] Erro geral na formatação de CNPJs:", error);
       throw error;
     }
   }

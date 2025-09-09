@@ -271,6 +271,36 @@ export function useExportUnidades() {
   });
 }
 
+/**
+ * Hook de debug para formatar todos os CNPJs das unidades
+ * ATENÇÃO: Usar apenas em desenvolvimento ou para correção única de dados
+ */
+export function useDebugFormatarCnpjs() {
+  return useMutation({
+    mutationFn: () => unidadesService.debugFormatarTodosCnpjs(),
+    onSuccess: (resultado) => {
+      const { total, processados, erro } = resultado;
+      
+      if (erro === 0) {
+        toast.success(
+          `✅ Formatação concluída! ${processados} de ${total} CNPJs foram formatados com sucesso.`
+        );
+      } else {
+        toast.success(
+          `⚠️ Formatação concluída com alertas: ${processados} sucessos, ${erro} erros de ${total} total.`
+        );
+      }
+      
+      // Log detalhado no console para análise
+      console.table(resultado.detalhes);
+    },
+    onError: (error: Error) => {
+      console.error("Erro ao formatar CNPJs:", error);
+      toast.error("Erro ao formatar CNPJs: " + error.message);
+    },
+  });
+}
+
 // ================================
 // HOOKS COMPOSTOS
 // ================================
@@ -305,6 +335,10 @@ export function useUnidadesPage(
     setPagination((prev) => ({ ...prev, page }));
   };
 
+  const handlePageSizeChange = (pageSize: number) => {
+    setPagination(() => ({ page: 1, limit: pageSize }));
+  };
+
   const handleStatusChange = (unidade: Unidade, newStatus: string) => {
     updateStatusMutation.mutate({ id: unidade.id, status: newStatus });
   };
@@ -334,6 +368,7 @@ export function useUnidadesPage(
     handleFilterChange,
     handleSortChange,
     handlePageChange,
+    handlePageSizeChange,
     handleStatusChange,
     handleExport,
     refetch: unidadesQuery.refetch,

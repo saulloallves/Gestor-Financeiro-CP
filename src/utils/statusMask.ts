@@ -9,10 +9,10 @@ import type { StatusUnidade } from "../types/unidades";
  * Mapeia os status do banco para labels amigáveis
  */
 export const STATUS_LABELS: Record<StatusUnidade, string> = {
-  em_implantacao: "Em Implantação",
-  ativo: "Ativo",
-  suspenso: "Suspenso",
-  cancelado: "Cancelado",
+  "OPERAÇÃO": "Operação",
+  "IMPLANTAÇÃO": "Implantação",
+  "SUSPENSO": "Suspenso",
+  "CANCELADO": "Cancelado",
 } as const;
 
 /**
@@ -28,10 +28,10 @@ export function getStatusLabel(status: StatusUnidade): string {
  * Mapeia cores para cada status (para uso com Chips e indicadores)
  */
 export const STATUS_COLORS = {
-  em_implantacao: "warning",
-  ativo: "success",
-  suspenso: "info",
-  cancelado: "error",
+  "OPERAÇÃO": "success",
+  "IMPLANTAÇÃO": "warning",
+  "SUSPENSO": "info",
+  "CANCELADO": "error",
 } as const;
 
 /**
