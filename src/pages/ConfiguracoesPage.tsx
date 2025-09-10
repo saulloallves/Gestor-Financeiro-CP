@@ -34,7 +34,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useConfiguracoes } from '../hooks/useConfiguracoes';
-import { useDebugFormatarCnpjs } from '../hooks/useUnidades';
 import type { AtualizarConfiguracaoData } from '../types/configuracoes';
 
 const configSchema = z.object({
@@ -68,7 +67,8 @@ export default function ConfiguracoesPage() {
   } = useConfiguracoes();
 
   // Hook de debug para formatar CNPJs
-  const debugFormatarCnpjs = useDebugFormatarCnpjs();
+  // Mock para debugging de CNPJs (funcionalidade não implementada)
+  const debugFormatarCnpjs = { mutate: () => {}, isPending: false };
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<ConfigForm>({
     resolver: zodResolver(configSchema),

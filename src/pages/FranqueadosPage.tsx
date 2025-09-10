@@ -1,40 +1,32 @@
 // Página de Listagem de Franqueados - Módulo 2.2
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
   Card,
   CardContent,
   Button,
-  IconButton,
   Chip,
   TextField,
   MenuItem,
-  Tooltip,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
 } from "@mui/material";
 import {
   DataGrid,
   type GridColDef,
-  GridActionsCellItem,
+  type GridPaginationModel,
 } from "@mui/x-data-grid";
 import { ptBR } from "@mui/x-data-grid/locales";
 import { useTheme } from "@mui/material/styles";
 import {
-  Plus,
   Search,
   Filter,
   Download,
-  Edit,
   User,
   Phone,
   MapPin,
-  X,
   Users,
   CheckCircle,
   XCircle,
@@ -43,8 +35,7 @@ import {
   DollarSign,
   Handshake,
 } from "lucide-react";
-import { useFranqueadosPage } from "../hooks/useFranqueados";
-import { FranqueadoForm } from "../components/FranqueadoForm";
+import { useFranqueadosPage, useFranqueadosEstatisticas } from "../hooks/useFranqueados";
 import {
   getTipoFranqueadoLabel,
   getTipoFranqueadoColor,
@@ -54,7 +45,6 @@ import {
   formatarUnidadesVinculadas,
 } from "../utils/franqueadosMask";
 import type {
-  Franqueado,
   StatusFranqueado,
   TipoFranqueado,
 } from "../types/franqueados";
@@ -65,39 +55,50 @@ export function FranqueadosPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFranqueado | "">("");
   const [tipoFilter, setTipoFilter] = useState<TipoFranqueado | "">("");
 
-  // Estados do modal
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedFranqueado, setSelectedFranqueado] =
-    useState<Franqueado | null>(null);
-
-  // Handlers do modal
-  const handleCreateFranqueado = () => {
-    setIsCreateModalOpen(true);
-  };
-
-  const handleEditFranqueado = (franqueado: Franqueado) => {
-    setSelectedFranqueado(franqueado);
-    setIsEditModalOpen(true);
-  };
-
-  const handleCloseModals = () => {
-    setIsCreateModalOpen(false);
-    setIsEditModalOpen(false);
-    setSelectedFranqueado(null);
-  };
+  // Estado de paginação do DataGrid
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 20, // Começando com 20 registros igual às Unidades
+  });
 
   const {
     franqueados,
-    totalFranqueados,
     isLoading,
     isError,
-    isExporting,
     filters,
     handleFilterChange,
-    handleExport,
+    handlePageChange,
+    handlePageSizeChange,
+    pagination,
     refetch,
   } = useFranqueadosPage();
+
+  // Buscar estatísticas gerais (todos os franqueados, não apenas da página atual)
+  const {
+    data: estatisticas,
+    isLoading: isLoadingStats,
+  } = useFranqueadosEstatisticas();
+
+  // Handler para mudança de paginação do DataGrid
+  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
+    setPaginationModel(newModel);
+    
+    // Se o pageSize mudou, atualize a paginação e volte para a primeira página
+    if (newModel.pageSize !== paginationModel.pageSize) {
+      handlePageSizeChange(newModel.pageSize);
+    } else {
+      // Se apenas a página mudou
+      handlePageChange(newModel.page + 1); // DataGrid usa base 0, backend usa base 1
+    }
+  };
+
+  // Sincronizar estado do DataGrid com estado do hook
+  useEffect(() => {
+    setPaginationModel({
+      page: pagination.page - 1, // Backend usa base 1, DataGrid usa base 0
+      pageSize: pagination.limit,
+    });
+  }, [pagination.page, pagination.limit]);
 
   // Função para aplicar filtros de busca
   const handleSearch = () => {
@@ -275,26 +276,6 @@ export function FranqueadosPage() {
         </Typography>
       ),
     },
-    {
-      field: "actions",
-      type: "actions",
-      headerName: "Ações",
-      flex: 0.3,
-      minWidth: 80,
-      maxWidth: 100,
-      getActions: (params) => [
-        <GridActionsCellItem
-          key="edit"
-          icon={
-            <Tooltip title="Editar">
-              <Edit size={16} />
-            </Tooltip>
-          }
-          label="Editar"
-          onClick={() => handleEditFranqueado(params.row)}
-        />,
-      ],
-    },
   ];
 
   if (isError) {
@@ -336,10 +317,10 @@ export function FranqueadosPage() {
             component="h1"
             sx={{ fontWeight: 700, color: "text.primary" }}
           >
-            Cadastro de Franqueados
+            Franqueados da Rede
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            Gerencie todos os franqueados da rede Cresci e Perdi
+            Visualize todos os franqueados da rede Cresci e Perdi
           </Typography>
         </Box>
 
@@ -354,19 +335,10 @@ export function FranqueadosPage() {
           <Button
             variant="outlined"
             startIcon={<Download size={20} />}
-            onClick={handleExport}
-            disabled={isExporting}
+            disabled
             sx={{ minWidth: 140 }}
           >
-            {isExporting ? <CircularProgress size={20} /> : "Exportar"}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={20} />}
-            onClick={handleCreateFranqueado}
-            sx={{ minWidth: 160 }}
-          >
-            Novo Franqueado
+            Exportar (Em breve)
           </Button>
         </Box>
       </Box>
@@ -574,7 +546,11 @@ export function FranqueadosPage() {
                 variant="h3"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
-                {totalFranqueados}
+                {isLoadingStats ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  estatisticas?.total || 0
+                )}
               </Typography>
               <Typography
                 variant="body1"
@@ -629,7 +605,11 @@ export function FranqueadosPage() {
                 variant="h3"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
-                {franqueados.filter((f) => f.status === "ativo").length}
+                {isLoadingStats ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  estatisticas?.ativos || 0
+                )}
               </Typography>
               <Typography
                 variant="body1"
@@ -684,7 +664,11 @@ export function FranqueadosPage() {
                 variant="h3"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
-                {franqueados.filter((f) => f.tipo === "principal").length}
+                {isLoadingStats ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  estatisticas?.principais || 0
+                )}
               </Typography>
               <Typography
                 variant="body1"
@@ -739,7 +723,11 @@ export function FranqueadosPage() {
                 variant="h3"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
-                {franqueados.filter((f) => f.status === "inativo").length}
+                {isLoadingStats ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  estatisticas?.inativos || 0
+                )}
               </Typography>
               <Typography
                 variant="body1"
@@ -788,12 +776,11 @@ export function FranqueadosPage() {
             rows={franqueados}
             columns={columns}
             loading={isLoading}
-            pageSizeOptions={[10, 20, 50]}
-            initialState={{
-              pagination: {
-                paginationModel: { pageSize: 20 },
-              },
-            }}
+            rowCount={estatisticas?.total || 0}
+            paginationModel={paginationModel}
+            onPaginationModelChange={handlePaginationModelChange}
+            paginationMode="server"
+            pageSizeOptions={[10, 20, 50, 100]}
             localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
             sx={{
               border: "none",
@@ -853,71 +840,6 @@ export function FranqueadosPage() {
           />
         </Box>
       </Card>
-
-      {/* Modal de Criar Franqueado */}
-      <Dialog
-        open={isCreateModalOpen}
-        onClose={handleCloseModals}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Typography variant="h6" component="div">
-            Novo Franqueado
-          </Typography>
-          <IconButton onClick={handleCloseModals} size="small">
-            <X size={20} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <FranqueadoForm
-            onSuccess={handleCloseModals}
-            onCancel={handleCloseModals}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Editar Franqueado */}
-      <Dialog
-        open={isEditModalOpen}
-        onClose={handleCloseModals}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Typography variant="h6" component="div">
-            Editar Franqueado
-          </Typography>
-          <IconButton onClick={handleCloseModals} size="small">
-            <X size={20} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <FranqueadoForm
-            franqueado={selectedFranqueado || undefined}
-            onSuccess={handleCloseModals}
-            onCancel={handleCloseModals}
-          />
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 }

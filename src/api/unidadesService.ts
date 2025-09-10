@@ -1,29 +1,30 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // Serviço de API para o módulo de Unidades
-// Integração com Supabase seguindo as diretrizes do projeto
+// REFATORADO PARA USAR BANCO MATRIZ (SOMENTE LEITURA)
 
-import { supabase } from "./supabaseClient";
-import { formatarCnpj } from "../utils/validations";
+import { supabaseMatriz } from "./supabaseMatrizClient";
+import { supabase } from "./supabaseClient"; // Para operações no banco local
 import type {
   Unidade,
-  CreateUnidadeData,
-  UpdateUnidadeData,
   UnidadeFilter,
   UnidadeSort,
   UnidadePagination,
   UnidadeListResponse,
-  FranqueadoPrincipal,
-  FranqueadoVinculado,
 } from "../types/unidades";
+import type {
+  UnidadeMatriz,
+} from "../types/matriz";
+import { 
+  mapearUnidadeMatriz, 
+  mapearFiltrosUnidade 
+} from "../utils/matrizMappers";
 
 class UnidadesService {
   // ================================
-  // LISTAGEM E BUSCA
+  // CONSULTAS (BANCO MATRIZ - SOMENTE LEITURA)
   // ================================
 
   /**
-   * Buscar todas as unidades com filtros, ordenação e paginação
+   * Buscar todas as unidades do banco matriz
    */
   async getUnidades(
     filters: UnidadeFilter = {},
@@ -31,60 +32,84 @@ class UnidadesService {
     pagination: UnidadePagination = { page: 1, limit: 50 }
   ): Promise<UnidadeListResponse> {
     try {
-      let query = supabase
-        .from("unidades")
-        .select("*, franqueado_principal:franqueados(id, nome, email)", {
-          count: "exact",
-        });
+      console.log('🔍 Buscando unidades no banco matriz...');
+      
+      // Mapear filtros para o schema do banco matriz
+      const filtrosMatriz = mapearFiltrosUnidade(filters as Record<string, unknown>);
+      
+      let query = supabaseMatriz
+        .from('unidades')
+        .select('*', { count: 'exact' });
 
       // Aplicar filtros
-      if (filters.status && filters.status.length > 0) {
-        query = query.in("status", filters.status);
+      if (filtrosMatriz.search && typeof filtrosMatriz.search === 'string') {
+        query = query.or(`
+          group_name.ilike.%${filtrosMatriz.search}%,
+          group_code.eq.${filtrosMatriz.search},
+          city.ilike.%${filtrosMatriz.search}%,
+          email.ilike.%${filtrosMatriz.search}%
+        `);
+      }
+      
+      if (filtrosMatriz.store_model && typeof filtrosMatriz.store_model === 'string') {
+        query = query.eq('store_model', filtrosMatriz.store_model);
+      }
+      
+      if (filtrosMatriz.store_phase && typeof filtrosMatriz.store_phase === 'string') {
+        query = query.eq('store_phase', filtrosMatriz.store_phase);
+      }
+      
+      if (filtrosMatriz.city && typeof filtrosMatriz.city === 'string') {
+        query = query.ilike('city', `%${filtrosMatriz.city}%`);
+      }
+      
+      if (filtrosMatriz.state && typeof filtrosMatriz.state === 'string') {
+        query = query.ilike('state', `%${filtrosMatriz.state}%`);
+      }
+      
+      if (filtrosMatriz.uf && typeof filtrosMatriz.uf === 'string') {
+        query = query.eq('uf', filtrosMatriz.uf);
       }
 
-      if (filters.cidade) {
-        query = query.ilike("endereco_cidade", `%${filters.cidade}%`);
+      // Aplicar ordenação (mapear campo para o schema matriz)
+      let campoOrdenacao: string = sort.field;
+      switch (sort.field) {
+        case 'codigo_unidade':
+          campoOrdenacao = 'group_code';
+          break;
+        case 'nome_padrao':
+          campoOrdenacao = 'group_name';
+          break;
+        case 'endereco_cidade':
+          campoOrdenacao = 'city';
+          break;
+        case 'endereco_uf':
+          campoOrdenacao = 'uf';
+          break;
+        default:
+          campoOrdenacao = sort.field;
       }
-
-      if (filters.uf) {
-        query = query.eq("endereco_uf", filters.uf);
-      }
-
-      if (filters.codigo_unidade) {
-        query = query.ilike("codigo_unidade", `%${filters.codigo_unidade}%`);
-      }
-
-      if (filters.nome_padrao) {
-        query = query.ilike("nome_padrao", `%${filters.nome_padrao}%`);
-      }
-
-      if (filters.multifranqueado !== undefined) {
-        query = query.eq("multifranqueado", filters.multifranqueado);
-      }
-
-      if (filters.franqueado_principal_id) {
-        query = query.eq(
-          "franqueado_principal_id",
-          filters.franqueado_principal_id
-        );
-      }
-
-      // Aplicar ordenação
-      query = query.order(sort.field, { ascending: sort.direction === "asc" });
+      
+      query = query.order(campoOrdenacao, { ascending: sort.direction === 'asc' });
 
       // Aplicar paginação
-      const from = (pagination.page - 1) * pagination.limit;
-      const to = from + pagination.limit - 1;
-      query = query.range(from, to);
+      const offset = (pagination.page - 1) * pagination.limit;
+      query = query.range(offset, offset + pagination.limit - 1);
 
       const { data, error, count } = await query;
 
       if (error) {
+        console.error('❌ Erro ao buscar unidades:', error);
         throw new Error(`Erro ao buscar unidades: ${error.message}`);
       }
 
+      // Mapear dados do banco matriz para formato do sistema
+      const unidadesMapeadas = (data as UnidadeMatriz[]).map(mapearUnidadeMatriz);
+
+      console.log(`✅ ${unidadesMapeadas.length} unidades encontradas`);
+
       return {
-        data: (data || []) as Unidade[],
+        data: unidadesMapeadas as unknown as Unidade[],
         pagination: {
           page: pagination.page,
           limit: pagination.limit,
@@ -93,546 +118,266 @@ class UnidadesService {
         },
       };
     } catch (error) {
-      console.error("Erro no UnidadesService.getUnidades:", error);
-      throw error;
+      console.error('❌ Erro no getUnidades:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar unidades');
     }
   }
 
   /**
-   * Buscar unidade por ID
+   * Buscar unidade específica por ID
    */
   async getUnidadeById(id: string): Promise<Unidade | null> {
     try {
-      const { data, error } = await supabase
-        .from("unidades")
-        .select(
-          "*, franqueado_principal:franqueados(id, nome, email, telefone, cpf)"
-        )
-        .eq("id", id)
+      console.log(`🔍 Buscando unidade ${id} no banco matriz...`);
+      
+      const { data, error } = await supabaseMatriz
+        .from('unidades')
+        .select('*')
+        .eq('id', id)
         .single();
 
       if (error) {
-        if (error.code === "PGRST116") {
-          return null; // Não encontrado
+        if (error.code === 'PGRST116') {
+          console.log('❌ Unidade não encontrada');
+          return null;
         }
         throw new Error(`Erro ao buscar unidade: ${error.message}`);
       }
 
-      return data as Unidade;
+      const unidadeMapeada = mapearUnidadeMatriz(data as UnidadeMatriz);
+      
+      console.log('✅ Unidade encontrada:', unidadeMapeada.nome_padrao);
+      return unidadeMapeada as unknown as Unidade;
     } catch (error) {
-      console.error("Erro no UnidadesService.getUnidadeById:", error);
-      throw error;
+      console.error('❌ Erro no getUnidadeById:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar unidade');
     }
   }
 
   /**
    * Buscar unidade por código
    */
-  async getUnidadeByCodigo(codigo: string): Promise<Unidade | null> {
+  async getUnidadeByCodigo(codigo: number): Promise<Unidade | null> {
     try {
-      const { data, error } = await supabase
-        .from("unidades")
-        .select("*, franqueado_principal:franqueados(id, nome, email)")
-        .eq("codigo_unidade", codigo)
+      console.log(`🔍 Buscando unidade com código ${codigo} no banco matriz...`);
+      
+      const { data, error } = await supabaseMatriz
+        .from('unidades')
+        .select('*')
+        .eq('group_code', codigo)
         .single();
 
       if (error) {
-        if (error.code === "PGRST116") {
-          return null; // Não encontrado
+        if (error.code === 'PGRST116') {
+          console.log('❌ Unidade não encontrada');
+          return null;
         }
-        throw new Error(`Erro ao buscar unidade por código: ${error.message}`);
+        throw new Error(`Erro ao buscar unidade: ${error.message}`);
       }
 
-      return data as Unidade;
+      const unidadeMapeada = mapearUnidadeMatriz(data as UnidadeMatriz);
+      
+      console.log('✅ Unidade encontrada:', unidadeMapeada.nome_padrao);
+      return unidadeMapeada as unknown as Unidade;
     } catch (error) {
-      console.error("Erro no UnidadesService.getUnidadeByCodigo:", error);
-      throw error;
+      console.error('❌ Erro no getUnidadeByCodigo:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar unidade por código');
     }
   }
 
-  // ================================
-  // CRIAÇÃO E EDIÇÃO
-  // ================================
-
   /**
-   * Gerar próximo código de unidade
+   * Buscar unidades por estado/UF
    */
-  async generateNextCode(): Promise<string> {
+  async getUnidadesByEstado(uf: string): Promise<Unidade[]> {
     try {
-      const { data, error } = await supabase.rpc("generate_next_unit_code");
+      console.log(`🔍 Buscando unidades do estado ${uf}...`);
+      
+      const { data, error } = await supabaseMatriz
+        .from('unidades')
+        .select('*')
+        .eq('uf', uf.toUpperCase())
+        .order('group_name');
 
       if (error) {
-        throw new Error(`Erro ao gerar código: ${error.message}`);
+        throw new Error(`Erro ao buscar unidades do estado: ${error.message}`);
       }
 
-      return data as string;
+      const unidadesMapeadas = (data as UnidadeMatriz[]).map(mapearUnidadeMatriz);
+      
+      console.log(`✅ ${unidadesMapeadas.length} unidades encontradas no estado ${uf}`);
+      return unidadesMapeadas as unknown as Unidade[];
     } catch (error) {
-      console.error("Erro no UnidadesService.generateNextCode:", error);
-      throw error;
+      console.error('❌ Erro no getUnidadesByEstado:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar unidades por estado');
     }
   }
 
   /**
-   * Criar nova unidade
+   * Buscar unidades por cidade
    */
-  async createUnidade(unidadeData: CreateUnidadeData): Promise<Unidade> {
+  async getUnidadesByCidade(cidade: string): Promise<Unidade[]> {
     try {
-      // Usar código fornecido ou gerar automaticamente com a função RPC do Supabase
-      const codigo =
-        unidadeData.codigo_unidade || (await this.generateNextCode());
+      console.log(`🔍 Buscando unidades da cidade ${cidade}...`);
+      
+      const { data, error } = await supabaseMatriz
+        .from('unidades')
+        .select('*')
+        .ilike('city', `%${cidade}%`)
+        .order('group_name');
 
+      if (error) {
+        throw new Error(`Erro ao buscar unidades da cidade: ${error.message}`);
+      }
+
+      const unidadesMapeadas = (data as UnidadeMatriz[]).map(mapearUnidadeMatriz);
+      
+      console.log(`✅ ${unidadesMapeadas.length} unidades encontradas na cidade ${cidade}`);
+      return unidadesMapeadas as unknown as Unidade[];
+    } catch (error) {
+      console.error('❌ Erro no getUnidadesByCidade:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar unidades por cidade');
+    }
+  }
+
+  // ================================
+  // OPERAÇÕES RELACIONADAS (BANCO LOCAL)
+  // ================================
+
+  /**
+   * Buscar cobranças da unidade no banco local
+   */
+  async getCobrancasByUnidade(unidadeId: string): Promise<unknown[]> {
+    try {
+      console.log(`🔍 Buscando cobranças da unidade ${unidadeId}...`);
+      
+      // Buscar cobranças no banco local usando o ID da unidade
       const { data, error } = await supabase
-        .from("unidades")
-        .insert({
-          ...unidadeData,
-          codigo_unidade: codigo,
-          status: unidadeData.status || "OPERAÇÃO",
-          multifranqueado: unidadeData.multifranqueado || false,
-        })
-        .select()
-        .single();
+        .from('cobrancas')
+        .select('*')
+        .eq('unidade_id', unidadeId);
 
       if (error) {
-        throw new Error(`Erro ao criar unidade: ${error.message}`);
+        throw new Error(`Erro ao buscar cobranças: ${error.message}`);
       }
 
-      return data as Unidade;
+      console.log(`✅ ${data?.length || 0} cobranças encontradas`);
+      return data || [];
     } catch (error) {
-      console.error("Erro no UnidadesService.createUnidade:", error);
-      throw error;
+      console.error('❌ Erro no getCobrancasByUnidade:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar cobranças da unidade');
     }
   }
 
   /**
-   * Atualizar unidade existente
+   * Buscar franqueados da unidade (busca no banco matriz)
    */
-  async updateUnidade(unidadeData: UpdateUnidadeData): Promise<Unidade> {
+  async getFranqueadosByUnidade(codigoUnidade: number): Promise<unknown[]> {
     try {
-      const { id, ...updateData } = unidadeData;
-
-      const { data, error } = await supabase
-        .from("unidades")
-        .update(updateData)
-        .eq("id", id)
-        .select()
-        .single();
+      console.log(`🔍 Buscando franqueados da unidade ${codigoUnidade}...`);
+      
+      const { data, error } = await supabaseMatriz
+        .from('v_franqueados_unidades_detalhes')
+        .select('*')
+        .contains('unidade_group_codes', [codigoUnidade]);
 
       if (error) {
-        throw new Error(`Erro ao atualizar unidade: ${error.message}`);
+        throw new Error(`Erro ao buscar franqueados da unidade: ${error.message}`);
       }
 
-      return data as Unidade;
+      console.log(`✅ ${data?.length || 0} franqueados encontrados para a unidade`);
+      return data || [];
     } catch (error) {
-      console.error("Erro no UnidadesService.updateUnidade:", error);
-      throw error;
+      console.error('❌ Erro no getFranqueadosByUnidade:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar franqueados da unidade');
     }
   }
 
   /**
-   * Alterar status da unidade
+   * Estatísticas da unidade (usando dados do banco local)
    */
-  async updateStatus(id: string, status: string): Promise<Unidade> {
+  async getEstatisticasUnidade(unidadeId: string): Promise<Record<string, unknown>> {
     try {
-      const { data, error } = await supabase
-        .from("unidades")
-        .update({ status })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(`Erro ao alterar status: ${error.message}`);
-      }
-
-      return data as Unidade;
-    } catch (error) {
-      console.error("Erro no UnidadesService.updateStatus:", error);
-      throw error;
-    }
-  }
-
-  // ================================
-  // VALIDAÇÕES
-  // ================================
-
-  /**
-   * Verificar se CNPJ já existe
-   */
-  async isCnpjUnique(cnpj: string, excludeId?: string): Promise<boolean> {
-    try {
-      let query = supabase.from("unidades").select("id").eq("cnpj", cnpj);
-
-      if (excludeId) {
-        query = query.neq("id", excludeId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        throw new Error(`Erro ao verificar CNPJ: ${error.message}`);
-      }
-
-      return (data?.length || 0) === 0;
-    } catch (error) {
-      console.error("Erro no UnidadesService.isCnpjUnique:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Verificar se código da unidade já existe
-   */
-  async isCodigoUnique(codigo: string, excludeId?: string): Promise<boolean> {
-    try {
-      let query = supabase
-        .from("unidades")
-        .select("id")
-        .eq("codigo_unidade", codigo);
-
-      if (excludeId) {
-        query = query.neq("id", excludeId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        throw new Error(`Erro ao verificar código: ${error.message}`);
-      }
-
-      return (data?.length || 0) === 0;
-    } catch (error) {
-      console.error("Erro no UnidadesService.isCodigoUnique:", error);
-      throw error;
-    }
-  }
-
-  // ================================
-  // FRANQUEADOS
-  // ================================
-
-  /**
-   * Buscar franqueados para seleção
-   */
-  async getFranqueados(): Promise<FranqueadoPrincipal[]> {
-    try {
-      const { data, error } = await supabase
-        .from("franqueados")
-        .select("id, nome, email, telefone, cpf, tipo")
-        .order("nome");
-
-      if (error) {
-        throw new Error(`Erro ao buscar franqueados: ${error.message}`);
-      }
-
-      return (data || []) as FranqueadoPrincipal[];
-    } catch (error) {
-      console.error("Erro no UnidadesService.getFranqueados:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Buscar franqueados vinculados a uma unidade específica
-   */
-  async getFranqueadosVinculados(
-    unidadeId: string
-  ): Promise<FranqueadoVinculado[]> {
-    try {
-      const { data, error } = await supabase
-        .from("franqueados_unidades")
-        .select(
-          `
-          id,
-          franqueado_id,
-          unidade_id,
-          data_vinculo,
-          ativo,
-          franqueado:franqueados(
-            id,
-            nome,
-            cpf,
-            telefone,
-            email,
-            tipo,
-            status
-          )
-        `
-        )
-        .eq("unidade_id", unidadeId)
-        .eq("ativo", true)
-        .order("data_vinculo", { ascending: false });
-
-      if (error) {
-        throw new Error(
-          `Erro ao buscar franqueados vinculados: ${error.message}`
-        );
-      }
-
-      return (data || []).map((vinculo: any) => ({
-        id: vinculo.id,
-        franqueado_id: vinculo.franqueado_id,
-        unidade_id: vinculo.unidade_id,
-        data_vinculo: vinculo.data_vinculo,
-        ativo: vinculo.ativo,
-        franqueado: {
-          id: vinculo.franqueado.id,
-          nome: vinculo.franqueado.nome,
-          cpf: vinculo.franqueado.cpf,
-          telefone: vinculo.franqueado.telefone,
-          email: vinculo.franqueado.email,
-          tipo: vinculo.franqueado.tipo,
-          status: vinculo.franqueado.status,
-        },
-      }));
-    } catch (error) {
-      console.error("Erro no UnidadesService.getFranqueadosVinculados:", error);
-      throw error;
-    }
-  }
-
-  // ================================
-  // UTILITÁRIOS
-  // ================================
-
-  /**
-   * Exportar unidades para CSV
-   */
-  async exportToCsv(filters: UnidadeFilter = {}): Promise<string> {
-    try {
-      // Buscar todas as unidades com os filtros aplicados
-      const response = await this.getUnidades(
-        filters,
-        { field: "codigo_unidade", direction: "asc" },
-        { page: 1, limit: 10000 }
-      );
-
-      const headers = [
-        "Código",
-        "Nome da Unidade",
-        "CNPJ",
-        "Status",
-        "Telefone",
-        "Email",
-        "Cidade",
-        "UF",
-        "Franqueado Principal",
-      ];
-
-      const csvRows = [
-        headers.join(","),
-        ...response.data.map((unidade) =>
-          [
-            unidade.codigo_unidade,
-            `"${unidade.nome_padrao}"`,
-            unidade.cnpj || "",
-            unidade.status,
-            unidade.telefone_comercial || "",
-            unidade.email_comercial || "",
-            unidade.endereco_cidade || "",
-            unidade.endereco_uf || "",
-            `"${(unidade as any).franqueado_principal?.nome || ""}"`,
-          ].join(",")
-        ),
-      ];
-
-      return csvRows.join("\n");
-    } catch (error) {
-      console.error("Erro no UnidadesService.exportToCsv:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Buscar estatísticas das unidades
-   */
-  async getEstatisticas(): Promise<{
-    total: number;
-    ativas: number;
-    inativas: number;
-    em_implantacao: number;
-    suspensas: number;
-    canceladas: number;
-    por_estado: { uf: string; count: number }[];
-  }> {
-    try {
-      const [totalResult, statusResult, estadosResult] = await Promise.all([
-        supabase.from("unidades").select("id", { count: "exact", head: true }),
-        supabase.from("unidades").select("status", { count: "exact" }),
-        supabase.from("unidades").select("endereco_uf", { count: "exact" }),
-      ]);
-
-      if (totalResult.error || statusResult.error || estadosResult.error) {
-        throw new Error("Erro ao buscar estatísticas");
-      }
-
-      const statusCounts =
-        statusResult.data?.reduce((acc: any, item: any) => {
-          acc[item.status] = (acc[item.status] || 0) + 1;
-          return acc;
-        }, {}) || {};
-
-      const estadosCounts =
-        estadosResult.data?.reduce((acc: any, item: any) => {
-          if (item.endereco_uf) {
-            acc[item.endereco_uf] = (acc[item.endereco_uf] || 0) + 1;
-          }
-          return acc;
-        }, {}) || {};
-
-      return {
-        total: totalResult.count || 0,
-        ativas: statusCounts["OPERAÇÃO"] || 0,
-        inativas: 0,
-        em_implantacao: statusCounts["IMPLANTAÇÃO"] || 0,
-        suspensas: statusCounts["SUSPENSO"] || 0,
-        canceladas: statusCounts["CANCELADO"] || 0,
-        por_estado: Object.entries(estadosCounts).map(([uf, count]) => ({
-          uf,
-          count: count as number,
-        })),
+      console.log(`📊 Calculando estatísticas da unidade ${unidadeId}...`);
+      
+      const cobrancas = await this.getCobrancasByUnidade(unidadeId);
+      
+      type CobrancaBasica = { status?: string; valor?: number };
+      const cobrancasTyped = cobrancas as CobrancaBasica[];
+      
+      const estatisticas = {
+        total_cobrancas: cobrancasTyped.length,
+        cobrancas_pendentes: cobrancasTyped.filter(c => c.status === 'pendente').length,
+        cobrancas_pagas: cobrancasTyped.filter(c => c.status === 'pago').length,
+        valor_total: cobrancasTyped.reduce((sum, c) => sum + (c.valor || 0), 0),
+        valor_pendente: cobrancasTyped.filter(c => c.status === 'pendente').reduce((sum, c) => sum + (c.valor || 0), 0),
+        valor_pago: cobrancasTyped.filter(c => c.status === 'pago').reduce((sum, c) => sum + (c.valor || 0), 0),
       };
+      
+      console.log('✅ Estatísticas calculadas:', estatisticas);
+      return estatisticas;
     } catch (error) {
-      console.error("Erro no UnidadesService.getEstatisticas:", error);
-      throw error;
+      console.error('❌ Erro no getEstatisticasUnidade:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao calcular estatísticas');
     }
   }
 
-  // ================================
-  // FUNÇÕES DE DEBUG/MANUTENÇÃO
-  // ================================
-
   /**
-   * Função de debug para formatar todos os CNPJs das unidades no banco
-   * Esta função deve ser usada apenas uma vez para corrigir dados importados
+   * Buscar lista de estados disponíveis
    */
-  async debugFormatarTodosCnpjs(): Promise<{
-    total: number;
-    processados: number;
-    erro: number;
-    detalhes: Array<{
-      id: string;
-      codigo_unidade: string;
-      cnpj_original: string;
-      cnpj_formatado: string;
-      status: 'sucesso' | 'erro';
-      erro_detalhes?: string;
-    }>;
-  }> {
+  async getEstadosDisponiveis(): Promise<{ uf: string; estado: string; total: number }[]> {
     try {
-      console.log("🔧 [DEBUG] Iniciando formatação de todos os CNPJs...");
+      console.log('🔍 Buscando estados disponíveis...');
+      
+      const { data, error } = await supabaseMatriz
+        .from('unidades')
+        .select('uf, state')
+        .not('uf', 'is', null)
+        .not('state', 'is', null);
 
-      // Buscar todas as unidades que possuem CNPJ
-      const { data: unidades, error: selectError } = await supabase
-        .from("unidades")
-        .select("id, codigo_unidade, cnpj")
-        .not("cnpj", "is", null)
-        .neq("cnpj", "");
-
-      if (selectError) {
-        throw new Error(`Erro ao buscar unidades: ${selectError.message}`);
+      if (error) {
+        throw new Error(`Erro ao buscar estados: ${error.message}`);
       }
 
-      if (!unidades || unidades.length === 0) {
-        return {
-          total: 0,
-          processados: 0,
-          erro: 0,
-          detalhes: [],
-        };
-      }
-
-      console.log(`🔧 [DEBUG] Encontradas ${unidades.length} unidades com CNPJ`);
-
-      const detalhes: Array<{
-        id: string;
-        codigo_unidade: string;
-        cnpj_original: string;
-        cnpj_formatado: string;
-        status: 'sucesso' | 'erro';
-        erro_detalhes?: string;
-      }> = [];
-
-      let processados = 0;
-      let erros = 0;
-
-      // Processar cada unidade
-      for (const unidade of unidades) {
-        try {
-          const cnpjOriginal = unidade.cnpj || "";
-          const cnpjFormatado = formatarCnpj(cnpjOriginal);
-
-          // Só atualizar se o CNPJ formatado for diferente do original
-          if (cnpjFormatado !== cnpjOriginal) {
-            const { error: updateError } = await supabase
-              .from("unidades")
-              .update({ cnpj: cnpjFormatado })
-              .eq("id", unidade.id);
-
-            if (updateError) {
-              console.error(`❌ [DEBUG] Erro ao atualizar unidade ${unidade.codigo_unidade}:`, updateError);
-              erros++;
-              detalhes.push({
-                id: unidade.id,
-                codigo_unidade: unidade.codigo_unidade,
-                cnpj_original: cnpjOriginal,
-                cnpj_formatado: cnpjFormatado,
-                status: 'erro',
-                erro_detalhes: updateError.message,
-              });
-            } else {
-              console.log(`✅ [DEBUG] Unidade ${unidade.codigo_unidade}: ${cnpjOriginal} → ${cnpjFormatado}`);
-              processados++;
-              detalhes.push({
-                id: unidade.id,
-                codigo_unidade: unidade.codigo_unidade,
-                cnpj_original: cnpjOriginal,
-                cnpj_formatado: cnpjFormatado,
-                status: 'sucesso',
-              });
-            }
-          } else {
-            console.log(`⏭️ [DEBUG] Unidade ${unidade.codigo_unidade}: CNPJ já está formatado`);
-            detalhes.push({
-              id: unidade.id,
-              codigo_unidade: unidade.codigo_unidade,
-              cnpj_original: cnpjOriginal,
-              cnpj_formatado: cnpjFormatado,
-              status: 'sucesso',
-            });
-          }
-        } catch (itemError) {
-          console.error(`❌ [DEBUG] Erro ao processar unidade ${unidade.codigo_unidade}:`, itemError);
-          erros++;
-          detalhes.push({
-            id: unidade.id,
-            codigo_unidade: unidade.codigo_unidade,
-            cnpj_original: unidade.cnpj || "",
-            cnpj_formatado: "",
-            status: 'erro',
-            erro_detalhes: itemError instanceof Error ? itemError.message : String(itemError),
-          });
+      // Agrupar por estado e contar
+      const estadosMap = new Map<string, { estado: string; count: number }>();
+      
+      (data as { uf: string; state: string }[]).forEach(item => {
+        const uf = item.uf.toUpperCase();
+        const estado = item.state;
+        
+        if (estadosMap.has(uf)) {
+          estadosMap.get(uf)!.count++;
+        } else {
+          estadosMap.set(uf, { estado, count: 1 });
         }
-      }
-
-      const resultado = {
-        total: unidades.length,
-        processados: processados,
-        erro: erros,
-        detalhes,
-      };
-
-      console.log("🎉 [DEBUG] Formatação concluída:", {
-        total: resultado.total,
-        processados: resultado.processados,
-        erros: resultado.erro,
       });
 
-      return resultado;
+      const estados = Array.from(estadosMap.entries()).map(([uf, info]) => ({
+        uf,
+        estado: info.estado,
+        total: info.count
+      })).sort((a, b) => a.estado.localeCompare(b.estado));
+
+      console.log(`✅ ${estados.length} estados encontrados`);
+      return estados;
     } catch (error) {
-      console.error("💥 [DEBUG] Erro geral na formatação de CNPJs:", error);
-      throw error;
+      console.error('❌ Erro no getEstadosDisponiveis:', error);
+      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar estados');
     }
   }
+
+  // ================================
+  // MÉTODOS REMOVIDOS (NÃO FAZEMOS MAIS CRUD)
+  // ================================
+  
+  // Os seguintes métodos foram REMOVIDOS pois agora só fazemos consulta:
+  // - createUnidade()
+  // - updateUnidade() 
+  // - deleteUnidade()
+  // - updateStatus()
+  // - updateFranqueadoPrincipal()
+  // 
+  // Estes dados agora são gerenciados diretamente no banco matriz
 }
 
 export const unidadesService = new UnidadesService();

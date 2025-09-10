@@ -8,103 +8,75 @@ import {
   Card,
   CardContent,
   Button,
-  IconButton,
   Chip,
   TextField,
   MenuItem,
-  Tooltip,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
 } from "@mui/material";
 import {
   DataGrid,
   type GridColDef,
-  GridActionsCellItem,
   type GridPaginationModel,
 } from "@mui/x-data-grid";
 import { ptBR } from "@mui/x-data-grid/locales";
 import { useTheme } from "@mui/material/styles";
 import {
-  Plus,
   Search,
   Filter,
   Download,
-  Edit,
   Building2,
   Phone,
   MapPin,
-  X,
   Building,
   CheckCircle,
   Clock,
   XCircle,
 } from "lucide-react";
-import { useUnidadesPage, useEstatisticasUnidades } from "../hooks/useUnidades";
-import { UnidadeForm } from "../components/UnidadeForm";
+import { useUnidadesPage, useUnidadesEstatisticas } from "../hooks/useUnidades";
 import { getStatusLabel, getStatusColor } from "../utils/statusMask";
-import type { Unidade, StatusUnidade } from "../types/unidades";
+import type { StatusUnidade } from "../types/unidades";
 
 export function UnidadesPage() {
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusUnidade | "">("");
 
-  // Estados do modal
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedUnidade, setSelectedUnidade] = useState<Unidade | null>(null);
-
   // Estado de paginação do DataGrid
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
-    pageSize: 20,
+    pageSize: 50, // Aumentando para 50 para mostrar mais unidades inicialmente
   });
-
-  // Handlers do modal
-  const handleCreateUnidade = () => {
-    setIsCreateModalOpen(true);
-  };
-
-  const handleEditUnidade = (unidade: Unidade) => {
-    setSelectedUnidade(unidade);
-    setIsEditModalOpen(true);
-  };
-
-  const handleCloseModals = () => {
-    setIsCreateModalOpen(false);
-    setIsEditModalOpen(false);
-    setSelectedUnidade(null);
-  };
-
-  // Hook para estatísticas reais
-  const { data: estatisticas, isLoading: isLoadingStats } = useEstatisticasUnidades();
 
   const {
     unidades,
+    totalUnidades,
     isLoading,
     isError,
-    isExporting,
     filters,
     handleFilterChange,
-    handleExport,
     handlePageChange,
     handlePageSizeChange,
     pagination,
     refetch,
   } = useUnidadesPage();
 
+  // Buscar estatísticas gerais (todas as unidades, não apenas da página atual)
+  const {
+    data: estatisticas,
+    isLoading: isLoadingStats,
+  } = useUnidadesEstatisticas();
+
   // Handler para mudança de paginação do DataGrid
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
-    // Se apenas a página mudou
-    if (newModel.pageSize === paginationModel.pageSize) {
-      handlePageChange(newModel.page + 1); // DataGrid usa base 0, backend usa base 1
-    } else {
-      // Se o tamanho da página mudou, resetar para primeira página
-      handlePageSizeChange(newModel.pageSize);
-    }
     setPaginationModel(newModel);
+    
+    // Se o pageSize mudou, atualize a paginação e volte para a primeira página
+    if (newModel.pageSize !== paginationModel.pageSize) {
+      handlePageSizeChange(newModel.pageSize);
+    } else {
+      // Se apenas a página mudou
+      handlePageChange(newModel.page + 1); // DataGrid usa base 0, backend usa base 1
+    }
   };
 
   // Sincronizar estado do DataGrid com estado do hook
@@ -269,26 +241,6 @@ export function UnidadesPage() {
         </Typography>
       ),
     },
-    {
-      field: "actions",
-      type: "actions",
-      headerName: "Ações",
-      flex: 0.3,
-      minWidth: 80,
-      maxWidth: 100,
-      getActions: (params) => [
-        <GridActionsCellItem
-          key="edit"
-          icon={
-            <Tooltip title="Editar">
-              <Edit size={16} />
-            </Tooltip>
-          }
-          label="Editar"
-          onClick={() => handleEditUnidade(params.row)}
-        />,
-      ],
-    },
   ];
 
   if (isError) {
@@ -348,19 +300,10 @@ export function UnidadesPage() {
           <Button
             variant="outlined"
             startIcon={<Download size={20} />}
-            onClick={handleExport}
-            disabled={isExporting}
+            disabled
             sx={{ minWidth: 140 }}
           >
-            {isExporting ? <CircularProgress size={20} /> : "Exportar"}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={20} />}
-            onClick={handleCreateUnidade}
-            sx={{ minWidth: 160 }}
-          >
-            Nova Unidade
+            Exportar (Em breve)
           </Button>
         </Box>
       </Box>
@@ -778,7 +721,7 @@ export function UnidadesPage() {
             rows={unidades}
             columns={columns}
             loading={isLoading}
-            rowCount={estatisticas?.total || 0}
+            rowCount={totalUnidades}
             paginationModel={paginationModel}
             onPaginationModelChange={handlePaginationModelChange}
             paginationMode="server"
@@ -842,71 +785,6 @@ export function UnidadesPage() {
           />
         </Box>
       </Card>
-
-      {/* Modal de Criar Unidade */}
-      <Dialog
-        open={isCreateModalOpen}
-        onClose={handleCloseModals}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Typography variant="h6" component="div">
-            Nova Unidade
-          </Typography>
-          <IconButton onClick={handleCloseModals} size="small">
-            <X size={20} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <UnidadeForm
-            onSuccess={handleCloseModals}
-            onCancel={handleCloseModals}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Editar Unidade */}
-      <Dialog
-        open={isEditModalOpen}
-        onClose={handleCloseModals}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Typography variant="h6" component="div">
-            Editar Unidade
-          </Typography>
-          <IconButton onClick={handleCloseModals} size="small">
-            <X size={20} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <UnidadeForm
-            unidade={selectedUnidade || undefined}
-            onSuccess={handleCloseModals}
-            onCancel={handleCloseModals}
-          />
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 }

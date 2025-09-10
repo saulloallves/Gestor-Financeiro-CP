@@ -2,17 +2,15 @@
 // Usando TanStack Query (React Query) para gerenciamento de estado do servidor
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "react-hot-toast";
+import { useQuery } from "@tanstack/react-query";
 import { unidadesService } from "../api/unidadesService";
 import { getStatusLabel } from "../utils/statusMask";
 import type {
   Unidade,
-  CreateUnidadeData,
-  UpdateUnidadeData,
   UnidadeFilter,
   UnidadeSort,
   UnidadePagination,
+  StatusUnidade,
 } from "../types/unidades";
 
 // Query keys para organização e invalidação de cache
@@ -26,12 +24,12 @@ export const unidadesQueryKeys = {
   ) => [...unidadesQueryKeys.lists(), { filters, sort, pagination }] as const,
   details: () => [...unidadesQueryKeys.all, "detail"] as const,
   detail: (id: string) => [...unidadesQueryKeys.details(), id] as const,
-  franqueados: () => [...unidadesQueryKeys.all, "franqueados"] as const,
   estatisticas: () => [...unidadesQueryKeys.all, "estatisticas"] as const,
+  geograficas: () => [...unidadesQueryKeys.all, "geograficas"] as const,
 };
 
 // ================================
-// HOOKS DE CONSULTA
+// HOOKS DE CONSULTA (SOMENTE LEITURA)
 // ================================
 
 /**
@@ -46,7 +44,28 @@ export function useUnidades(
     queryKey: unidadesQueryKeys.list(filters, sort, pagination),
     queryFn: () => unidadesService.getUnidades(filters, sort, pagination),
     staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos (novo nome no TanStack Query v5)
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+}
+
+/**
+ * Hook para buscar estatísticas gerais de todas as unidades (sem paginação)
+ */
+export function useUnidadesEstatisticas() {
+  return useQuery({
+    queryKey: unidadesQueryKeys.estatisticas(),
+    queryFn: () => unidadesService.getUnidades({}, { field: "codigo_unidade", direction: "asc" }, { page: 1, limit: 5000 }),
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    select: (data) => {
+      const unidades = data.data || [];
+      return {
+        total: data.pagination.total || 0,
+        ativas: unidades.filter(u => u.status === "OPERAÇÃO").length,
+        em_implantacao: unidades.filter(u => u.status === "IMPLANTAÇÃO").length,
+        canceladas: unidades.filter(u => u.status === "CANCELADO").length,
+      };
+    },
   });
 }
 
@@ -62,243 +81,107 @@ export function useUnidade(id: string) {
   });
 }
 
-/**
- * Hook para buscar franqueados disponíveis para seleção
- */
-export function useFranqueados() {
-  return useQuery({
-    queryKey: unidadesQueryKeys.franqueados(),
-    queryFn: () => unidadesService.getFranqueados(),
-    staleTime: 10 * 60 * 1000, // 10 minutos (dados menos voláteis)
-  });
-}
-
-/**
- * Hook para buscar franqueados vinculados a uma unidade específica
- */
-export function useFranqueadosVinculados(unidadeId: string) {
-  return useQuery({
-    queryKey: [
-      ...unidadesQueryKeys.details(),
-      unidadeId,
-      "franqueados-vinculados",
-    ],
-    queryFn: () => unidadesService.getFranqueadosVinculados(unidadeId),
-    enabled: !!unidadeId,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-  });
-}
-
-/**
- * Hook para buscar estatísticas das unidades
- */
-export function useEstatisticasUnidades() {
-  return useQuery({
-    queryKey: unidadesQueryKeys.estatisticas(),
-    queryFn: () => unidadesService.getEstatisticas(),
-    staleTime: 30 * 60 * 1000, // 30 minutos (dados estatísticos)
-  });
-}
-
-// ================================
-// HOOKS DE MUTAÇÃO
-// ================================
-
-/**
- * Hook para criar nova unidade
- */
-export function useCreateUnidade() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateUnidadeData) =>
-      unidadesService.createUnidade(data),
-    onSuccess: (newUnidade) => {
-      // Invalidar cache da lista de unidades
-      queryClient.invalidateQueries({ queryKey: unidadesQueryKeys.lists() });
-
-      // Invalidar estatísticas
-      queryClient.invalidateQueries({
-        queryKey: unidadesQueryKeys.estatisticas(),
-      });
-
-      // Adicionar a nova unidade ao cache de detalhes
-      queryClient.setQueryData(
-        unidadesQueryKeys.detail(newUnidade.id),
-        newUnidade
-      );
-
-      toast.success(`Unidade ${newUnidade.codigo_unidade} criada com sucesso!`);
-    },
-    onError: (error: Error) => {
-      console.error("Erro ao criar unidade:", error);
-      toast.error(error.message || "Erro ao criar unidade");
-    },
-  });
-}
-
-/**
- * Hook para atualizar unidade existente
- */
-export function useUpdateUnidade() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: UpdateUnidadeData) =>
-      unidadesService.updateUnidade(data),
-    onSuccess: (updatedUnidade) => {
-      // Invalidar cache da lista de unidades
-      queryClient.invalidateQueries({ queryKey: unidadesQueryKeys.lists() });
-
-      // Atualizar cache de detalhes
-      queryClient.setQueryData(
-        unidadesQueryKeys.detail(updatedUnidade.id),
-        updatedUnidade
-      );
-
-      // Invalidar estatísticas (pode ter mudado status)
-      queryClient.invalidateQueries({
-        queryKey: unidadesQueryKeys.estatisticas(),
-      });
-
-      toast.success(
-        `Unidade ${updatedUnidade.codigo_unidade} atualizada com sucesso!`
-      );
-    },
-    onError: (error: Error) => {
-      console.error("Erro ao atualizar unidade:", error);
-      toast.error(error.message || "Erro ao atualizar unidade");
-    },
-  });
-}
-
-/**
- * Hook para alterar status da unidade
- */
-export function useUpdateStatusUnidade() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      unidadesService.updateStatus(id, status),
-    onSuccess: (updatedUnidade) => {
-      // Invalidar cache da lista de unidades
-      queryClient.invalidateQueries({ queryKey: unidadesQueryKeys.lists() });
-
-      // Atualizar cache de detalhes
-      queryClient.setQueryData(
-        unidadesQueryKeys.detail(updatedUnidade.id),
-        updatedUnidade
-      );
-
-      // Invalidar estatísticas
-      queryClient.invalidateQueries({
-        queryKey: unidadesQueryKeys.estatisticas(),
-      });
-
-      toast.success(
-        `Status da unidade ${
-          updatedUnidade.codigo_unidade
-        } alterado para ${getStatusLabel(updatedUnidade.status)}`
-      );
-    },
-    onError: (error: Error) => {
-      console.error("Erro ao alterar status:", error);
-      toast.error(error.message || "Erro ao alterar status da unidade");
-    },
-  });
-}
-
 // ================================
 // HOOKS UTILITÁRIOS
 // ================================
 
 /**
- * Hook para validação de CNPJ
+ * Hook para gerenciar filtros e estado da interface
  */
-export function useValidateCnpj() {
-  return useMutation({
-    mutationFn: ({ cnpj, excludeId }: { cnpj: string; excludeId?: string }) =>
-      unidadesService.isCnpjUnique(cnpj, excludeId),
-    onError: (error: Error) => {
-      console.error("Erro ao validar CNPJ:", error);
-    },
+export function useUnidadesFilters() {
+  const [filters, setFilters] = useState<UnidadeFilter>({});
+  const [sort, setSort] = useState<UnidadeSort>({
+    field: "codigo_unidade",
+    direction: "asc",
   });
+  const [pagination, setPagination] = useState<UnidadePagination>({
+    page: 1,
+    limit: 50,
+  });
+
+  const resetFilters = () => {
+    setFilters({});
+    setPagination({ page: 1, limit: 50 });
+  };
+
+  const updateFilter = (key: keyof UnidadeFilter, value: string | boolean | null) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const updateSort = (field: keyof Unidade) => {
+    setSort((prev) => ({
+      field,
+      direction:
+        prev.field === field && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  return {
+    filters,
+    sort,
+    pagination,
+    setFilters,
+    setSort,
+    setPagination,
+    resetFilters,
+    updateFilter,
+    updateSort,
+  };
 }
 
 /**
- * Hook para gerar próximo código de unidade
+ * Hook para trabalhar com labels de status
  */
-export function useGenerateNextCode() {
-  return useMutation({
-    mutationFn: () => unidadesService.generateNextCode(),
-    onError: (error: Error) => {
-      console.error("Erro ao gerar código:", error);
-      toast.error("Erro ao gerar código da unidade");
-    },
-  });
+export function useUnidadeStatus() {
+  const getStatusLabelForUnidade = (status: StatusUnidade) => getStatusLabel(status);
+
+  const statusOptions = [
+    { value: "ativa", label: "Ativa" },
+    { value: "inativa", label: "Inativa" },
+    { value: "em_construcao", label: "Em Construção" },
+    { value: "planejada", label: "Planejada" },
+    { value: "vendida", label: "Vendida" },
+  ];
+
+  return {
+    getStatusLabel: getStatusLabelForUnidade,
+    statusOptions,
+  };
 }
 
 /**
- * Hook para exportar unidades para CSV
+ * Hook para formatação de dados específicos de unidades
  */
-export function useExportUnidades() {
-  return useMutation({
-    mutationFn: (filters: UnidadeFilter = {}) =>
-      unidadesService.exportToCsv(filters),
-    onSuccess: (csvData) => {
-      // Criar e baixar arquivo CSV
-      const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute(
-          "download",
-          `unidades_${new Date().toISOString().split("T")[0]}.csv`
-        );
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-      toast.success("Relatório exportado com sucesso!");
-    },
-    onError: (error: Error) => {
-      console.error("Erro ao exportar:", error);
-      toast.error("Erro ao exportar relatório");
-    },
-  });
-}
+export function useUnidadeFormHelpers() {
+  // Formatar código de unidade
+  const formatCodigoUnidade = (value: string) => {
+    return value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+  };
 
-/**
- * Hook de debug para formatar todos os CNPJs das unidades
- * ATENÇÃO: Usar apenas em desenvolvimento ou para correção única de dados
- */
-export function useDebugFormatarCnpjs() {
-  return useMutation({
-    mutationFn: () => unidadesService.debugFormatarTodosCnpjs(),
-    onSuccess: (resultado) => {
-      const { total, processados, erro } = resultado;
-      
-      if (erro === 0) {
-        toast.success(
-          `✅ Formatação concluída! ${processados} de ${total} CNPJs foram formatados com sucesso.`
-        );
-      } else {
-        toast.success(
-          `⚠️ Formatação concluída com alertas: ${processados} sucessos, ${erro} erros de ${total} total.`
-        );
-      }
-      
-      // Log detalhado no console para análise
-      console.table(resultado.detalhes);
-    },
-    onError: (error: Error) => {
-      console.error("Erro ao formatar CNPJs:", error);
-      toast.error("Erro ao formatar CNPJs: " + error.message);
-    },
-  });
+  // Formatar área (m²)
+  const formatArea = (value: string | number) => {
+    const numValue = typeof value === "string" ? parseFloat(value) : value;
+    return isNaN(numValue) ? "0" : numValue.toFixed(2);
+  };
+
+  // Formatar valor de investimento
+  const formatValorInvestimento = (value: string | number) => {
+    const numValue = typeof value === "string" ? parseFloat(value.replace(/[^\d,.-]/g, "").replace(",", ".")) : value;
+    return isNaN(numValue) ? 0 : numValue;
+  };
+
+  // Validar coordenadas geográficas
+  const isValidLatitude = (lat: number) => lat >= -90 && lat <= 90;
+  const isValidLongitude = (lng: number) => lng >= -180 && lng <= 180;
+
+  return {
+    formatCodigoUnidade,
+    formatArea,
+    formatValorInvestimento,
+    isValidLatitude,
+    isValidLongitude,
+  };
 }
 
 // ================================
@@ -311,15 +194,13 @@ export function useDebugFormatarCnpjs() {
 export function useUnidadesPage(
   initialFilters: UnidadeFilter = {},
   initialSort: UnidadeSort = { field: "codigo_unidade", direction: "asc" },
-  initialPagination: UnidadePagination = { page: 1, limit: 20 }
+  initialPagination: UnidadePagination = { page: 1, limit: 50 } // Aumentando para 50
 ) {
   const [filters, setFilters] = useState(initialFilters);
   const [sort, setSort] = useState(initialSort);
   const [pagination, setPagination] = useState(initialPagination);
 
   const unidadesQuery = useUnidades(filters, sort, pagination);
-  const updateStatusMutation = useUpdateStatusUnidade();
-  const exportMutation = useExportUnidades();
 
   const handleFilterChange = (newFilters: UnidadeFilter) => {
     setFilters(newFilters);
@@ -336,15 +217,7 @@ export function useUnidadesPage(
   };
 
   const handlePageSizeChange = (pageSize: number) => {
-    setPagination(() => ({ page: 1, limit: pageSize }));
-  };
-
-  const handleStatusChange = (unidade: Unidade, newStatus: string) => {
-    updateStatusMutation.mutate({ id: unidade.id, status: newStatus });
-  };
-
-  const handleExport = () => {
-    exportMutation.mutate(filters);
+    setPagination((prev) => ({ ...prev, limit: pageSize, page: 1 }));
   };
 
   return {
@@ -362,15 +235,32 @@ export function useUnidadesPage(
     isLoading: unidadesQuery.isLoading,
     isError: unidadesQuery.isError,
     error: unidadesQuery.error,
-    isExporting: exportMutation.isPending,
 
     // Ações
     handleFilterChange,
     handleSortChange,
     handlePageChange,
     handlePageSizeChange,
-    handleStatusChange,
-    handleExport,
     refetch: unidadesQuery.refetch,
   };
+}
+
+/**
+ * Hook para buscar unidades por região/área geográfica
+ */
+export function useUnidadesPorRegiao(
+  uf?: string,
+  cidade?: string,
+  enabled: boolean = true
+) {
+  const filters: UnidadeFilter = {};
+  if (uf) filters.uf = uf;
+  if (cidade) filters.cidade = cidade;
+
+  return useQuery({
+    queryKey: [...unidadesQueryKeys.lists(), "regiao", uf, cidade],
+    queryFn: () => unidadesService.getUnidades(filters, { field: "codigo_unidade", direction: "asc" }, { page: 1, limit: 1000 }),
+    enabled: enabled,
+    staleTime: 10 * 60 * 1000, // 10 minutos
+  });
 }
