@@ -70,6 +70,12 @@ export class AuthService {
       if (userError) {
         console.error("❌ Erro ao buscar usuário interno:", userError);
         await supabase.auth.signOut();
+        
+        // Verifica se é erro de usuário inativo
+        if (userError.message?.includes('USUARIO_INATIVO')) {
+          throw new Error("Usuário inativo. Entre em contato com o administrador do sistema.");
+        }
+        
         throw new Error(`Erro na consulta: ${userError.message}`);
       }
 
