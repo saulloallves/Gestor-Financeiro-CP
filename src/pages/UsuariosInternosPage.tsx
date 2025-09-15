@@ -15,7 +15,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Avatar,
   CircularProgress,
 } from "@mui/material";
 import {
@@ -41,7 +40,9 @@ import {
 } from "../hooks/useUsuariosInternos";
 import { useEquipesAtivas } from "../hooks/useEquipes";
 import { UsuarioInternoForm } from "../components/UsuarioInternoForm";
+import { AvatarUsuario } from "../components/ui/AvatarUsuario";
 import { UsuariosInternosService } from "../api/usuariosInternosService";
+import { formatarTelefone } from "../utils/validations";
 import type { 
   UsuarioInterno, 
   UsuarioInternoListItem, 
@@ -80,15 +81,6 @@ const getPerfilLabel = (perfil: PerfilUsuario) => {
     default:
       return "Operador";
   }
-};
-
-const getInitials = (nome: string) => {
-  return nome
-    .split(" ")
-    .map(n => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 };
 
 // ==============================================
@@ -225,17 +217,12 @@ export function UsuariosInternosPage() {
               padding: "8px 0",
             }}
           >
-            <Avatar
-              sx={{
-                width: 40,
-                height: 40,
-                bgcolor: "primary.main",
-                fontSize: "0.875rem",
-                flexShrink: 0,
-              }}
-            >
-              {getInitials(usuario.nome)}
-            </Avatar>
+            <AvatarUsuario
+              nome={usuario.nome}
+              fotoPerfil={usuario.foto_perfil}
+              size={40}
+              fontSize="0.875rem"
+            />
             <Box 
               sx={{ 
                 minWidth: 0,
@@ -307,10 +294,12 @@ export function UsuariosInternosPage() {
       width: 200,
       renderCell: (params) => {
         const usuario = params.row as UsuarioInternoListItem;
+        const telefoneFormatado = usuario.telefone ? formatarTelefone(usuario.telefone) : null;
+        
         return (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {usuario.telefone ? (
-              <Tooltip title={usuario.telefone}>
+            {telefoneFormatado ? (
+              <Tooltip title={telefoneFormatado}>
                 <Phone size={14} color={theme.palette.text.secondary} />
               </Tooltip>
             ) : (
@@ -319,7 +308,7 @@ export function UsuariosInternosPage() {
               </Tooltip>
             )}
             <Typography variant="body2" color="text.secondary">
-              {usuario.telefone || "E-mail"}
+              {telefoneFormatado || "E-mail"}
             </Typography>
           </Box>
         );

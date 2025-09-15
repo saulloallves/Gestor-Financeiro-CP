@@ -14,6 +14,7 @@ interface UsuarioInternoData {
   telefone?: string;
   perfil: string;
   status: string;
+  ultimo_login?: string;
   primeiro_acesso?: boolean;
   senha_temporaria?: boolean;
   data_criacao?: string;
@@ -88,6 +89,7 @@ export class AuthService {
         email: userData.email,
         perfil: userData.perfil as "operador" | "gestor" | "juridico" | "admin",
         status: (userData.status as "ativo" | "inativo") || "ativo",
+        ultimo_login: userData.ultimo_login,
         primeiro_acesso: userData.primeiro_acesso,
         senha_temporaria: userData.senha_temporaria,
         data_criacao: userData.data_criacao,

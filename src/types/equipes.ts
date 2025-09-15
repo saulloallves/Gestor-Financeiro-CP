@@ -94,6 +94,7 @@ export interface UsuarioInterno {
   user_id: string;
   created_at: string;
   updated_at: string;
+  foto_perfil?: string;
   
   // Campos de controle de primeiro acesso
   primeiro_acesso?: boolean;

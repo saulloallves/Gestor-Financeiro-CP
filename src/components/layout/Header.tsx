@@ -24,6 +24,8 @@ import { useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { PerfilModal } from '../PerfilModal';
+import { usePerfil } from '../../hooks/usePerfil';
 
 interface HeaderProps {
   sidebarWidth: number;
@@ -33,7 +35,9 @@ export function Header({ sidebarWidth }: HeaderProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const { usuario, logout } = useAuthStore();
+  const { data: perfilData } = usePerfil();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [perfilModalOpen, setPerfilModalOpen] = useState(false);
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -41,6 +45,15 @@ export function Header({ sidebarWidth }: HeaderProps) {
 
   const handleProfileMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleOpenPerfilModal = () => {
+    setPerfilModalOpen(true);
+    handleProfileMenuClose();
+  };
+
+  const handleClosePerfilModal = () => {
+    setPerfilModalOpen(false);
   };
 
   const handleLogout = async () => {
@@ -155,8 +168,9 @@ export function Header({ sidebarWidth }: HeaderProps) {
                 fontSize: '1rem',
                 fontWeight: 600,
               }}
+              src={perfilData?.fotoPerfil || undefined}
             >
-              {usuario?.nome?.charAt(0).toUpperCase() || 'U'}
+              {!perfilData?.fotoPerfil && (usuario?.nome?.charAt(0).toUpperCase() || 'U')}
             </Avatar>
           </IconButton>
         </Box>
@@ -201,8 +215,11 @@ export function Header({ sidebarWidth }: HeaderProps) {
       >
         {/* User Info */}
         <MenuItem disabled sx={{ opacity: 1, cursor: 'default' }}>
-          <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-            {usuario?.nome?.charAt(0).toUpperCase() || 'U'}
+          <Avatar 
+            sx={{ bgcolor: 'primary.main', mr: 2 }}
+            src={perfilData?.fotoPerfil || undefined}
+          >
+            {!perfilData?.fotoPerfil && (usuario?.nome?.charAt(0).toUpperCase() || 'U')}
           </Avatar>
           <Box>
             <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -217,7 +234,7 @@ export function Header({ sidebarWidth }: HeaderProps) {
         <Divider sx={{ my: 1 }} />
 
         {/* Menu Items */}
-        <MenuItem onClick={handleProfileMenuClose}>
+        <MenuItem onClick={handleOpenPerfilModal}>
           <ListItemIcon>
             <User size={20} />
           </ListItemIcon>
@@ -240,6 +257,12 @@ export function Header({ sidebarWidth }: HeaderProps) {
           <ListItemText>Sair</ListItemText>
         </MenuItem>
       </Menu>
+      
+      {/* Modal de Perfil */}
+      <PerfilModal 
+        open={perfilModalOpen}
+        onClose={handleClosePerfilModal}
+      />
     </AppBar>
   );
 }
