@@ -142,13 +142,8 @@ export class UsuariosInternosService {
   // Criar novo usuário interno
   static async criarUsuario(usuario: UsuarioInternoCreate): Promise<UsuarioInterno> {
     try {
-      // Verificar se o email já existe
-      const emailExiste = await this.verificarEmailExiste(usuario.email);
-      if (emailExiste) {
-        throw new Error('Este email já está cadastrado no sistema. Use um email diferente.');
-      }
-
       // Usar função do banco para criar usuário com autenticação
+      // A função RPC já faz a validação de email duplicado
       const { data, error } = await supabase.rpc('create_usuario_interno_with_auth', {
         p_nome: usuario.nome,
         p_email: usuario.email,
@@ -211,9 +206,12 @@ export class UsuariosInternosService {
 
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Erro ao criar usuário interno: ${error.message}`);
+        // Se é um erro conhecido, manter a mensagem original
+        throw error;
       }
-      throw new Error('Erro ao criar usuário interno');
+      
+      // Se é um erro desconhecido, criar uma mensagem mais específica
+      throw new Error('Erro inesperado ao criar usuário interno');
     }
   }
 

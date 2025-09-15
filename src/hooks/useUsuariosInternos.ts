@@ -4,6 +4,7 @@ import { UsuariosInternosService } from "../api/usuariosInternosService";
 import type {
   UsuarioInternoCreate,
   UsuarioInternoUpdate,
+  UsuarioInternoFormData,
   FiltrosUsuarios,
 } from "../types/equipes";
 
@@ -83,8 +84,19 @@ export function useCreateUsuarioInterno() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (usuario: UsuarioInternoCreate) => {
-      const resultado = await UsuariosInternosService.criarUsuario(usuario);
+    mutationFn: async (usuarioForm: UsuarioInternoFormData) => {
+      // Converter dados do formulário para o formato esperado pelo service
+      const usuarioCreate: UsuarioInternoCreate = {
+        nome: usuarioForm.nome,
+        email: usuarioForm.email,
+        telefone: usuarioForm.telefone || undefined,
+        perfil: usuarioForm.perfil,
+        equipe_id: usuarioForm.equipe_id,
+        status: usuarioForm.status,
+        // O campo senha será gerado automaticamente pelo service
+      };
+      
+      const resultado = await UsuariosInternosService.criarUsuario(usuarioCreate);
       return resultado;
     },
     onSuccess: (novoUsuario) => {
