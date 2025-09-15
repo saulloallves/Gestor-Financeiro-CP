@@ -30,7 +30,9 @@ export class PerfilService {
           foto_perfil,
           perfil,
           created_at,
-          ultimo_login
+          ultimo_login,
+          equipe_id,
+          equipes(nome_equipe)
         `)
         .eq('user_id', user.id)
         .single();
@@ -73,6 +75,9 @@ export class PerfilService {
         telefone: perfilData.telefone ? formatarTelefone(perfilData.telefone) : undefined,
         fotoPerfil: perfilData.foto_perfil,
         perfil: perfilData.perfil,
+        equipe_nome: Array.isArray(perfilData.equipes) && perfilData.equipes.length > 0 
+          ? perfilData.equipes[0].nome_equipe 
+          : undefined,
         dataCriacao: perfilData.created_at,
         ultimoLogin: perfilData.ultimo_login,
       };

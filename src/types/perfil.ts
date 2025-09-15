@@ -43,6 +43,7 @@ export interface PerfilUsuario {
   fotoPerfil?: string; // URL da foto no Supabase Storage
   perfil?: string; // Para usuários internos
   tipo?: string; // Para franqueados
+  equipe_nome?: string; // Nome da equipe para usuários internos
   dataCriacao?: string;
   ultimoLogin?: string;
 }

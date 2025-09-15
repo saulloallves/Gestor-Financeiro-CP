@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import {
   Bell,
-  Settings,
   LogOut,
   User,
   HelpCircle,
@@ -187,7 +186,6 @@ export function Header({ sidebarWidth }: HeaderProps) {
           elevation: 3,
           sx: {
             overflow: 'visible',
-            filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
             mt: 1.5,
             minWidth: 220,
             '& .MuiAvatar-root': {
@@ -214,19 +212,34 @@ export function Header({ sidebarWidth }: HeaderProps) {
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
         {/* User Info */}
-        <MenuItem disabled sx={{ opacity: 1, cursor: 'default' }}>
+        <MenuItem 
+          sx={{ 
+            opacity: '1 !important', 
+            cursor: 'default',
+            backgroundColor: 'transparent !important',
+            '&:hover': {
+              backgroundColor: 'transparent !important',
+            },
+            '&.Mui-focusVisible': {
+              backgroundColor: 'transparent !important',
+            },
+            '&.Mui-disabled': {
+              opacity: '1 !important',
+            }
+          }}
+        >
           <Avatar 
-            sx={{ bgcolor: 'primary.main', mr: 2 }}
+            sx={{ bgcolor: 'primary.main', mr: 2, opacity: '1 !important' }}
             src={perfilData?.fotoPerfil || undefined}
           >
             {!perfilData?.fotoPerfil && (usuario?.nome?.charAt(0).toUpperCase() || 'U')}
           </Avatar>
-          <Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+          <Box sx={{ opacity: '1 !important' }}>
+            <Typography variant="body1" sx={{ fontWeight: 600, opacity: '1 !important', color: 'text.primary' }}>
               {usuario?.nome || 'Usuário'}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {'perfil' in usuario! ? usuario.perfil : 'Usuário'}
+            <Typography variant="body2" sx={{ color: 'text.secondary', opacity: '1 !important' }}>
+              {perfilData?.equipe_nome || 'Sem equipe'}
             </Typography>
           </Box>
         </MenuItem>
@@ -241,14 +254,6 @@ export function Header({ sidebarWidth }: HeaderProps) {
           <ListItemText>Meu Perfil</ListItemText>
         </MenuItem>
 
-        <MenuItem onClick={handleProfileMenuClose}>
-          <ListItemIcon>
-            <Settings size={20} />
-          </ListItemIcon>
-          <ListItemText>Configurações</ListItemText>
-        </MenuItem>
-
-        <Divider sx={{ my: 1 }} />
 
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
