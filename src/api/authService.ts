@@ -50,6 +50,7 @@ export class AuthService {
         });
 
       if (authError) {
+        console.error("❌ Erro na autenticação:", authError);
         throw new Error(authError.message);
       }
 
@@ -61,16 +62,13 @@ export class AuthService {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // 3. Usa função customizada que bypassa RLS
-      const { data: userData, error: userError } = (await supabase.rpc(
+      const { data: userData, error: userError } = await supabase.rpc(
         "get_internal_user_data",
         { p_user_id: authData.user.id }
-      )) as {
-        data: UsuarioInternoData | null;
-        error: Error | null;
-      };
+      );
 
       if (userError) {
-        console.error("Erro ao buscar usuário interno:", userError);
+        console.error("❌ Erro ao buscar usuário interno:", userError);
         await supabase.auth.signOut();
         throw new Error(`Erro na consulta: ${userError.message}`);
       }
@@ -96,7 +94,7 @@ export class AuthService {
         data_ultima_senha: userData.data_ultima_senha,
       };
     } catch (error) {
-      console.error("Erro no login interno:", error);
+      console.error("❌ Erro no login interno:", error);
       throw error;
     }
   }
