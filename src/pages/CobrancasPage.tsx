@@ -36,7 +36,6 @@ import {
   useGerarBoletoAsaas,
   useSincronizarStatusAsaas,
 } from '../hooks/useCobrancas';
-import { useUnidades } from '../hooks/useUnidades';
 import {
   type Cobranca,
   type StatusCobranca,
@@ -91,7 +90,6 @@ export function CobrancasPage() {
 
   const { data: cobrancas = [], isLoading, refetch } = useCobrancas(filters);
   const { data: estatisticas } = useEstatisticasCobrancas();
-  const { data: unidades } = useUnidades();
   const atualizarValores = useAtualizarValoresCobrancas();
   const gerarBoleto = useGerarBoletoAsaas();
   const sincronizarStatus = useSincronizarStatusAsaas();
@@ -175,7 +173,7 @@ export function CobrancasPage() {
       search: searchTerm || undefined,
       status: statusFilter || undefined,
       tipo_cobranca: tipoFilter || undefined,
-      unidade_id: unidadeFilter || undefined,
+      codigo_unidade: unidadeFilter ? parseInt(unidadeFilter) : undefined,
     };
     setFilters(newFilters);
   };
@@ -230,14 +228,13 @@ export function CobrancasPage() {
       ),
     },
     {
-      field: 'unidade',
-      headerName: 'Unidade',
-      flex: 1.5,
-      minWidth: 180,
-      valueGetter: (_value, row: Cobranca) => row.unidade?.nome_padrao || '-',
+      field: 'codigo_unidade',
+      headerName: 'Código Unidade',
+      flex: 1,
+      minWidth: 120,
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'text.primary' }}>
-          {params.value}
+        <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+          {params.value || '-'}
         </Typography>
       ),
     },
@@ -316,8 +313,6 @@ export function CobrancasPage() {
       ],
     },
   ];
-
-  const unidadesList = unidades?.data || [];
 
   return (
     <Box
@@ -507,25 +502,23 @@ export function CobrancasPage() {
             </TextField>
 
             <TextField
-              select
-              label="Unidade"
+              label="Código da Unidade"
               value={unidadeFilter}
               onChange={(e) => setUnidadeFilter(e.target.value)}
+              placeholder="Ex: 1116, 2546"
               size="small"
+              type="number"
+              inputProps={{ 
+                min: 1000,
+                max: 9999
+              }}
               sx={{
                 minWidth: 200,
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
                 },
               }}
-            >
-              <MenuItem value="">Todas as unidades</MenuItem>
-              {unidadesList.map((unidade) => (
-                <MenuItem key={unidade.id} value={unidade.id}>
-                  {unidade.nome_padrao}
-                </MenuItem>
-              ))}
-            </TextField>
+            />
 
             <Box sx={{ display: "flex", gap: 1.5 }}>
               <Button

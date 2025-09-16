@@ -6,6 +6,9 @@ import { FranqueadosPage } from "../pages/FranqueadosPage";
 import { EquipesPage } from "../pages/EquipesPage";
 import { UsuariosInternosPage } from "../pages/UsuariosInternosPage";
 import { CobrancasPage } from "../pages/CobrancasPage";
+import { CobrancasPageCacheFirst } from "../pages/CobrancasPageCacheFirst";
+import { TesteCacheFirstPage } from "../pages/TesteCacheFirstPage";
+import { TestTimerPage } from "../pages/TestTimerPage";
 import ConfiguracoesPage from "../pages/ConfiguracoesPage";
 import { MainLayout } from "../components/layout/MainLayout";
 import {
@@ -71,6 +74,30 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <CobrancasPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "cobrancas-cache",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <CobrancasPageCacheFirst />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "teste-cache",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <TesteCacheFirstPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "teste-timer",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <TestTimerPage />
           </ProtectedRoute>
         ),
       },

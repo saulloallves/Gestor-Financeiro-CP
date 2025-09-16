@@ -4,7 +4,7 @@ export type StatusCobranca = 'pendente' | 'pago' | 'atrasado' | 'cancelado' | 'e
 
 export interface Cobranca {
   id: string;
-  unidade_id: string;
+  codigo_unidade: number;
   tipo_cobranca: TipoCobranca;
   valor_original: number;
   valor_atualizado: number;
@@ -24,23 +24,10 @@ export interface Cobranca {
   link_boleto?: string;
   created_by?: string;
   updated_by?: string;
-  unidade?: {
-    id: string;
-    codigo_unidade: string;
-    nome_padrao: string;
-    franqueado?: {
-      id: string;
-      nome: string;
-      email: string;
-      telefone: string;
-      cnpj: string;
-      asaas_customer_id?: string;
-    };
-  };
 }
 
 export interface CriarCobrancaData {
-  unidade_id: string;
+  codigo_unidade: number;
   tipo_cobranca: TipoCobranca;
   valor_original: number;
   vencimento: string;
@@ -68,7 +55,7 @@ export interface NegociacaoCobranca {
 }
 
 export interface CobrancasFilters {
-  unidade_id?: string;
+  codigo_unidade?: number;
   tipo_cobranca?: TipoCobranca;
   status?: StatusCobranca;
   data_vencimento_inicio?: string;

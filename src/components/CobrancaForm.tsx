@@ -15,13 +15,12 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useTheme } from '@mui/material/styles';
-import { useUnidades } from '../hooks/useUnidades';
 import { useCriarCobranca, useEditarCobranca } from '../hooks/useCobrancas';
 import type { Cobranca, TipoCobranca } from '../types/cobrancas';
 import { useState } from 'react';
 
 const schema = z.object({
-  unidade_id: z.string().min(1, 'Selecione uma unidade'),
+  codigo_unidade: z.number().int().min(1000, 'Código deve ter 4 dígitos').max(9999, 'Código deve ter 4 dígitos'),
   tipo_cobranca: z.enum(['royalties', 'insumos', 'aluguel', 'eventual']),
   valor_original: z.number().positive('Valor deve ser maior que zero'),
   vencimento: z.date(),
@@ -45,7 +44,6 @@ const tiposCobranca: { value: TipoCobranca; label: string }[] = [
 
 export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   const theme = useTheme();
-  const { data: unidades } = useUnidades();
   const criarCobranca = useCriarCobranca();
   const editarCobranca = useEditarCobranca();
   const [dataVencimento, setDataVencimento] = useState<Date | null>(
@@ -62,7 +60,7 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
     resolver: zodResolver(schema),
     defaultValues: cobranca
       ? {
-          unidade_id: cobranca.unidade_id,
+          codigo_unidade: cobranca.codigo_unidade,
           tipo_cobranca: cobranca.tipo_cobranca,
           valor_original: cobranca.valor_original,
           vencimento: new Date(cobranca.vencimento),
@@ -88,7 +86,7 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
         });
       } else {
         await criarCobranca.mutateAsync({
-          unidade_id: data.unidade_id,
+          codigo_unidade: data.codigo_unidade,
           tipo_cobranca: data.tipo_cobranca,
           valor_original: data.valor_original,
           vencimento: data.vencimento.toISOString(),
@@ -128,23 +126,21 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: theme.spacing(3) }}>
             {!isEdit && (
               <TextField
-                select
-                label="Unidade"
+                label="Código da Unidade"
                 fullWidth
-                {...register('unidade_id')}
-                error={!!errors.unidade_id}
-                helperText={errors.unidade_id?.message}
+                type="number"
+                placeholder="Ex: 1116, 2546"
+                inputProps={{ 
+                  min: 1000,
+                  max: 9999
+                }}
+                {...register('codigo_unidade', { 
+                  valueAsNumber: true 
+                })}
+                error={!!errors.codigo_unidade}
+                helperText={errors.codigo_unidade?.message || 'Digite o código de 4 dígitos da unidade'}
                 disabled={isLoading}
-              >
-                <MenuItem value="">
-                  <em>Selecione uma unidade</em>
-                </MenuItem>
-                {unidades?.data?.map((unidade) => (
-                  <MenuItem key={unidade.id} value={unidade.id}>
-                    {unidade.codigo_unidade} - {unidade.nome_padrao}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             )}
 
             <Box sx={{ display: 'flex', gap: theme.spacing(2) }}>

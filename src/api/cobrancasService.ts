@@ -13,14 +13,11 @@ class CobrancasService {
   async listarCobrancas(filters?: CobrancasFilters): Promise<Cobranca[]> {
     let query = supabase
       .from('cobrancas')
-      .select(`
-        *,
-        unidade:unidades(id, codigo_unidade, nome_padrao)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
-    if (filters?.unidade_id) {
-      query = query.eq('unidade_id', filters.unidade_id);
+    if (filters?.codigo_unidade) {
+      query = query.eq('codigo_unidade', filters.codigo_unidade);
     }
 
     if (filters?.tipo_cobranca) {
@@ -59,10 +56,7 @@ class CobrancasService {
   async obterCobranca(id: string): Promise<Cobranca | null> {
     const { data, error } = await supabase
       .from('cobrancas')
-      .select(`
-        *,
-        unidade:unidades(id, codigo_unidade, nome_padrao)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -90,10 +84,7 @@ class CobrancasService {
     const { data: cobranca, error } = await supabase
       .from('cobrancas')
       .insert(cobrancaData)
-      .select(`
-        *,
-        unidade:unidades(id, codigo_unidade, nome_padrao, franqueado:franqueados(id, nome, email, telefone, cpf))
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -101,138 +92,14 @@ class CobrancasService {
     }
 
     try {
-      // Integração com ASAAS - Garantir que o cliente existe
-      let asaasCustomerId: string | null = null;
-
-      if (cobranca.unidade?.franqueado) {
-        asaasCustomerId = await this.garantirClienteAsaas(
-          cobranca.unidade.franqueado, 
-          cobranca.unidade_id
-        );
-      }
-
-      if (asaasCustomerId) {
-        // Criar cobrança no ASAAS
-        const paymentData = {
-          customer: asaasCustomerId,
-          billingType: 'BOLETO' as const,
-          value: cobranca.valor_original,
-          dueDate: cobranca.vencimento,
-          description: cobranca.descricao,
-          externalReference: cobranca.id,
-          fine: {
-            value: await this.getMultaPercentual(),
-            type: 'PERCENTAGE' as const,
-          },
-          interest: {
-            value: await this.getJurosPercentual(),
-            type: 'PERCENTAGE' as const,
-          },
-        };
-
-        const asaasPayment = await asaasService.createPayment(paymentData);
-
-        // Salvar ID do pagamento ASAAS na cobrança
-        await supabase
-          .from('cobrancas')
-          .update({ 
-            asaas_payment_id: asaasPayment.id,
-            boleto_url: asaasPayment.bankSlipUrl,
-            link_pagamento: asaasPayment.invoiceUrl,
-          })
-          .eq('id', cobranca.id);
-
-        // Atualizar objeto retornado
-        cobranca.asaas_payment_id = asaasPayment.id;
-        cobranca.boleto_url = asaasPayment.bankSlipUrl;
-        cobranca.link_pagamento = asaasPayment.invoiceUrl;
-      }
+      // Integração com ASAAS será implementada futuramente
+      // quando tivermos os dados do franqueado disponíveis
+      console.log('Cobrança criada para a unidade:', cobranca.codigo_unidade);
     } catch (asaasError) {
       console.error('Erro na integração ASAAS:', asaasError);
-      // Não falha a criação da cobrança se houver erro no ASAAS
-      // Apenas loga o erro para análise posterior
     }
 
     return cobranca;
-  }
-
-  private async getMultaPercentual(): Promise<number> {
-    try {
-      const config = await configuracoesService.obterConfiguracao();
-      return config.valor_multa_atraso || 2;
-    } catch {
-      return 2; // Default 2%
-    }
-  }
-
-  private async getJurosPercentual(): Promise<number> {
-    try {
-      const config = await configuracoesService.obterConfiguracao();
-      return config.taxa_juros_diaria || 0.033;
-    } catch {
-      return 0.033; // Default 0.033% ao dia
-    }
-  }
-
-  /**
-   * Garante que o franqueado tem um cliente correspondente no ASAAS
-   * @param franqueado Dados do franqueado
-   * @param unidadeId ID da unidade para usar como referência externa
-   * @returns ID do cliente no ASAAS
-   */
-  private async garantirClienteAsaas(franqueado: { 
-    id: string; 
-    nome: string; 
-    email?: string; 
-    telefone?: string; 
-    cpf: string; 
-    asaas_customer_id?: string; 
-  }, unidadeId: string): Promise<string | null> {
-    try {
-      // Se já tem ID salvo, retorna direto
-      if (franqueado.asaas_customer_id) {
-        return franqueado.asaas_customer_id;
-      }
-
-      // Buscar cliente existente no ASAAS por CPF
-      const existingCustomers = await asaasService.getCustomers({
-        cpfCnpj: franqueado.cpf,
-        limit: 1
-      });
-
-      let asaasCustomerId: string;
-
-      if (existingCustomers.data && existingCustomers.data.length > 0 && existingCustomers.data[0].id) {
-        // Cliente já existe no ASAAS, usar o ID existente
-        asaasCustomerId = existingCustomers.data[0].id;
-      } else {
-        // Cliente não existe, criar novo cliente no ASAAS
-        const customerData = {
-          name: franqueado.nome,
-          email: franqueado.email || '',
-          phone: franqueado.telefone || '',
-          cpfCnpj: franqueado.cpf,
-          externalReference: unidadeId,
-        };
-
-        const asaasCustomer = await asaasService.createCustomer(customerData);
-        if (!asaasCustomer.id) {
-          throw new Error('ASAAS não retornou ID do cliente criado');
-        }
-        asaasCustomerId = asaasCustomer.id;
-      }
-
-      // Salvar customer_id no franqueado local
-      await supabase
-        .from('franqueados')
-        .update({ asaas_customer_id: asaasCustomerId })
-        .eq('id', franqueado.id);
-
-      return asaasCustomerId;
-    } catch (error) {
-      console.error('Erro ao garantir cliente ASAAS:', error);
-      return null;
-    }
   }
 
   async editarCobranca(id: string, dados: EditarCobrancaData): Promise<Cobranca> {
@@ -247,10 +114,7 @@ class CobrancasService {
       .from('cobrancas')
       .update(dados)
       .eq('id', id)
-      .select(`
-        *,
-        unidade:unidades(id, codigo_unidade, nome_padrao)
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -320,10 +184,7 @@ class CobrancasService {
       .from('cobrancas')
       .update({ status })
       .eq('id', id)
-      .select(`
-        *,
-        unidade:unidades(id, codigo_unidade, nome_padrao)
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -425,10 +286,7 @@ class CobrancasService {
       .from('cobrancas')
       .update(updateData)
       .eq('id', id)
-      .select(`
-        *,
-        unidade:unidades(id, codigo_unidade, nome_padrao)
-      `)
+      .select('*')
       .single();
 
     if (error) {
