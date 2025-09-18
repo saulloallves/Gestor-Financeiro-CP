@@ -36,7 +36,7 @@ function App() {
             }}
           />
 
-          {/* Router Provider para gerenciar as rotas */}
+          {/* RouterProvider sem SystemInitializer para evitar erro useLocation */}
           <RouterProvider router={router} />
         </LocalizationProvider>
       </ThemeProvider>

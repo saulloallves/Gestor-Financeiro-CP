@@ -53,11 +53,29 @@ export function useDataSync(): UseDataSyncReturn {
   const loadAllData = useCallback(async () => {
     const store = useDataStore.getState();
     
+    // CORREÇÃO: Verificar se já há dados em cache antes de recarregar
+    const hasData = store.franqueados.length > 0 && store.cobrancas.length > 0;
+    const hasCacheValid = store.sync.hasInitialLoad && hasData;
+    
+    console.log('🔍 Verificando estado do cache:', {
+      hasInitialLoad: store.sync.hasInitialLoad,
+      franqueados: store.franqueados.length,
+      cobrancas: store.cobrancas.length,
+      hasCacheValid
+    });
+    
+    if (hasCacheValid) {
+      console.log('✅ Dados já estão em cache - ignorando nova sincronização');
+      return;
+    }
+    
     // Evitar múltiplas sincronizações simultâneas
     if (store.sync.isLoading || isMinimumLoadingTime) {
       console.log('Sincronização já em andamento, ignorando...');
       return;
     }
+
+    console.log('🔄 Cache vazio ou incompleto - executando sincronização...');
 
     // Marcar início do loading e timer
     loadingStartTime.current = Date.now();

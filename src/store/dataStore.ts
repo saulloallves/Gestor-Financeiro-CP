@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { syncService } from '../services/syncService';
 import type { Cobranca } from '../types/cobrancas';
@@ -76,7 +76,8 @@ const initialState: DataCache & { sync: SyncStatus } = {
 
 export const useDataStore = create<DataStoreState>()(
   devtools(
-    immer((set, get) => ({
+    persist(
+      immer((set, get) => ({
       ...initialState,
 
       // Implementações das ações principais
@@ -259,6 +260,34 @@ export const useDataStore = create<DataStoreState>()(
           progress: null,
         }
       }),
+    }),
+    {
+      name: 'data-store',
+      partialize: (state: DataStoreState) => ({
+        // Persistir apenas os dados, não os estados de sync
+        franqueados: state.franqueados,
+        cobrancas: state.cobrancas,
+        usuariosInternos: state.usuariosInternos,
+        sync: {
+          ...state.sync,
+          isLoading: false, // Sempre iniciar com loading false
+          progress: null,
+        }
+      }),
+      onRehydrateStorage: () => {
+        console.log('🔧 Iniciando hidratação do cache...');
+        return (state: DataStoreState | undefined, error: Error | undefined) => {
+          if (error) {
+            console.error('❌ Erro na hidratação do cache:', error);
+          } else {
+            console.log('✅ Cache hidratado com sucesso:', {
+              franqueados: state?.franqueados?.length || 0,
+              cobrancas: state?.cobrancas?.length || 0,
+              hasInitialLoad: state?.sync?.hasInitialLoad || false
+            });
+          }
+        };
+      }
     }
   )
 );

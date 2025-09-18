@@ -8,6 +8,7 @@ import type {
   Usuario,
 } from "../types/auth";
 import { AuthService } from "../api/authService";
+import { useDataStore } from "./dataStore";
 import toast from "react-hot-toast";
 
 export const useAuthStore = create<AuthState>()(
@@ -34,6 +35,31 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
             });
             toast.success(`Bem-vindo, ${usuario.nome}!`);
+
+            // 🚀 TEMPORÁRIO: Sync automático desabilitado devido a problema com funções RPC 404
+            // O sync será feito pelo useAuthDataSync sem validação de sessão
+            console.log('ℹ️ Sync automático delegado para useAuthDataSync hook');
+
+            /* CÓDIGO ORIGINAL - COMENTADO TEMPORARIAMENTE
+            try {
+              console.log('🔄 Iniciando sincronização automática pós-login...');
+              const dataStore = useDataStore.getState();
+              
+              if (!dataStore.sync.isLoading && !dataStore.sync.hasInitialLoad) {
+                setTimeout(async () => {
+                  try {
+                    await dataStore.loadAllData();
+                    console.log('✅ Sincronização pós-login concluída com sucesso');
+                  } catch (syncError) {
+                    console.error('❌ Erro na sincronização pós-login:', syncError);
+                  }
+                }, 500);
+              }
+            } catch (syncError) {
+              console.error('❌ Erro ao iniciar sincronização pós-login:', syncError);
+            }
+            */
+
           } else if (tipo === "franqueado") {
             usuario = await AuthService.loginFranqueado(
               dados as LoginFranqueadoData
@@ -44,6 +70,30 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
             });
             toast.success(`Bem-vindo ao portal, ${usuario.nome}!`);
+
+            // 🚀 TEMPORÁRIO: Sync automático desabilitado devido a problema com funções RPC 404
+            console.log('ℹ️ Sync automático delegado para useAuthDataSync hook (franqueado)');
+
+            /* CÓDIGO ORIGINAL - COMENTADO TEMPORARIAMENTE
+            try {
+              console.log('🔄 Iniciando sincronização automática pós-login (franqueado)...');
+              const dataStore = useDataStore.getState();
+              
+              if (!dataStore.sync.isLoading && !dataStore.sync.hasInitialLoad) {
+                setTimeout(async () => {
+                  try {
+                    await dataStore.loadAllData();
+                    console.log('✅ Sincronização pós-login (franqueado) concluída');
+                  } catch (syncError) {
+                    console.error('❌ Erro na sincronização pós-login (franqueado):', syncError);
+                  }
+                }, 500);
+              }
+            } catch (syncError) {
+              console.error('❌ Erro ao iniciar sincronização pós-login (franqueado):', syncError);
+            }
+            */
+
           } else if (tipo === "unidade") {
             // Para futuro: implementar login por código de unidade
             // Por enquanto, redirect para franqueado
@@ -63,10 +113,28 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           await AuthService.logout();
+          
+          // 🗑️ Limpar cache de dados ao fazer logout
+          try {
+            const dataStore = useDataStore.getState();
+            dataStore.clearCache();
+            console.log('🗑️ Cache de dados limpo durante logout');
+          } catch (cacheError) {
+            console.error('⚠️ Erro ao limpar cache durante logout:', cacheError);
+            // Continua o logout mesmo se falhar ao limpar cache
+          }
+          
           set({ usuario: null, tipoAcesso: null });
           toast.success("Logout realizado com sucesso!");
         } catch {
-          // Mesmo com erro no Supabase, faz logout local
+          // Mesmo com erro no Supabase, faz logout local e limpa cache
+          try {
+            const dataStore = useDataStore.getState();
+            dataStore.clearCache();
+          } catch (cacheError) {
+            console.error('⚠️ Erro ao limpar cache durante logout de emergência:', cacheError);
+          }
+          
           set({ usuario: null, tipoAcesso: null });
           toast.success("Sessão encerrada!");
         }
