@@ -41,6 +41,8 @@ function mapearTipoProprietario(ownerType: string): 'principal' | 'familiar' | '
   switch (ownerType.toLowerCase()) {
     case 'principal':
       return 'principal';
+    case 'sócio':
+    case 'socio':
     case 'familiar':
       return 'familiar';
     case 'investidor':
@@ -56,12 +58,21 @@ function mapearTipoProprietario(ownerType: string): 'principal' | 'familiar' | '
  * Mapeia um franqueado do banco matriz para o formato esperado pelo sistema
  */
 export function mapearFranqueadoMatriz(franqueado: FranqueadoMatriz | VFranqueadosUnidadesDetalhes): FranqueadoMapeado {
-  const enderecoCompleto = franqueado.address || '';
+  // Montar endereço completo com os novos campos
+  const enderecoCompleto = [
+    franqueado.address,
+    franqueado.number_address ? `nº ${franqueado.number_address}` : '',
+    franqueado.address_complement,
+    franqueado.neighborhood,
+    franqueado.city,
+    franqueado.state || franqueado.uf,
+    franqueado.postal_code
+  ].filter(Boolean).join(', ');
   
   return {
     id: franqueado.id,
     nome: franqueado.full_name,
-    email: extrairEmailDoContato(franqueado.contact),
+    email: franqueado.email || extrairEmailDoContato(franqueado.contact),
     telefone: extrairTelefoneDoContato(franqueado.contact),
     cpf: franqueado.cpf_rnm || '',
     endereco: enderecoCompleto,
@@ -86,7 +97,7 @@ export function mapearFranqueadoMatriz(franqueado: FranqueadoMatriz | VFranquead
     termo_lgpd_aceito: franqueado.lgpd_term_accepted,
     termo_confidencialidade_aceito: franqueado.confidentiality_term_accepted,
     termo_sistema_aceito: franqueado.system_term_accepted,
-    senha_web: franqueado.web_password,
+    senha_web: ('systems_password' in franqueado) ? franqueado.systems_password.toString() : '',
     created_at: franqueado.created_at,
     updated_at: franqueado.updated_at,
     
@@ -222,8 +233,30 @@ function montarEnderecoCompleto(unidade: UnidadeMatriz): string {
 export function mapearFiltrosFranqueado(filtros: Record<string, unknown>): Record<string, unknown> {
   const filtrosMapeados: Record<string, unknown> = {};
   
+  // Mapear busca por nome
   if (filtros.search) {
     filtrosMapeados.search = filtros.search;
+  }
+  
+  if (filtros.nome) {
+    filtrosMapeados.search = filtros.nome;
+  }
+  
+  // Mapear tipo de franqueado
+  if (filtros.tipo) {
+    // Converter de volta para o formato do banco
+    const tiposMap: Record<string, string> = {
+      'principal': 'Principal',
+      'familiar': 'Sócio',
+      'investidor': 'Investidor',
+      'parceiro': 'Parceiro'
+    };
+    
+    if (Array.isArray(filtros.tipo)) {
+      filtrosMapeados.owner_type = filtros.tipo.map(t => tiposMap[t] || t);
+    } else {
+      filtrosMapeados.owner_type = tiposMap[filtros.tipo as string] || filtros.tipo;
+    }
   }
   
   if (filtros.tipo_proprietario) {

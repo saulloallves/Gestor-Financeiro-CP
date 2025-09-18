@@ -7,9 +7,6 @@ import { EquipesPage } from "../pages/EquipesPage";
 import { UsuariosInternosPage } from "../pages/UsuariosInternosPage";
 import { CobrancasPage } from "../pages/CobrancasPage";
 import { CobrancasPageCacheFirst } from "../pages/CobrancasPageCacheFirst";
-import { TesteCacheFirstPage } from "../pages/TesteCacheFirstPage";
-import { TesteIntegracaoPage } from "../pages/TesteIntegracaoPage";
-import { TestTimerPage } from "../pages/TestTimerPage";
 import ConfiguracoesPage from "../pages/ConfiguracoesPage";
 import { MainLayout } from "../components/layout/MainLayout";
 import {
@@ -83,30 +80,6 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <CobrancasPageCacheFirst />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "teste-cache",
-        element: (
-          <ProtectedRoute requiredType="interno">
-            <TesteCacheFirstPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "teste-timer",
-        element: (
-          <ProtectedRoute requiredType="interno">
-            <TestTimerPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "teste-integracao",
-        element: (
-          <ProtectedRoute requiredType="interno">
-            <TesteIntegracaoPage />
           </ProtectedRoute>
         ),
       },

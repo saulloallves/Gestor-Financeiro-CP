@@ -5,11 +5,11 @@ export interface FranqueadoMatriz {
   id: string;
   full_name: string;
   nationality?: string;
-  cpf_rnm?: string;
+  cpf_rnm: string;
   birth_date?: string;
   address?: string;
   owner_type: string;
-  is_in_contract?: boolean;
+  is_in_contract: boolean;
   receives_prolabore?: boolean;
   prolabore_value?: number;
   availability?: string;
@@ -28,9 +28,19 @@ export interface FranqueadoMatriz {
   lgpd_term_accepted: boolean;
   confidentiality_term_accepted: boolean;
   system_term_accepted: boolean;
-  web_password: string;
   created_at?: string;
   updated_at?: string;
+  systems_password: number;
+  is_active_system: boolean;
+  number_address?: string;
+  address_complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  uf?: string;
+  postal_code?: string;
+  instagram?: string;
+  email?: string;
 }
 
 export interface UnidadeMatriz {
@@ -81,11 +91,11 @@ export interface VFranqueadosComUnidades {
   id: string;
   full_name: string;
   nationality?: string;
-  cpf_rnm?: string;
+  cpf_rnm: string;
   birth_date?: string;
   address?: string;
   owner_type: string;
-  is_in_contract?: boolean;
+  is_in_contract: boolean;
   receives_prolabore?: boolean;
   prolabore_value?: number;
   availability?: string;
@@ -104,7 +114,17 @@ export interface VFranqueadosComUnidades {
   lgpd_term_accepted: boolean;
   confidentiality_term_accepted: boolean;
   system_term_accepted: boolean;
-  web_password: string;
+  systems_password: number;
+  is_active_system: boolean;
+  number_address?: string;
+  address_complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  uf?: string;
+  postal_code?: string;
+  instagram?: string;
+  email?: string;
   created_at?: string;
   updated_at?: string;
   unidade_ids: string[];

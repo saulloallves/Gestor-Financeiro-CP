@@ -12,6 +12,7 @@ import type {
 } from "../types/franqueados";
 import type {
   VFranqueadosUnidadesDetalhes,
+  FranqueadoMatriz,
 } from "../types/matriz";
 import { 
   mapearFranqueadoMatriz, 
@@ -33,12 +34,14 @@ class FranqueadosService {
   ): Promise<FranqueadoListResponse> {
     try {
       console.log('🔍 Buscando franqueados no banco matriz...');
+      console.log('🔍 Filtros recebidos:', filters);
       
       // Mapear filtros para o schema do banco matriz
       const filtrosMatriz = mapearFiltrosFranqueado(filters as Record<string, unknown>);
+      console.log('🔍 Filtros mapeados:', filtrosMatriz);
       
       let query = supabaseMatriz
-        .from('v_franqueados_unidades_detalhes')
+        .from('franqueados')
         .select('*', { count: 'exact' });
 
       // Aplicar filtros
@@ -50,8 +53,12 @@ class FranqueadosService {
         `);
       }
       
-      if (filtrosMatriz.owner_type && typeof filtrosMatriz.owner_type === 'string') {
-        query = query.eq('owner_type', filtrosMatriz.owner_type);
+      if (filtrosMatriz.owner_type) {
+        if (Array.isArray(filtrosMatriz.owner_type)) {
+          query = query.in('owner_type', filtrosMatriz.owner_type);
+        } else if (typeof filtrosMatriz.owner_type === 'string') {
+          query = query.eq('owner_type', filtrosMatriz.owner_type);
+        }
       }
       
       if (typeof filtrosMatriz.is_in_contract === 'boolean') {
@@ -78,12 +85,34 @@ class FranqueadosService {
       }
 
       // Mapear dados do banco matriz para formato do sistema
-      const franqueadosMapeados = (data as VFranqueadosUnidadesDetalhes[]).map(mapearFranqueadoMatriz);
+      const franqueadosMapeados = (data as FranqueadoMatriz[]).map(franqueado => mapearFranqueadoMatriz({
+        ...franqueado,
+        unidade_ids: [],
+        total_unidades: 0,
+        unidade_group_codes: [],
+        unidade_group_names: []
+      } as unknown as VFranqueadosUnidadesDetalhes));
 
       console.log(`✅ ${franqueadosMapeados.length} franqueados encontrados`);
 
+      console.log('🔍 Debug - Dados originais (primeiros 3):', 
+        (data as FranqueadoMatriz[]).slice(0, 3).map(f => ({ 
+          nome: f.full_name, 
+          owner_type: f.owner_type,
+          id: f.id
+        }))
+      );
+
+      console.log('🔍 Debug - Dados mapeados (primeiros 3):', 
+        franqueadosMapeados.slice(0, 3).map(f => ({ 
+          nome: f.nome, 
+          tipo: f.tipo,
+          id: f.id
+        }))
+      );
+
       return {
-        data: franqueadosMapeados as unknown as Franqueado[],
+        data: franqueadosMapeados as Franqueado[],
         pagination: {
           page: pagination.page,
           limit: pagination.limit,
@@ -105,7 +134,7 @@ class FranqueadosService {
       console.log(`🔍 Buscando franqueado ${id} no banco matriz...`);
       
       const { data, error } = await supabaseMatriz
-        .from('v_franqueados_unidades_detalhes')
+        .from('franqueados')
         .select('*')
         .eq('id', id)
         .single();
@@ -118,7 +147,13 @@ class FranqueadosService {
         throw new Error(`Erro ao buscar franqueado: ${error.message}`);
       }
 
-      const franqueadoMapeado = mapearFranqueadoMatriz(data as VFranqueadosUnidadesDetalhes);
+      const franqueadoMapeado = mapearFranqueadoMatriz({
+        ...(data as FranqueadoMatriz),
+        unidade_ids: [],
+        total_unidades: 0,
+        unidade_group_codes: [],
+        unidade_group_names: []
+      } as unknown as VFranqueadosUnidadesDetalhes);
       
       console.log('✅ Franqueado encontrado:', franqueadoMapeado.nome);
       return franqueadoMapeado as unknown as Franqueado;
@@ -130,21 +165,29 @@ class FranqueadosService {
 
   /**
    * Buscar franqueados por código de unidade
+   * NOTA: Método temporariamente simplificado - precisa ser implementado com JOIN ou view
    */
   async getFranqueadosByUnidade(codigoUnidade: number): Promise<Franqueado[]> {
     try {
       console.log(`🔍 Buscando franqueados da unidade ${codigoUnidade}...`);
       
+      // Por enquanto, retornamos todos os franqueados
+      // TODO: Implementar JOIN com tabela de unidades ou recriar view
       const { data, error } = await supabaseMatriz
-        .from('v_franqueados_unidades_detalhes')
-        .select('*')
-        .contains('unidade_group_codes', [codigoUnidade]);
+        .from('franqueados')
+        .select('*');
 
       if (error) {
         throw new Error(`Erro ao buscar franqueados da unidade: ${error.message}`);
       }
 
-      const franqueadosMapeados = (data as VFranqueadosUnidadesDetalhes[]).map(mapearFranqueadoMatriz);
+      const franqueadosMapeados = (data as FranqueadoMatriz[]).map(franqueado => mapearFranqueadoMatriz({
+        ...(franqueado as FranqueadoMatriz),
+        unidade_ids: [],
+        total_unidades: 0,
+        unidade_group_codes: [],
+        unidade_group_names: []
+      } as unknown as VFranqueadosUnidadesDetalhes));
       
       console.log(`✅ ${franqueadosMapeados.length} franqueados encontrados para a unidade`);
       return franqueadosMapeados as unknown as Franqueado[];
