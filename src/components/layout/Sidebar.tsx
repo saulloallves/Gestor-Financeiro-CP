@@ -27,6 +27,7 @@ import {
   PinOff,
   Shield,
   UserCog,
+  UserSearch,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -66,23 +67,32 @@ const menuItems: MenuItem[] = [
     path: "/dashboard",
   },
   {
-    id: "unidades",
-    title: "Unidades",
-    icon: Building,
-    path: "/unidades",
-  },
-  {
-    id: "franqueados",
-    title: "Franqueados",
-    icon: Users,
-    path: "/franqueados",
-  },
-  {
     id: "cobrancas",
     title: "Cobranças",
     icon: CreditCard,
     path: "/cobrancas",
   },
+  {
+    id: "consultas",
+    title: "Consultas",
+    icon: UserSearch,
+    path: "/consultas",
+    children: [
+      {
+        id: "unidades",
+        title: "Unidades",
+        icon: Building,
+        path: "/unidades",
+      },
+      {
+        id: "franqueados",
+        title: "Franqueados",
+        icon: Users,
+        path: "/franqueados",
+      },
+    ],
+  },
+
   {
     id: "administracao",
     title: "Administração",
@@ -434,8 +444,8 @@ export function Sidebar({
               display: "block",
             }}
           >
-            Versão 1.0.0<br />
-            © 2025 Cresci e Perdi
+            Versão 1.0.0
+            <br />© 2025 Cresci e Perdi
           </Typography>
         </Box>
       )}
