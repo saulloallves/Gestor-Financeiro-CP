@@ -1,9 +1,11 @@
 import { supabase } from '../api/supabaseClient';
 import { cobrancasService } from '../api/cobrancasService';
 import { franqueadosService } from '../api/franqueadosService';
+import { unidadesService } from '../api/unidadesService';
 import { UsuariosInternosService } from '../api/usuariosInternosService';
 import type { Cobranca } from '../types/cobrancas';
 import type { Franqueado } from '../types/franqueados';
+import type { Unidade } from '../types/unidades';
 import type { UsuarioInterno } from '../types/auth';
 
 export interface SyncProgress {
@@ -18,11 +20,13 @@ export interface SyncResult {
   data?: {
     franqueados: Franqueado[];
     cobrancas: Cobranca[];
+    unidades: Unidade[];
     usuariosInternos: UsuarioInterno[];
   };
   stats?: {
     franqueados: number;
     cobrancas: number;
+    unidades: number;
     usuariosInternos: number;
     syncTime: number;
   };
@@ -45,34 +49,40 @@ class SyncService {
     const startTime = Date.now();
     
     try {
-      this.updateProgress(0, 3, 'Preparando sincronização...');
+      this.updateProgress(0, 4, 'Preparando sincronização...');
 
       // Fase 1: Sincronizar dados do banco matriz (franqueados)
-      this.updateProgress(1, 3, 'Sincronizando franqueados...');
+      this.updateProgress(1, 4, 'Sincronizando franqueados...');
       const franqueados = await this.syncFranqueados();
 
-      // Fase 2: Sincronizar dados locais (cobranças)
-      this.updateProgress(2, 3, 'Sincronizando cobranças...');
+      // Fase 2: Sincronizar dados do banco matriz (unidades)
+      this.updateProgress(2, 4, 'Sincronizando unidades...');
+      const unidades = await this.syncUnidades();
+
+      // Fase 3: Sincronizar dados locais (cobranças)
+      this.updateProgress(3, 4, 'Sincronizando cobranças...');
       const cobrancas = await this.syncCobrancas();
 
-      // Fase 3: Sincronizar usuários internos
-      this.updateProgress(3, 3, 'Sincronizando usuários...');
+      // Fase 4: Sincronizar usuários internos
+      this.updateProgress(4, 4, 'Sincronizando usuários...');
       const usuariosInternos = await this.syncUsuariosInternos();
 
       const syncTime = Date.now() - startTime;
 
-      this.updateProgress(3, 3, 'Sincronização concluída!');
+      this.updateProgress(4, 4, 'Sincronização concluída!');
 
       return {
         success: true,
         data: {
           franqueados,
           cobrancas,
+          unidades,
           usuariosInternos,
         },
         stats: {
           franqueados: franqueados.length,
           cobrancas: cobrancas.length,
+          unidades: unidades.length,
           usuariosInternos: usuariosInternos.length,
           syncTime,
         },
@@ -89,14 +99,22 @@ class SyncService {
 
   private async syncFranqueados(): Promise<Franqueado[]> {
     try {
-      // TODO: Quando implementarmos o banco matriz, usar método getFranqueados
-      console.log('Tentando sincronizar do banco matriz...');
+      console.log('Sincronizando franqueados do banco matriz...');
       
-      // Fallback para dados locais se matriz não disponível
-      const response = await franqueadosService.getFranqueados();
+      // Buscar todos os franqueados do banco matriz com limite alto para não paginar
+      const response = await franqueadosService.getFranqueados({}, 
+        { field: "nome", direction: "asc" },
+        { page: 1, limit: 1000 }
+      );
+      
+      console.log('📊 Resposta do franqueadosService:', {
+        dataLength: response.data?.length || 0,
+        hasData: !!response.data
+      });
+      
       return response.data || [];
     } catch (error) {
-      console.warn('Erro ao sincronizar franqueados, usando dados locais:', error);
+      console.error('❌ Erro ao sincronizar franqueados:', error);
       
       // Em caso de erro, tentar buscar do banco local
       try {
@@ -110,6 +128,28 @@ class SyncService {
         console.error('Erro ao buscar franqueados locais:', localError);
         return [];
       }
+    }
+  }
+
+  private async syncUnidades(): Promise<Unidade[]> {
+    try {
+      console.log('Sincronizando unidades do banco matriz...');
+      
+      // Buscar todas as unidades do banco matriz com limite alto para não paginar
+      const response = await unidadesService.getUnidades({}, 
+        { field: "codigo_unidade", direction: "asc" },
+        { page: 1, limit: 1000 }
+      );
+      
+      console.log('📊 Resposta do unidadesService:', {
+        dataLength: response.data?.length || 0,
+        hasData: !!response.data
+      });
+      
+      return response.data || [];
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar unidades:', error);
+      return [];
     }
   }
 
@@ -137,17 +177,20 @@ class SyncService {
     const startTime = Date.now();
     
     try {
-      this.updateProgress(0, 3, 'Verificando atualizações...');
+      this.updateProgress(0, 4, 'Verificando atualizações...');
 
       // Buscar apenas dados atualizados desde a última sincronização
       const franqueados = await this.syncFranqueadosIncremental(lastSyncAt);
-      this.updateProgress(1, 3, 'Atualizando franqueados...');
+      this.updateProgress(1, 4, 'Atualizando franqueados...');
+
+      const unidades = await this.syncUnidadesIncremental(lastSyncAt);
+      this.updateProgress(2, 4, 'Atualizando unidades...');
 
       const cobrancas = await this.syncCobrancasIncremental(lastSyncAt);
-      this.updateProgress(2, 3, 'Atualizando cobranças...');
+      this.updateProgress(3, 4, 'Atualizando cobranças...');
 
       const usuariosInternos = await this.syncUsuariosInternosIncremental(lastSyncAt);
-      this.updateProgress(3, 3, 'Finalizado!');
+      this.updateProgress(4, 4, 'Finalizado!');
 
       const syncTime = Date.now() - startTime;
 
@@ -156,11 +199,13 @@ class SyncService {
         data: {
           franqueados,
           cobrancas,
+          unidades,
           usuariosInternos,
         },
         stats: {
           franqueados: franqueados.length,
           cobrancas: cobrancas.length,
+          unidades: unidades.length,
           usuariosInternos: usuariosInternos.length,
           syncTime,
         },
@@ -185,6 +230,18 @@ class SyncService {
       return data || [];
     } catch (error) {
       console.error('Erro na sincronização incremental de franqueados:', error);
+      return [];
+    }
+  }
+
+  private async syncUnidadesIncremental(_lastSyncAt: Date): Promise<Unidade[]> {
+    try {
+      // Para unidades do banco matriz, não temos updated_at local
+      // Vamos fazer uma busca completa por simplicidade
+      console.log('Sincronização incremental de unidades - fazendo busca completa do banco matriz...');
+      return await this.syncUnidades();
+    } catch (error) {
+      console.error('Erro na sincronização incremental de unidades:', error);
       return [];
     }
   }

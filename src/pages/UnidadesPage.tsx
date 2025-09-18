@@ -31,15 +31,18 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Database,
 } from "lucide-react";
-import { useUnidadesPage, useUnidadesEstatisticas } from "../hooks/useUnidades";
+import { useUnidadesPageCacheFirst, useUnidadesEstatisticasCacheFirst } from "../hooks/useUnidadesCacheFirst";
 import { getStatusLabel, getStatusColor } from "../utils/statusMask";
 import type { StatusUnidade } from "../types/unidades";
 
 export function UnidadesPage() {
   const theme = useTheme();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusUnidade | "">("");
+  
+  // Estado local para os inputs de filtro
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const [localStatusFilter, setLocalStatusFilter] = useState<StatusUnidade | "">("");
 
   // Estado de paginação do DataGrid
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -49,22 +52,22 @@ export function UnidadesPage() {
 
   const {
     unidades,
-    totalUnidades,
+    total,
     isLoading,
     isError,
-    filters,
-    handleFilterChange,
     handlePageChange,
     handlePageSizeChange,
     pagination,
     refetch,
-  } = useUnidadesPage();
+    setSearchTerm,
+    setStatusFilter,
+  } = useUnidadesPageCacheFirst();
 
   // Buscar estatísticas gerais (todas as unidades, não apenas da página atual)
   const {
     data: estatisticas,
     isLoading: isLoadingStats,
-  } = useUnidadesEstatisticas();
+  } = useUnidadesEstatisticasCacheFirst();
 
   // Handler para mudança de paginação do DataGrid
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
@@ -74,34 +77,31 @@ export function UnidadesPage() {
     if (newModel.pageSize !== paginationModel.pageSize) {
       handlePageSizeChange(newModel.pageSize);
     } else {
-      // Se apenas a página mudou
-      handlePageChange(newModel.page + 1); // DataGrid usa base 0, backend usa base 1
+      // Se apenas a página mudou (cache-first já usa base 0)
+      handlePageChange(newModel.page);
     }
   };
 
   // Sincronizar estado do DataGrid com estado do hook
   useEffect(() => {
     setPaginationModel({
-      page: pagination.page - 1, // Backend usa base 1, DataGrid usa base 0
-      pageSize: pagination.limit,
+      page: pagination.page, // Cache-first já usa base 0
+      pageSize: pagination.pageSize,
     });
-  }, [pagination.page, pagination.limit]);
+  }, [pagination.page, pagination.pageSize]);
 
   // Função para aplicar filtros de busca
   const handleSearch = () => {
-    const newFilters = {
-      ...filters,
-      nome_padrao: searchTerm || undefined,
-      status: statusFilter ? [statusFilter] : undefined,
-    };
-    handleFilterChange(newFilters);
+    // Os filtros já são aplicados automaticamente através dos valores dos inputs
+    // que são controlados pelos setters do hook
   };
 
   // Limpar filtros
   const handleClearFilters = () => {
+    setLocalSearchTerm("");
+    setLocalStatusFilter("");
     setSearchTerm("");
     setStatusFilter("");
-    handleFilterChange({});
   };
 
   // Definir colunas da tabela
@@ -277,13 +277,32 @@ export function UnidadesPage() {
         }}
       >
         <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ fontWeight: 700, color: "text.primary" }}
-          >
-            Cadastro de Unidades
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{ fontWeight: 700, color: "text.primary" }}
+            >
+              Cadastro de Unidades
+            </Typography>
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 0.5, 
+                px: 1, 
+                py: 0.5, 
+                backgroundColor: 'success.main',
+                borderRadius: 1,
+                color: 'white'
+              }}
+            >
+              <Database size={16} />
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
+                CACHE
+              </Typography>
+            </Box>
+          </Box>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
             Gerencie todas as unidades franqueadas da rede
           </Typography>
@@ -372,8 +391,11 @@ export function UnidadesPage() {
           >
             <TextField
               placeholder="Buscar por nome da unidade..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={localSearchTerm}
+              onChange={(e) => {
+                setLocalSearchTerm(e.target.value);
+                setSearchTerm(e.target.value);
+              }}
               InputProps={{
                 startAdornment: (
                   <Box
@@ -399,10 +421,12 @@ export function UnidadesPage() {
             <TextField
               select
               label="Status"
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as StatusUnidade | "")
-              }
+              value={localStatusFilter}
+              onChange={(e) => {
+                const value = e.target.value as StatusUnidade | "";
+                setLocalStatusFilter(value);
+                setStatusFilter(value);
+              }}
               size="small"
               sx={{
                 minWidth: 150,
@@ -553,7 +577,7 @@ export function UnidadesPage() {
                 {isLoadingStats ? (
                   <CircularProgress size={24} />
                 ) : (
-                  estatisticas?.ativas || 0
+                  estatisticas?.operacao || 0
                 )}
               </Typography>
               <Typography
@@ -612,7 +636,7 @@ export function UnidadesPage() {
                 {isLoadingStats ? (
                   <CircularProgress size={24} />
                 ) : (
-                  estatisticas?.em_implantacao || 0
+                  estatisticas?.implantacao || 0
                 )}
               </Typography>
               <Typography
@@ -671,7 +695,7 @@ export function UnidadesPage() {
                 {isLoadingStats ? (
                   <CircularProgress size={24} />
                 ) : (
-                  estatisticas?.canceladas || 0
+                  estatisticas?.cancelado || 0
                 )}
               </Typography>
               <Typography
@@ -721,7 +745,7 @@ export function UnidadesPage() {
             rows={unidades}
             columns={columns}
             loading={isLoading}
-            rowCount={totalUnidades}
+            rowCount={total}
             paginationModel={paginationModel}
             onPaginationModelChange={handlePaginationModelChange}
             paginationMode="server"

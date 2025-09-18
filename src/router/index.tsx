@@ -1,12 +1,11 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { LoginPage } from "../pages/LoginPage";
-import { DashboardPage } from "../pages/DashboardPage";
+import { DashboardPageCacheFirst } from "../pages/DashboardPageCacheFirst";
 import { UnidadesPage } from "../pages/UnidadesPage";
 import { FranqueadosPage } from "../pages/FranqueadosPage";
 import { EquipesPage } from "../pages/EquipesPage";
 import { UsuariosInternosPage } from "../pages/UsuariosInternosPage";
 import { CobrancasPage } from "../pages/CobrancasPage";
-import { CobrancasPageCacheFirst } from "../pages/CobrancasPageCacheFirst";
 import ConfiguracoesPage from "../pages/ConfiguracoesPage";
 import { MainLayout } from "../components/layout/MainLayout";
 import {
@@ -33,7 +32,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "dashboard",
-        element: <DashboardPage />,
+        element: <DashboardPageCacheFirst />,
       },
       {
         path: "unidades",
@@ -76,14 +75,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "cobrancas-cache",
-        element: (
-          <ProtectedRoute requiredType="interno">
-            <CobrancasPageCacheFirst />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: "configuracoes",
         element: (
           <ProtectedRoute requiredType="interno">
@@ -95,7 +86,7 @@ export const router = createBrowserRouter([
         path: "admin",
         element: (
           <ProtectedRoute requiredType="interno">
-            <DashboardPage />
+            <DashboardPageCacheFirst />
           </ProtectedRoute>
         ),
       },
@@ -103,7 +94,7 @@ export const router = createBrowserRouter([
         path: "franqueado",
         element: (
           <ProtectedRoute requiredType="franqueado">
-            <DashboardPage />
+            <DashboardPageCacheFirst />
           </ProtectedRoute>
         ),
       },

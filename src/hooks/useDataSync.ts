@@ -7,7 +7,7 @@ export interface UseDataSyncReturn {
   // Estados
   isLoading: boolean;
   hasInitialLoad: boolean;
-  lastSyncAt: Date | null;
+  lastSyncAt: Date | string | null;
   error: string | null;
   progress: {
     current: number;
@@ -172,10 +172,13 @@ export function useDataSync(): UseDataSyncReturn {
     }
     
     // Se não forçar e a última sync foi há menos de 5 minutos, pular
-    if (!force && lastSyncAt && (Date.now() - lastSyncAt.getTime()) < 5 * 60 * 1000) {
-      console.log('Dados ainda são recentes, pulando refresh...');
-      toast('Dados já estão atualizados', { icon: 'ℹ️' });
-      return;
+    if (!force && lastSyncAt) {
+      const syncDate = lastSyncAt instanceof Date ? lastSyncAt : new Date(lastSyncAt);
+      if ((Date.now() - syncDate.getTime()) < 5 * 60 * 1000) {
+        console.log('Dados ainda são recentes, pulando refresh...');
+        toast('Dados já estão atualizados', { icon: 'ℹ️' });
+        return;
+      }
     }
 
     console.log('🔄 Iniciando refresh de dados...');

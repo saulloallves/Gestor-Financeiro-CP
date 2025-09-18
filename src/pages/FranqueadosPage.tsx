@@ -34,8 +34,9 @@ import {
   Heart,
   DollarSign,
   Handshake,
+  Database,
 } from "lucide-react";
-import { useFranqueadosPage, useFranqueadosEstatisticas } from "../hooks/useFranqueados";
+import { useFranqueadosPageCacheFirst, useFranqueadosEstatisticasCacheFirst } from "../hooks/useFranqueadosCacheFirst";
 import {
   getTipoFranqueadoLabel,
   getTipoFranqueadoColor,
@@ -71,13 +72,13 @@ export function FranqueadosPage() {
     handlePageSizeChange,
     pagination,
     refetch,
-  } = useFranqueadosPage();
+  } = useFranqueadosPageCacheFirst();
 
   // Buscar estatísticas gerais (todos os franqueados, não apenas da página atual)
   const {
     data: estatisticas,
     isLoading: isLoadingStats,
-  } = useFranqueadosEstatisticas();
+  } = useFranqueadosEstatisticasCacheFirst();
 
   // Handler para mudança de paginação do DataGrid
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
@@ -312,13 +313,32 @@ export function FranqueadosPage() {
         }}
       >
         <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ fontWeight: 700, color: "text.primary" }}
-          >
-            Franqueados da Rede
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{ fontWeight: 700, color: "text.primary" }}
+            >
+              Franqueados da Rede
+            </Typography>
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 0.5, 
+                px: 1, 
+                py: 0.5, 
+                backgroundColor: 'success.main',
+                borderRadius: 1,
+                color: 'white'
+              }}
+            >
+              <Database size={16} />
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
+                CACHE
+              </Typography>
+            </Box>
+          </Box>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
             Visualize todos os franqueados da rede Cresci e Perdi
           </Typography>

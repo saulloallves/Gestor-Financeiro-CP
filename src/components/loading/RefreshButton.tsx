@@ -185,7 +185,9 @@ export function SyncStatusChip({
     }
 
     if (lastSyncAt) {
-      const timeDiff = Date.now() - lastSyncAt.getTime();
+      // Garantir que lastSyncAt seja um Date válido
+      const syncDate = lastSyncAt instanceof Date ? lastSyncAt : new Date(lastSyncAt);
+      const timeDiff = Date.now() - syncDate.getTime();
       const isRecent = timeDiff < 5 * 60 * 1000; // 5 minutos
 
       return {

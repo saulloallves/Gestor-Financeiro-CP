@@ -1,14 +1,15 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { syncService } from '../services/syncService';
 import type { Cobranca } from '../types/cobrancas';
 import type { Franqueado } from '../types/franqueados';
+import type { Unidade } from '../types/unidades';
 import type { UsuarioInterno } from '../types/auth';
 
 export interface SyncStatus {
   isLoading: boolean;
-  lastSyncAt: Date | null;
+  lastSyncAt: Date | string | null;
   hasInitialLoad: boolean;
   error: string | null;
   progress: {
@@ -21,6 +22,7 @@ export interface SyncStatus {
 export interface DataCache {
   franqueados: Franqueado[];
   cobrancas: Cobranca[];
+  unidades: Unidade[];
   usuariosInternos: UsuarioInterno[];
 }
 
@@ -64,6 +66,7 @@ export interface DataStoreState extends DataCache {
 const initialState: DataCache & { sync: SyncStatus } = {
   franqueados: [],
   cobrancas: [],
+  unidades: [],
   usuariosInternos: [],
   sync: {
     isLoading: false,
@@ -75,9 +78,8 @@ const initialState: DataCache & { sync: SyncStatus } = {
 };
 
 export const useDataStore = create<DataStoreState>()(
-  devtools(
-    persist(
-      immer((set, get) => ({
+  persist(
+    immer((set, get) => ({
       ...initialState,
 
       // Implementações das ações principais
@@ -85,7 +87,7 @@ export const useDataStore = create<DataStoreState>()(
         set((state) => {
           state.sync.isLoading = true;
           state.sync.error = null;
-          state.sync.progress = { current: 0, total: 3, stage: 'Iniciando sincronização...' };
+          state.sync.progress = { current: 0, total: 4, stage: 'Iniciando sincronização...' };
         });
 
         try {
@@ -95,6 +97,7 @@ export const useDataStore = create<DataStoreState>()(
             set((state) => {
               state.franqueados = result.data!.franqueados;
               state.cobrancas = result.data!.cobrancas;
+              state.unidades = result.data!.unidades;
               state.usuariosInternos = result.data!.usuariosInternos;
               
               state.sync.isLoading = false;
@@ -119,8 +122,11 @@ export const useDataStore = create<DataStoreState>()(
         const { lastSyncAt } = get().sync;
         
         // Se não forçar e a última sync foi há menos de 5 minutos, pular
-        if (!force && lastSyncAt && (Date.now() - lastSyncAt.getTime()) < 5 * 60 * 1000) {
-          return;
+        if (!force && lastSyncAt) {
+          const syncDate = lastSyncAt instanceof Date ? lastSyncAt : new Date(lastSyncAt);
+          if ((Date.now() - syncDate.getTime()) < 5 * 60 * 1000) {
+            return;
+          }
         }
 
         await get().loadAllData();
@@ -130,6 +136,7 @@ export const useDataStore = create<DataStoreState>()(
         set((state) => {
           state.franqueados = [];
           state.cobrancas = [];
+          state.unidades = [];
           state.usuariosInternos = [];
           state.sync.hasInitialLoad = false;
           state.sync.lastSyncAt = null;
@@ -253,20 +260,7 @@ export const useDataStore = create<DataStoreState>()(
         // Persistir apenas os dados, não os estados de sync
         franqueados: state.franqueados,
         cobrancas: state.cobrancas,
-        usuariosInternos: state.usuariosInternos,
-        sync: {
-          ...state.sync,
-          isLoading: false, // Sempre iniciar com loading false
-          progress: null,
-        }
-      }),
-    }),
-    {
-      name: 'data-store',
-      partialize: (state: DataStoreState) => ({
-        // Persistir apenas os dados, não os estados de sync
-        franqueados: state.franqueados,
-        cobrancas: state.cobrancas,
+        unidades: state.unidades,
         usuariosInternos: state.usuariosInternos,
         sync: {
           ...state.sync,
@@ -276,14 +270,16 @@ export const useDataStore = create<DataStoreState>()(
       }),
       onRehydrateStorage: () => {
         console.log('🔧 Iniciando hidratação do cache...');
-        return (state: DataStoreState | undefined, error: Error | undefined) => {
+        return (state?: DataStoreState, error?: unknown) => {
           if (error) {
             console.error('❌ Erro na hidratação do cache:', error);
           } else {
             console.log('✅ Cache hidratado com sucesso:', {
               franqueados: state?.franqueados?.length || 0,
               cobrancas: state?.cobrancas?.length || 0,
-              hasInitialLoad: state?.sync?.hasInitialLoad || false
+              unidades: state?.unidades?.length || 0,
+              hasInitialLoad: state?.sync?.hasInitialLoad || false,
+              lastSyncAt: state?.sync?.lastSyncAt ? 'Data válida' : 'Nenhuma'
             });
           }
         };

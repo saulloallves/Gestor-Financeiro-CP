@@ -36,11 +36,7 @@ export const useAuthStore = create<AuthState>()(
             });
             toast.success(`Bem-vindo, ${usuario.nome}!`);
 
-            // 🚀 TEMPORÁRIO: Sync automático desabilitado devido a problema com funções RPC 404
-            // O sync será feito pelo useAuthDataSync sem validação de sessão
-            console.log('ℹ️ Sync automático delegado para useAuthDataSync hook');
-
-            /* CÓDIGO ORIGINAL - COMENTADO TEMPORARIAMENTE
+            // 🚀 FASE 3: Reativando sync automático com funções RPC corrigidas
             try {
               console.log('🔄 Iniciando sincronização automática pós-login...');
               const dataStore = useDataStore.getState();
@@ -58,7 +54,6 @@ export const useAuthStore = create<AuthState>()(
             } catch (syncError) {
               console.error('❌ Erro ao iniciar sincronização pós-login:', syncError);
             }
-            */
 
           } else if (tipo === "franqueado") {
             usuario = await AuthService.loginFranqueado(
@@ -71,10 +66,7 @@ export const useAuthStore = create<AuthState>()(
             });
             toast.success(`Bem-vindo ao portal, ${usuario.nome}!`);
 
-            // 🚀 TEMPORÁRIO: Sync automático desabilitado devido a problema com funções RPC 404
-            console.log('ℹ️ Sync automático delegado para useAuthDataSync hook (franqueado)');
-
-            /* CÓDIGO ORIGINAL - COMENTADO TEMPORARIAMENTE
+            // 🚀 FASE 3: Reativando sync automático com funções RPC corrigidas  
             try {
               console.log('🔄 Iniciando sincronização automática pós-login (franqueado)...');
               const dataStore = useDataStore.getState();
@@ -92,7 +84,6 @@ export const useAuthStore = create<AuthState>()(
             } catch (syncError) {
               console.error('❌ Erro ao iniciar sincronização pós-login (franqueado):', syncError);
             }
-            */
 
           } else if (tipo === "unidade") {
             // Para futuro: implementar login por código de unidade
