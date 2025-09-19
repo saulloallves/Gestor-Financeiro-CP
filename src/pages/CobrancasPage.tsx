@@ -27,6 +27,8 @@ import {
   CheckCircle,
   RefreshCw,
   Filter,
+  CloudDownload,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
@@ -36,6 +38,10 @@ import {
   useGerarBoletoAsaas,
   useSincronizarStatusAsaas,
 } from '../hooks/useCobrancas';
+import {
+  useSyncAsaasPayments,
+  useSyncAsaasStatuses,
+} from '../hooks/useAsaasSync';
 import {
   type Cobranca,
   type StatusCobranca,
@@ -75,6 +81,7 @@ const tipoLabels: Record<TipoCobranca, string> = {
   insumos: 'Insumos',
   aluguel: 'Aluguel',
   eventual: 'Eventual',
+  taxa_franquia: 'Taxa de Franquia',
 };
 
 export function CobrancasPage() {
@@ -93,6 +100,10 @@ export function CobrancasPage() {
   const atualizarValores = useAtualizarValoresCobrancas();
   const gerarBoleto = useGerarBoletoAsaas();
   const sincronizarStatus = useSincronizarStatusAsaas();
+  
+  // Hooks de sincronização ASAAS
+  const syncPayments = useSyncAsaasPayments();
+  const syncStatuses = useSyncAsaasStatuses();
 
   const formatCurrency = (value: number | null | undefined) => {
     if (value === null || value === undefined || isNaN(value)) {
@@ -184,6 +195,21 @@ export function CobrancasPage() {
     setTipoFilter('');
     setUnidadeFilter('');
     setFilters({});
+  };
+
+  // Funções de sincronização ASAAS
+  const handleSyncAsaasPayments = () => {
+    const dateFrom = new Date();
+    dateFrom.setMonth(dateFrom.getMonth() - 3); // Últimos 3 meses
+    
+    syncPayments.mutate({
+      dateFrom: dateFrom.toISOString().split('T')[0],
+      limit: 200
+    });
+  };
+
+  const handleSyncAsaasStatuses = () => {
+    syncStatuses.mutate();
   };
 
   const columns: GridColDef[] = [
@@ -352,8 +378,29 @@ export function CobrancasPage() {
             gap: 2,
             flexDirection: { xs: "column", sm: "row" },
             width: { xs: "100%", md: "auto" },
+            flexWrap: "wrap",
           }}
         >
+          <Button
+            variant="outlined"
+            startIcon={<CloudDownload size={20} />}
+            onClick={handleSyncAsaasPayments}
+            disabled={syncPayments.isPending}
+            sx={{ minWidth: 140 }}
+          >
+            {syncPayments.isPending ? 'Sincronizando...' : 'Sync ASAAS'}
+          </Button>
+          
+          <Button
+            variant="outlined"
+            startIcon={<RotateCcw size={20} />}
+            onClick={handleSyncAsaasStatuses}
+            disabled={syncStatuses.isPending}
+            sx={{ minWidth: 140 }}
+          >
+            {syncStatuses.isPending ? 'Atualizando...' : 'Sync Status'}
+          </Button>
+          
           <Button
             variant="outlined"
             startIcon={<Download size={20} />}
@@ -363,6 +410,7 @@ export function CobrancasPage() {
           >
             Exportar
           </Button>
+          
           <Button
             variant="contained"
             startIcon={<Plus size={20} />}

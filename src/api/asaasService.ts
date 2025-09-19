@@ -1,3 +1,4 @@
+import { supabase } from './supabaseClient'; // Importe o cliente Supabase
 import type { 
   AsaasCustomer, 
   AsaasPayment, 
@@ -6,58 +7,39 @@ import type {
   AsaasApiResponse,
   AsaasApiError 
 } from '../types/asaas';
-import { configuracoesService } from './configuracoesService';
 
 class AsaasService {
-  private async getEnvironment(): Promise<'sandbox' | 'production'> {
-    try {
-      return await configuracoesService.verificarAmbienteAsaas();
-    } catch (error) {
-      console.warn('Erro ao obter ambiente ASAAS, usando sandbox como padrão:', error);
-      return 'sandbox';
-    }
-  }
-
-  private async getBaseUrl(): Promise<string> {
-    const environment = await this.getEnvironment();
-    return environment === 'production' 
-      ? 'https://www.asaas.com/api/v3'
-      : 'https://sandbox.asaas.com/api/v3';
-  }
-
-  private getApiKey(): string {
-    return import.meta.env.VITE_ASAAS_API_KEY || '';
-  }
-
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const baseUrl = await this.getBaseUrl();
-    const url = `${baseUrl}${endpoint}`;
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'access_token': this.getApiKey(),
-        ...options.headers,
-      },
-    };
+    console.log(`[CLIENT] Invocando Edge Function 'asaas-proxy' para o endpoint: ${endpoint}`);
 
     try {
-      const response = await fetch(url, config);
-      const data = await response.json();
+      const { data, error } = await supabase.functions.invoke('asaas-proxy', {
+        body: { endpoint, options },
+      });
 
-      if (!response.ok) {
-        const error = data as AsaasApiError;
-        throw new Error(error.errors?.[0]?.description || 'Erro na API ASAAS');
+      if (error) {
+        // Erros de rede ou da própria Edge Function
+        throw new Error(`Erro ao invocar a Edge Function: ${error.message}`);
       }
 
-      return data;
-    } catch (error) {
-      console.error('Erro na requisição ASAAS:', error);
-      throw error;
+      if (data.error) {
+        // Erros de lógica ou vindos da API do ASAAS
+        throw new Error(data.error);
+      }
+      
+      // Se a API do ASAAS retornou um erro (ex: 401, 404), ele será encapsulado aqui
+      if (data.errors) {
+        const apiError = data as AsaasApiError;
+        throw new Error(apiError.errors[0].description);
+      }
+
+      return data as T;
+    } catch (err) {
+      console.error(`❌ [CLIENT] Falha na chamada para 'asaas-proxy':`, err);
+      throw err;
     }
   }
 

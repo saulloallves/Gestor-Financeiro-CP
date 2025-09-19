@@ -21,7 +21,7 @@ import { useState } from 'react';
 
 const schema = z.object({
   codigo_unidade: z.number().int().min(1000, 'Código deve ter 4 dígitos').max(9999, 'Código deve ter 4 dígitos'),
-  tipo_cobranca: z.enum(['royalties', 'insumos', 'aluguel', 'eventual']),
+  tipo_cobranca: z.enum(['royalties', 'insumos', 'aluguel', 'eventual', 'taxa_franquia']),
   valor_original: z.number().positive('Valor deve ser maior que zero'),
   vencimento: z.date(),
   observacoes: z.string().optional(),
@@ -40,6 +40,7 @@ const tiposCobranca: { value: TipoCobranca; label: string }[] = [
   { value: 'insumos', label: 'Insumos' },
   { value: 'aluguel', label: 'Aluguel' },
   { value: 'eventual', label: 'Eventual' },
+  { value: 'taxa_franquia', label: 'Taxa de Franquia' },
 ];
 
 export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {

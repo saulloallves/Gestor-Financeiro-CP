@@ -452,6 +452,218 @@ class CobrancasService {
 
     return data;
   }
+
+  /**
+   * Cria cobrança no ASAAS e sincroniza com banco local
+   */
+  async criarCobrancaComAsaas(dados: CriarCobrancaData & {
+    customerData: {
+      name: string;
+      cpfCnpj: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      addressNumber?: string;
+      complement?: string;
+      province?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+    };
+    billingType?: 'BOLETO' | 'CREDIT_CARD' | 'PIX' | 'UNDEFINED';
+    generateBankSlip?: boolean;
+  }): Promise<Cobranca> {
+    try {
+      console.log('🔄 Criando cobrança com integração ASAAS...');
+
+      // 1. Buscar ou criar customer no ASAAS
+      let customerId: string;
+      const cpfCnpjLimpo = dados.customerData.cpfCnpj.replace(/\D/g, '');
+      
+      // Buscar customer existente
+      const customers = await asaasService.getCustomers({
+        cpfCnpj: cpfCnpjLimpo
+      });
+      
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id!;
+        console.log(`✅ Customer existente encontrado: ${customerId}`);
+      } else {
+        // Criar novo customer
+        const newCustomer = await asaasService.createCustomer({
+          name: dados.customerData.name,
+          cpfCnpj: cpfCnpjLimpo,
+          email: dados.customerData.email,
+          phone: dados.customerData.phone,
+          address: dados.customerData.address,
+          addressNumber: dados.customerData.addressNumber,
+          complement: dados.customerData.complement,
+          province: dados.customerData.province,
+          city: dados.customerData.city,
+          state: dados.customerData.state,
+          postalCode: dados.customerData.postalCode?.replace(/\D/g, '')
+        });
+        customerId = newCustomer.id!;
+        console.log(`✅ Novo customer criado: ${customerId}`);
+      }
+
+      // 2. Criar payment no ASAAS
+      const paymentData = {
+        customer: customerId,
+        billingType: dados.billingType || 'BOLETO',
+        value: dados.valor_original,
+        dueDate: dados.vencimento,
+        description: dados.observacoes || `Cobrança ${dados.tipo_cobranca} - Unidade ${dados.codigo_unidade}`,
+        externalReference: `UN${dados.codigo_unidade}-${Date.now()}`,
+        installmentCount: 1,
+        totalValue: dados.valor_original
+      };
+
+      console.log('📝 Criando payment no ASAAS:', paymentData);
+      const payment = await asaasService.createPayment(paymentData);
+      console.log('✅ Payment criado no ASAAS:', payment.id);
+
+      // 3. Salvar no banco local
+      const cobrancaData: CriarCobrancaData = {
+        codigo_unidade: dados.codigo_unidade,
+        tipo_cobranca: dados.tipo_cobranca,
+        valor_original: dados.valor_original,
+        valor_atualizado: dados.valor_original,
+        vencimento: dados.vencimento,
+        status: 'pendente',
+        observacoes: dados.observacoes || '',
+        juros_aplicado: 0,
+        multa_aplicada: 0,
+        dias_atraso: 0,
+        asaas_payment_id: payment.id,
+        asaas_customer_id: customerId,
+        boleto_id: payment.billingType === 'BOLETO' ? payment.id : undefined,
+        link_boleto: payment.bankSlipUrl || undefined
+      };
+
+      const { data: cobranca, error } = await supabase
+        .from('cobrancas')
+        .insert(cobrancaData)
+        .select('*')
+        .single();
+
+      if (error) {
+        throw new Error(`Erro ao salvar cobrança no banco: ${error.message}`);
+      }
+
+      console.log('✅ Cobrança salva no banco local:', cobranca.id);
+      return cobranca;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('❌ Erro ao criar cobrança com ASAAS:', errorMessage);
+      throw new Error(`Erro ao criar cobrança com ASAAS: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Atualiza uma cobrança existente no ASAAS
+   */
+  async atualizarCobrancaAsaas(cobrancaId: string, dados: {
+    value?: number;
+    dueDate?: string;
+    description?: string;
+  }): Promise<Cobranca> {
+    try {
+      // Buscar a cobrança local
+      const { data: cobranca, error: fetchError } = await supabase
+        .from('cobrancas')
+        .select('*')
+        .eq('id', cobrancaId)
+        .single();
+
+      if (fetchError || !cobranca) {
+        throw new Error('Cobrança não encontrada');
+      }
+
+      if (!cobranca.asaas_payment_id) {
+        throw new Error('Cobrança não possui ID do ASAAS');
+      }
+
+      // Atualizar no ASAAS
+      await asaasService.updatePayment(cobranca.asaas_payment_id, dados);
+
+      // Atualizar no banco local
+      const updateData: Partial<Cobranca> = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (dados.value) {
+        updateData.valor_atualizado = dados.value;
+      }
+      if (dados.dueDate) {
+        updateData.vencimento = dados.dueDate;
+      }
+      if (dados.description) {
+        updateData.observacoes = dados.description;
+      }
+
+      const { data: updatedCobranca, error: updateError } = await supabase
+        .from('cobrancas')
+        .update(updateData)
+        .eq('id', cobrancaId)
+        .select('*')
+        .single();
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      return updatedCobranca;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      throw new Error(`Erro ao atualizar cobrança no ASAAS: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Cancela uma cobrança no ASAAS
+   */
+  async cancelarCobrancaAsaas(cobrancaId: string): Promise<Cobranca> {
+    try {
+      // Buscar a cobrança local
+      const { data: cobranca, error: fetchError } = await supabase
+        .from('cobrancas')
+        .select('*')
+        .eq('id', cobrancaId)
+        .single();
+
+      if (fetchError || !cobranca) {
+        throw new Error('Cobrança não encontrada');
+      }
+
+      if (!cobranca.asaas_payment_id) {
+        throw new Error('Cobrança não possui ID do ASAAS');
+      }
+
+      // Cancelar no ASAAS
+      await asaasService.deletePayment(cobranca.asaas_payment_id);
+
+      // Atualizar status no banco local
+      const { data: updatedCobranca, error: updateError } = await supabase
+        .from('cobrancas')
+        .update({ 
+          status: 'cancelado',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', cobrancaId)
+        .select('*')
+        .single();
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      return updatedCobranca;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      throw new Error(`Erro ao cancelar cobrança no ASAAS: ${errorMessage}`);
+    }
+  }
 }
 
 export const cobrancasService = new CobrancasService();

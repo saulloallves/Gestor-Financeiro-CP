@@ -1,4 +1,4 @@
-export type TipoCobranca = 'royalties' | 'insumos' | 'aluguel' | 'eventual';
+export type TipoCobranca = 'royalties' | 'insumos' | 'aluguel' | 'eventual' | 'taxa_franquia';
 
 export type StatusCobranca = 'pendente' | 'pago' | 'atrasado' | 'cancelado' | 'em_aberto' | 'negociado' | 'em_atraso' | 'vencido' | 'juridico' | 'parcelado';
 
@@ -19,8 +19,6 @@ export interface Cobranca {
   asaas_customer_id?: string;
   asaas_payment_id?: string;
   boleto_id?: string;
-  boleto_url?: string;
-  link_pagamento?: string;
   link_boleto?: string;
   created_by?: string;
   updated_by?: string;
@@ -30,9 +28,18 @@ export interface CriarCobrancaData {
   codigo_unidade: number;
   tipo_cobranca: TipoCobranca;
   valor_original: number;
+  valor_atualizado?: number;
   vencimento: string;
+  status?: StatusCobranca;
   descricao?: string;
   observacoes?: string;
+  juros_aplicado?: number;
+  multa_aplicada?: number;
+  dias_atraso?: number;
+  asaas_payment_id?: string;
+  asaas_customer_id?: string;
+  boleto_id?: string;
+  link_boleto?: string;
 }
 
 export interface EditarCobrancaData {
