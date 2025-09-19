@@ -206,14 +206,20 @@ class AsaasService {
     });
   }
 
-  async getPaymentUrl(paymentId: string): Promise<string> {
-    const baseUrl = await this.getBaseUrl();
-    return `${baseUrl}/payments/${paymentId}/invoiceUrl`;
+  // Obter URL do boleto bancário
+  async getBankSlipUrl(paymentId: string): Promise<string> {
+    const response = await this.makeRequest<{ identificationField: string }>(`/payments/${paymentId}/bankSlipUrl`, {
+      method: 'GET',
+    });
+    return response.identificationField;
   }
 
-  async getBankSlipUrl(paymentId: string): Promise<string> {
-    const baseUrl = await this.getBaseUrl();
-    return `${baseUrl}/payments/${paymentId}/bankSlipUrl`;
+  // Obter URL da página de pagamento
+  async getPaymentUrl(paymentId: string): Promise<string> {
+    const response = await this.makeRequest<{ invoiceUrl: string }>(`/payments/${paymentId}/invoiceUrl`, {
+      method: 'GET',
+    });
+    return response.invoiceUrl;
   }
 }
 
