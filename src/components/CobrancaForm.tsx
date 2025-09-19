@@ -1,6 +1,5 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogTitle,
@@ -12,22 +11,30 @@ import {
   Box,
   Typography,
   Alert,
+  FormControlLabel,
+  Checkbox,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio,
+  Autocomplete,
+  Paper,
+  Chip,
+  Divider,
+  CircularProgress,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useTheme } from '@mui/material/styles';
-import { useCriarCobranca, useEditarCobranca } from '../hooks/useCobrancas';
-import type { Cobranca, TipoCobranca } from '../types/cobrancas';
-import { useState } from 'react';
-
-const schema = z.object({
-  codigo_unidade: z.number().int().min(1000, 'Código deve ter 4 dígitos').max(9999, 'Código deve ter 4 dígitos'),
-  tipo_cobranca: z.enum(['royalties', 'insumos', 'aluguel', 'eventual', 'taxa_franquia']),
-  valor_original: z.number().positive('Valor deve ser maior que zero'),
-  vencimento: z.date(),
-  observacoes: z.string().optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+import { useCriarCobranca, useEditarCobranca, useCriarCobrancaIntegrada } from '../hooks/useCobrancas';
+import { useAtualizarUrls } from '../hooks/useUrls';
+import { 
+  useFranqueadosParaSelecao, 
+  useUnidadesParaSelecao 
+} from '../hooks/useClienteSelecao';
+import type { Cobranca, TipoCobranca, ClienteSelecionado, TipoCliente } from '../types/cobrancas';
+import { cobrancaFormSchema, type CobrancaFormData } from '../utils/cobrancaSchemas';
+import { useState, useEffect } from 'react';
+import { formatarCpf, formatarCnpj } from '../utils/validations';
 
 interface CobrancaFormProps {
   open: boolean;
@@ -47,9 +54,20 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   const theme = useTheme();
   const criarCobranca = useCriarCobranca();
   const editarCobranca = useEditarCobranca();
+  const criarCobrancaIntegrada = useCriarCobrancaIntegrada();
+  const atualizarUrls = useAtualizarUrls();
+  
+  // Estados para controle da interface
   const [dataVencimento, setDataVencimento] = useState<Date | null>(
     cobranca ? new Date(cobranca.vencimento) : null
   );
+  const [criarNoAsaas, setCriarNoAsaas] = useState(false);
+  const [tipoCliente, setTipoCliente] = useState<TipoCliente | ''>('');
+  const [clienteSelecionado, setClienteSelecionado] = useState<ClienteSelecionado | null>(null);
+
+  // Hooks para buscar dados
+  const franqueadosQuery = useFranqueadosParaSelecao();
+  const unidadesQuery = useUnidadesParaSelecao();
 
   const {
     register,
@@ -57,8 +75,9 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
     formState: { errors },
     reset,
     setValue,
-  } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    watch,
+  } = useForm<CobrancaFormData>({
+    resolver: zodResolver(cobrancaFormSchema),
     defaultValues: cobranca
       ? {
           codigo_unidade: cobranca.codigo_unidade,
@@ -66,14 +85,69 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
           valor_original: cobranca.valor_original,
           vencimento: new Date(cobranca.vencimento),
           observacoes: cobranca.observacoes || '',
+          criar_no_asaas: false, // Sempre false para edição
         }
-      : undefined,
+      : {
+          criar_no_asaas: false, // Valor padrão para criação
+        },
   });
 
-  const isLoading = criarCobranca.isPending || editarCobranca.isPending;
+  // Observar mudanças no formulário
+  const watchCriarNoAsaas = watch('criar_no_asaas');
+  const watchTipoCliente = watch('tipo_cliente');
+
+  // Sincronizar estados locais com o formulário
+  useEffect(() => {
+    setCriarNoAsaas(watchCriarNoAsaas);
+  }, [watchCriarNoAsaas]);
+
+  useEffect(() => {
+    setTipoCliente(watchTipoCliente || '');
+    // Limpar cliente selecionado quando mudar o tipo
+    if (watchTipoCliente !== tipoCliente) {
+      setClienteSelecionado(null);
+      setValue('cliente_selecionado', undefined);
+      setValue('franqueado_id', undefined);
+      setValue('unidade_id', undefined);
+    }
+  }, [watchTipoCliente, setValue, tipoCliente]);
+
+  const isLoading = criarCobranca.isPending || editarCobranca.isPending || criarCobrancaIntegrada.isPending || atualizarUrls.isPending;
   const isEdit = !!cobranca;
 
-  const onSubmit = async (data: FormData) => {
+  // Opções para seleção de clientes baseado no tipo
+  const opcoesClientes = tipoCliente === 'cpf' 
+    ? franqueadosQuery.data || [] 
+    : tipoCliente === 'cnpj' 
+    ? unidadesQuery.data || [] 
+    : [];
+
+  const isLoadingClientes = tipoCliente === 'cpf' 
+    ? franqueadosQuery.isLoading 
+    : tipoCliente === 'cnpj' 
+    ? unidadesQuery.isLoading 
+    : false;
+
+  // Funções de manipulação
+  const handleClienteSelecionado = (cliente: ClienteSelecionado | null) => {
+    setClienteSelecionado(cliente);
+    setValue('cliente_selecionado', cliente || undefined);
+    
+    if (cliente) {
+      if (cliente.tipo === 'cpf') {
+        setValue('franqueado_id', cliente.id as string);
+        setValue('unidade_id', undefined);
+      } else {
+        setValue('unidade_id', cliente.id as number);
+        setValue('franqueado_id', undefined);
+      }
+    } else {
+      setValue('franqueado_id', undefined);
+      setValue('unidade_id', undefined);
+    }
+  };
+
+  const onSubmit = async (data: CobrancaFormData) => {
     try {
       if (isEdit) {
         await editarCobranca.mutateAsync({
@@ -86,13 +160,21 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
           },
         });
       } else {
-        await criarCobranca.mutateAsync({
-          codigo_unidade: data.codigo_unidade,
-          tipo_cobranca: data.tipo_cobranca,
-          valor_original: data.valor_original,
-          vencimento: data.vencimento.toISOString(),
-          observacoes: data.observacoes,
-        });
+        // Verificar se deve usar integração ASAAS
+        if (data.criar_no_asaas) {
+          console.log('🚀 Criando cobrança integrada:', data);
+          // Usar o hook de criação integrada
+          await criarCobrancaIntegrada.mutateAsync(data);
+        } else {
+          // Método tradicional sem integração ASAAS
+          await criarCobranca.mutateAsync({
+            codigo_unidade: data.codigo_unidade,
+            tipo_cobranca: data.tipo_cobranca,
+            valor_original: data.valor_original,
+            vencimento: data.vencimento.toISOString(),
+            observacoes: data.observacoes,
+          });
+        }
       }
       
       handleClose();
@@ -115,7 +197,7 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         <Typography variant="h6" component="h2" sx={{ color: 'primary.main' }}>
           {isEdit ? 'Editar Cobrança' : 'Nova Cobrança'}
@@ -125,96 +207,271 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent sx={{ padding: theme.spacing(3) }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: theme.spacing(3) }}>
-            {!isEdit && (
-              <TextField
-                label="Código da Unidade"
-                fullWidth
-                type="number"
-                placeholder="Ex: 1116, 2546"
-                inputProps={{ 
-                  min: 1000,
-                  max: 9999
-                }}
-                {...register('codigo_unidade', { 
-                  valueAsNumber: true 
-                })}
-                error={!!errors.codigo_unidade}
-                helperText={errors.codigo_unidade?.message || 'Digite o código de 4 dígitos da unidade'}
-                disabled={isLoading}
-              />
-            )}
+            
+            {/* Seção: Dados Básicos */}
+            <Box>
+              <Typography variant="h6" sx={{ color: 'primary.main', mb: 2 }}>
+                📋 Dados da Cobrança
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: theme.spacing(2) }}>
+                {!isEdit && (
+                  <TextField
+                    label="Código da Unidade"
+                    fullWidth
+                    type="number"
+                    placeholder="Ex: 1116, 2546"
+                    inputProps={{ 
+                      min: 1000,
+                      max: 9999
+                    }}
+                    {...register('codigo_unidade', { 
+                      valueAsNumber: true 
+                    })}
+                    error={!!errors.codigo_unidade}
+                    helperText={errors.codigo_unidade?.message || 'Digite o código de 4 dígitos da unidade'}
+                    disabled={isLoading}
+                  />
+                )}
 
-            <Box sx={{ display: 'flex', gap: theme.spacing(2) }}>
-              <TextField
-                select
-                label="Tipo de Cobrança"
-                sx={{ flex: 1 }}
-                {...register('tipo_cobranca')}
-                error={!!errors.tipo_cobranca}
-                helperText={errors.tipo_cobranca?.message}
-                disabled={isLoading}
-              >
-                <MenuItem value="">
-                  <em>Selecione o tipo</em>
-                </MenuItem>
-                {tiposCobranca.map((tipo) => (
-                  <MenuItem key={tipo.value} value={tipo.value}>
-                    {tipo.label}
-                  </MenuItem>
-                ))}
-              </TextField>
+                <Box sx={{ display: 'flex', gap: theme.spacing(2) }}>
+                  <TextField
+                    select
+                    label="Tipo de Cobrança"
+                    sx={{ flex: 1 }}
+                    {...register('tipo_cobranca')}
+                    error={!!errors.tipo_cobranca}
+                    helperText={errors.tipo_cobranca?.message}
+                    disabled={isLoading}
+                  >
+                    <MenuItem value="">
+                      <em>Selecione o tipo</em>
+                    </MenuItem>
+                    {tiposCobranca.map((tipo) => (
+                      <MenuItem key={tipo.value} value={tipo.value}>
+                        {tipo.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
 
-              <TextField
-                label="Valor Original"
-                type="number"
-                sx={{ flex: 1 }}
-                inputProps={{ 
-                  step: '0.01',
-                  min: '0'
-                }}
-                {...register('valor_original', { 
-                  valueAsNumber: true 
-                })}
-                error={!!errors.valor_original}
-                helperText={errors.valor_original?.message}
-                disabled={isLoading}
-              />
+                  <TextField
+                    label="Valor da Cobrança"
+                    type="number"
+                    sx={{ flex: 1 }}
+                    inputProps={{ 
+                      min: 0.01,
+                      step: 0.01
+                    }}
+                    {...register('valor_original', { 
+                      valueAsNumber: true 
+                    })}
+                    error={!!errors.valor_original}
+                    helperText={errors.valor_original?.message}
+                    disabled={isLoading}
+                    InputProps={{
+                      startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography>,
+                    }}
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: theme.spacing(2) }}>
+                  <DatePicker
+                    label="Data de Vencimento"
+                    value={dataVencimento}
+                    onChange={handleDateChange}
+                    disabled={isLoading}
+                    sx={{ flex: 1 }}
+                    slotProps={{
+                      textField: {
+                        error: !!errors.vencimento,
+                        helperText: errors.vencimento?.message || 'Selecione a data de vencimento',
+                      },
+                    }}
+                  />
+                </Box>
+
+                <TextField
+                  label="Observações"
+                  multiline
+                  rows={3}
+                  placeholder="Informações adicionais sobre a cobrança..."
+                  {...register('observacoes')}
+                  error={!!errors.observacoes}
+                  helperText={errors.observacoes?.message}
+                  disabled={isLoading}
+                />
+              </Box>
             </Box>
 
-            <DatePicker
-              label="Data de Vencimento"
-              value={dataVencimento}
-              onChange={handleDateChange}
-              disabled={isLoading}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  error: !!errors.vencimento,
-                  helperText: errors.vencimento?.message,
-                },
-              }}
-            />
+            {/* Seção: Integração ASAAS (só para criação) */}
+            {!isEdit && (
+              <>
+                <Divider />
+                <Box>
+                  <Typography variant="h6" sx={{ color: 'primary.main', mb: 2 }}>
+                    🏦 Integração ASAAS
+                  </Typography>
+                  
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        {...register('criar_no_asaas')}
+                        disabled={isLoading}
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body1">
+                          Criar cobrança no ASAAS
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Gera automaticamente boleto, PIX e link de pagamento
+                        </Typography>
+                      </Box>
+                    }
+                  />
 
-            <TextField
-              label="Observações"
-              multiline
-              rows={4}
-              fullWidth
-              {...register('observacoes')}
-              error={!!errors.observacoes}
-              helperText={errors.observacoes?.message}
-              disabled={isLoading}
-            />
+                  {/* Campos condicionais para integração ASAAS */}
+                  {criarNoAsaas && (
+                    <Box sx={{ mt: 3, pl: 4, borderLeft: `3px solid ${theme.palette.primary.main}` }}>
+                      <Typography variant="subtitle1" sx={{ mb: 2, color: 'primary.main' }}>
+                        👤 Seleção do Cliente
+                      </Typography>
 
-            {(criarCobranca.error || editarCobranca.error) && (
-              <Alert severity="error">
-                {criarCobranca.error?.message || editarCobranca.error?.message}
-              </Alert>
+                      {/* Tipo de Cliente */}
+                      <FormControl component="fieldset" sx={{ mb: 3 }}>
+                        <FormLabel component="legend" sx={{ mb: 1 }}>
+                          Tipo de Documento
+                        </FormLabel>
+                        <RadioGroup
+                          row
+                          value={tipoCliente}
+                          onChange={(e) => {
+                            const valor = e.target.value as TipoCliente;
+                            setTipoCliente(valor);
+                            setValue('tipo_cliente', valor);
+                          }}
+                        >
+                          <FormControlLabel 
+                            value="cpf" 
+                            control={<Radio />} 
+                            label="CPF (Franqueado)" 
+                            disabled={isLoading}
+                          />
+                          <FormControlLabel 
+                            value="cnpj" 
+                            control={<Radio />} 
+                            label="CNPJ (Unidade)" 
+                            disabled={isLoading}
+                          />
+                        </RadioGroup>
+                        {errors.tipo_cliente && (
+                          <Typography variant="caption" color="error">
+                            {errors.tipo_cliente.message}
+                          </Typography>
+                        )}
+                      </FormControl>
+
+                      {/* Seleção de Cliente */}
+                      {tipoCliente && (
+                        <Autocomplete
+                          options={opcoesClientes}
+                          value={clienteSelecionado}
+                          onChange={(_, value) => handleClienteSelecionado(value)}
+                          getOptionLabel={(option) => option.nome}
+                          loading={isLoadingClientes}
+                          disabled={isLoading}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label={tipoCliente === 'cpf' ? 'Selecionar Franqueado' : 'Selecionar Unidade'}
+                              placeholder={`Digite para buscar ${tipoCliente === 'cpf' ? 'franqueados' : 'unidades'}...`}
+                              error={!!errors.cliente_selecionado}
+                              helperText={errors.cliente_selecionado?.message}
+                              InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                  <>
+                                    {isLoadingClientes ? <CircularProgress color="inherit" size={20} /> : null}
+                                    {params.InputProps.endAdornment}
+                                  </>
+                                ),
+                              }}
+                            />
+                          )}
+                          renderOption={(props, option) => (
+                            <Box component="li" {...props}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                <Typography variant="body1">{option.nome}</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {option.tipo === 'cpf' 
+                                    ? formatarCpf(option.documento)
+                                    : formatarCnpj(option.documento)
+                                  }
+                                  {option.email && ` • ${option.email}`}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                          noOptionsText={
+                            isLoadingClientes 
+                              ? 'Carregando...' 
+                              : `Nenhum ${tipoCliente === 'cpf' ? 'franqueado' : 'unidade'} encontrado`
+                          }
+                        />
+                      )}
+
+                      {/* Preview do Cliente Selecionado */}
+                      {clienteSelecionado && (
+                        <Paper 
+                          elevation={2} 
+                          sx={{ 
+                            mt: 2, 
+                            p: 2, 
+                            backgroundColor: theme.palette.mode === 'light' ? 'grey.50' : 'grey.900' 
+                          }}
+                        >
+                          <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main' }}>
+                            ✅ Cliente Selecionado
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                            <Chip 
+                              label={clienteSelecionado.nome} 
+                              color="primary" 
+                              variant="outlined" 
+                            />
+                            <Chip 
+                              label={clienteSelecionado.tipo === 'cpf' 
+                                ? formatarCpf(clienteSelecionado.documento)
+                                : formatarCnpj(clienteSelecionado.documento)
+                              } 
+                              size="small" 
+                            />
+                            {clienteSelecionado.email && (
+                              <Chip 
+                                label={clienteSelecionado.email} 
+                                size="small" 
+                                variant="outlined" 
+                              />
+                            )}
+                          </Box>
+                        </Paper>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              </>
             )}
           </Box>
         </DialogContent>
 
         <DialogActions sx={{ padding: theme.spacing(2, 3) }}>
+          {(criarCobranca.error || editarCobranca.error || criarCobrancaIntegrada.error) && (
+            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+              {criarCobranca.error?.message || editarCobranca.error?.message || criarCobrancaIntegrada.error?.message}
+            </Alert>
+          )}
+          
           <Button onClick={handleClose} disabled={isLoading}>
             Cancelar
           </Button>

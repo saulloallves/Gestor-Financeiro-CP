@@ -44,6 +44,8 @@ class AsaasService {
   }
 
   async createCustomer(customer: AsaasCustomer): Promise<AsaasCustomer> {
+    console.log(`🏭 [ASAAS] createCustomer chamado com:`, JSON.stringify(customer, null, 2));
+    
     return this.makeRequest<AsaasCustomer>('/customers', {
       method: 'POST',
       body: JSON.stringify(customer),
@@ -220,6 +222,168 @@ class AsaasService {
       method: 'GET',
     });
     return response.invoiceUrl;
+  }
+
+  // ================================
+  // MÉTODOS AVANÇADOS PARA INTEGRAÇÃO
+  // ================================
+
+  /**
+   * Buscar customer por CPF ou CNPJ
+   */
+  async findCustomerByCpfCnpj(cpfCnpj: string): Promise<AsaasCustomer | null> {
+    try {
+      const customers = await this.getCustomers({
+        cpfCnpj: cpfCnpj,
+        limit: 1,
+      });
+
+      return customers.data && customers.data.length > 0 ? customers.data[0] : null;
+    } catch {
+      console.log(`Customer com documento ${cpfCnpj} não encontrado no ASAAS`);
+      return null;
+    }
+  }
+
+  /**
+   * Criar customer no ASAAS baseado em dados de franqueado (CPF)
+   */
+  async createCustomerFromFranqueado(franqueado: {
+    nome: string;
+    cpf: string;
+    email?: string;
+    telefone?: string;
+    endereco_rua?: string;
+    endereco_numero?: string;
+    endereco_bairro?: string;
+    endereco_cidade?: string;
+    endereco_uf?: string;
+    endereco_cep?: string;
+  }): Promise<AsaasCustomer> {
+    const customerData: AsaasCustomer = {
+      name: franqueado.nome,
+      cpfCnpj: franqueado.cpf,
+      email: franqueado.email,
+      phone: franqueado.telefone,
+      mobilePhone: franqueado.telefone,
+      // Endereço (se disponível)
+      address: franqueado.endereco_rua,
+      addressNumber: franqueado.endereco_numero,
+      province: franqueado.endereco_bairro,
+      city: franqueado.endereco_cidade,
+      state: franqueado.endereco_uf,
+      postalCode: franqueado.endereco_cep,
+    };
+
+    return await this.createCustomer(customerData);
+  }
+
+  /**
+   * Criar customer no ASAAS baseado em dados de unidade (CNPJ)
+   */
+  async createCustomerFromUnidade(unidade: {
+    nome_padrao: string;
+    cnpj: string;
+    email_comercial?: string;
+    telefone_comercial?: string;
+    endereco_rua?: string;
+    endereco_numero?: string;
+    endereco_bairro?: string;
+    endereco_cidade?: string;
+    endereco_uf?: string;
+    endereco_cep?: string;
+  }): Promise<AsaasCustomer> {
+    const customerData: AsaasCustomer = {
+      name: unidade.nome_padrao,
+      cpfCnpj: unidade.cnpj,
+      email: unidade.email_comercial,
+      phone: unidade.telefone_comercial,
+      mobilePhone: unidade.telefone_comercial,
+      // Endereço (se disponível)
+      address: unidade.endereco_rua,
+      addressNumber: unidade.endereco_numero,
+      province: unidade.endereco_bairro,
+      city: unidade.endereco_cidade,
+      state: unidade.endereco_uf,
+      postalCode: unidade.endereco_cep,
+    };
+
+    return await this.createCustomer(customerData);
+  }
+
+  /**
+   * Buscar ou criar customer no ASAAS (método principal para integração)
+   */
+  async findOrCreateCustomer(clienteData: {
+    tipo: 'cpf' | 'cnpj';
+    documento: string;
+    nome: string;
+    email?: string;
+    telefone?: string;
+    endereco?: {
+      rua?: string;
+      numero?: string;
+      bairro?: string;
+      cidade?: string;
+      uf?: string;
+      cep?: string;
+    };
+  }): Promise<{ customer: AsaasCustomer; isNew: boolean }> {
+    console.log(`🔍 [ASAAS] Buscando customer com documento: ${clienteData.documento}`);
+    console.log(`📋 [ASAAS] Dados do cliente:`, JSON.stringify(clienteData, null, 2));
+
+    // Validações obrigatórias
+    if (!clienteData.nome || clienteData.nome.trim() === '') {
+      throw new Error('Nome do cliente é obrigatório para criar customer no ASAAS');
+    }
+    if (!clienteData.documento || clienteData.documento.trim() === '') {
+      throw new Error('Documento do cliente é obrigatório para criar customer no ASAAS');
+    }
+
+    // 1. Tentar buscar customer existente
+    const existingCustomer = await this.findCustomerByCpfCnpj(clienteData.documento);
+
+    if (existingCustomer) {
+      console.log(`✅ Customer encontrado no ASAAS: ${existingCustomer.id}`);
+      return { customer: existingCustomer, isNew: false };
+    }
+
+    // 2. Se não encontrou, criar novo customer
+    console.log(`➕ Criando novo customer no ASAAS para: ${clienteData.nome}`);
+    
+    // Preparar dados base (campos obrigatórios)
+    const baseData: Partial<AsaasCustomer> = {
+      name: clienteData.nome.trim(),
+      cpfCnpj: clienteData.documento.trim(),
+    };
+
+    // Adicionar campos opcionais apenas se tiverem valor
+    if (clienteData.email?.trim()) {
+      baseData.email = clienteData.email.trim();
+    }
+    if (clienteData.telefone?.trim()) {
+      baseData.phone = clienteData.telefone.trim();
+      baseData.mobilePhone = clienteData.telefone.trim();
+    }
+
+    // Adicionar endereço se fornecido
+    if (clienteData.endereco) {
+      if (clienteData.endereco.rua?.trim()) baseData.address = clienteData.endereco.rua.trim();
+      if (clienteData.endereco.numero?.trim()) baseData.addressNumber = clienteData.endereco.numero.trim();
+      if (clienteData.endereco.bairro?.trim()) baseData.province = clienteData.endereco.bairro.trim();
+      if (clienteData.endereco.cidade?.trim()) baseData.city = clienteData.endereco.cidade.trim();
+      if (clienteData.endereco.uf?.trim()) baseData.state = clienteData.endereco.uf.trim();
+      if (clienteData.endereco.cep?.trim()) baseData.postalCode = clienteData.endereco.cep.trim();
+    }
+
+    const customerData = baseData as AsaasCustomer;
+
+    console.log(`📤 [ASAAS] CustomerData sendo enviado:`, JSON.stringify(customerData, null, 2));
+    
+    const newCustomer = await this.createCustomer(customerData);
+    console.log(`✅ Customer criado no ASAAS: ${newCustomer.id}`);
+
+    return { customer: newCustomer, isNew: true };
   }
 }
 

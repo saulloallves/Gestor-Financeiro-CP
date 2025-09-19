@@ -6,7 +6,8 @@ import type {
   CriarCobrancaData, 
   EditarCobrancaData, 
   CobrancasFilters,
-  NegociacaoCobranca 
+  NegociacaoCobranca,
+  CobrancaFormData 
 } from '../types/cobrancas';
 
 class CobrancasService {
@@ -100,6 +101,159 @@ class CobrancasService {
     }
 
     return cobranca;
+  }
+
+  /**
+   * Cria cobrança integrada com ASAAS (novo método para Fase 2)
+   * Usa a nova lógica de buscar/criar customer automaticamente
+   */
+  async criarCobrancaIntegrada(dados: CobrancaFormData): Promise<Cobranca> {
+    console.log('🚀 [INTEGRAÇÃO] Iniciando criação de cobrança integrada...');
+    console.log('📋 Dados recebidos:', dados);
+
+    // 1. Preparar dados base da cobrança (apenas campos da tabela)
+    const cobrancaBase: CriarCobrancaData = {
+      codigo_unidade: dados.codigo_unidade,
+      tipo_cobranca: dados.tipo_cobranca,
+      valor_original: dados.valor_original,
+      valor_atualizado: dados.valor_original,
+      vencimento: dados.vencimento.toISOString(),
+      observacoes: dados.observacoes,
+      status: 'pendente',
+      juros_aplicado: 0,
+      multa_aplicada: 0,
+      dias_atraso: 0,
+    };
+
+    // 2. Se não deve criar no ASAAS, usar método tradicional
+    if (!dados.criar_no_asaas) {
+      console.log('📝 Criando cobrança apenas local (sem ASAAS)');
+      return await this.criarCobranca(cobrancaBase);
+    }
+
+    // 3. Validar dados para integração ASAAS
+    if (!dados.cliente_selecionado) {
+      throw new Error('Cliente selecionado é obrigatório para integração ASAAS');
+    }
+
+    console.log('🔗 Integrando com ASAAS...');
+    console.log('👤 Cliente selecionado:', JSON.stringify(dados.cliente_selecionado, null, 2));
+
+    // Validar campos obrigatórios do cliente
+    if (!dados.cliente_selecionado.nome || dados.cliente_selecionado.nome.trim() === '') {
+      throw new Error('Nome do cliente é obrigatório para integração ASAAS');
+    }
+    if (!dados.cliente_selecionado.documento || dados.cliente_selecionado.documento.trim() === '') {
+      throw new Error('Documento do cliente é obrigatório para integração ASAAS');
+    }
+
+    console.log('✅ Validações OK - Cliente:', dados.cliente_selecionado.nome);
+
+    try {
+      // 4. Buscar ou criar customer no ASAAS
+      const { customer, isNew } = await asaasService.findOrCreateCustomer({
+        tipo: dados.cliente_selecionado.tipo,
+        documento: dados.cliente_selecionado.documento,
+        nome: dados.cliente_selecionado.nome,
+        email: dados.cliente_selecionado.email,
+        telefone: dados.cliente_selecionado.telefone,
+      });
+
+      console.log(`${isNew ? '✨ Novo' : '✅ Existente'} customer ASAAS: ${customer.id}`);
+
+      // 5. Criar payment no ASAAS
+      const paymentData = {
+        customer: customer.id!,
+        billingType: 'BOLETO' as const,
+        value: dados.valor_original,
+        dueDate: dados.vencimento.toISOString().split('T')[0], // YYYY-MM-DD
+        description: `${dados.tipo_cobranca.toUpperCase()} - Unidade ${dados.codigo_unidade}`,
+        externalReference: `unidade-${dados.codigo_unidade}-${Date.now()}`,
+      };
+
+      console.log('💳 Criando payment no ASAAS...');
+      const payment = await asaasService.createPayment(paymentData);
+      console.log('✅ Payment criado:', payment.id);
+
+      // 6. Tentar obter URLs do boleto e pagamento (com fallback)
+      console.log('🔗 Tentando obter URLs do boleto...');
+      let boletoUrl: string | undefined;
+      let linkPagamento: string | undefined;
+
+      try {
+        const urls = await Promise.allSettled([
+          asaasService.getBankSlipUrl(payment.id!),
+          asaasService.getPaymentUrl(payment.id!),
+        ]);
+
+        if (urls[0].status === 'fulfilled') {
+          boletoUrl = urls[0].value;
+          console.log('✅ URL do boleto obtida com sucesso');
+        } else {
+          console.warn('⚠️ Erro ao obter URL do boleto:', urls[0].reason);
+        }
+
+        if (urls[1].status === 'fulfilled') {
+          linkPagamento = urls[1].value;
+          console.log('✅ URL de pagamento obtida com sucesso');
+        } else {
+          console.warn('⚠️ Erro ao obter URL de pagamento:', urls[1].reason);
+        }
+      } catch (urlError) {
+        console.warn('⚠️ Erro geral ao obter URLs:', urlError);
+      }
+
+      // 7. Salvar cobrança com dados ASAAS (mesmo sem URLs)
+      const cobrancaCompleta: CriarCobrancaData = {
+        ...cobrancaBase,
+        asaas_customer_id: customer.id,
+        asaas_payment_id: payment.id,
+        ...(boletoUrl && { link_boleto: boletoUrl }),
+        ...(linkPagamento && { link_pagamento: linkPagamento }),
+      };
+
+      console.log('💾 Salvando cobrança no banco local...');
+      const { data: cobranca, error } = await supabase
+        .from('cobrancas')
+        .insert(cobrancaCompleta)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('❌ Erro ao salvar cobrança:', error);
+        throw new Error(`Erro ao salvar cobrança: ${error.message}`);
+      }
+
+      console.log('🎉 Cobrança integrada criada com sucesso!');
+      console.log('📋 ID Local:', cobranca.id);
+      console.log('🏦 ID ASAAS Payment:', payment.id);
+      console.log('👤 ID ASAAS Customer:', customer.id);
+
+      return cobranca;
+
+    } catch (asaasError) {
+      console.error('❌ Erro na integração ASAAS:', asaasError);
+      
+      // Fallback: criar cobrança local com indicação de erro
+      console.log('🔄 Criando cobrança local como fallback...');
+      const cobrancaFallbackData: CriarCobrancaData = {
+        ...cobrancaBase,
+        observacoes: `${dados.observacoes || ''}\n\n[ERRO ASAAS: ${asaasError}]`.trim(),
+      };
+
+      const { error } = await supabase
+        .from('cobrancas')
+        .insert(cobrancaFallbackData)
+        .select('*')
+        .single();
+
+      if (error) {
+        throw new Error(`Erro crítico: falha na integração ASAAS E no banco local: ${error.message}`);
+      }
+
+      // Re-throw o erro ASAAS para o usuário saber que houve problema
+      throw new Error(`Cobrança criada localmente, mas falhou integração ASAAS: ${asaasError}`);
+    }
   }
 
   async editarCobranca(id: string, dados: EditarCobrancaData): Promise<Cobranca> {

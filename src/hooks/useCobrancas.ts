@@ -5,7 +5,8 @@ import type {
   CriarCobrancaData, 
   EditarCobrancaData, 
   CobrancasFilters,
-  NegociacaoCobranca 
+  NegociacaoCobranca,
+  CobrancaFormData 
 } from '../types/cobrancas';
 import toast from 'react-hot-toast';
 
@@ -45,6 +46,22 @@ export function useCriarCobranca() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erro ao criar cobrança');
+    },
+  });
+}
+
+export function useCriarCobrancaIntegrada() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dados: CobrancaFormData) => cobrancasService.criarCobrancaIntegrada(dados),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cobrancas'] });
+      queryClient.invalidateQueries({ queryKey: ['estatisticas-cobrancas'] });
+      toast.success('Cobrança integrada criada com sucesso!');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erro ao criar cobrança integrada');
     },
   });
 }

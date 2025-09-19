@@ -1,98 +1,218 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
 // Setup type definitions for built-in Supabase Runtime APIs
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-// Headers para permitir requisições do nosso app (CORS)
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// Use built-in Deno.serve (recommended)
+const ASAAS_API_URL = Deno.env.get('ASAAS_API_URL') || 'https://api-sandbox.asaas.com/v3';
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*', // Em produção, restrinja para o seu domínio: 'https://meu-app.com'
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json'
 };
-
-// URL base da API do ASAAS
-const ASAAS_API_URL = 'https://api-sandbox.asaas.com/v3';
-
-serve(async (req) => {
-  // Trata a requisição pre-flight do CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
+// Utility to safely JSON.stringify unknown values
+function safeStringify(obj) {
   try {
-    console.log('Iniciando a função asaas-proxy.');
-
-    // 1. Pega a chave da API dos secrets do Supabase
-    const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
-    if (!asaasApiKey) {
-      throw new Error('ASAAS_API_KEY não foi configurada nos secrets do Supabase.');
+    return JSON.stringify(obj);
+  } catch  {
+    return String(obj);
+  }
+}
+// Redact potential secrets in headers
+function redactHeaders(h) {
+  const out = {};
+  if (!h) return out;
+  const hdrs = new Headers(h);
+  for (const [k, v] of hdrs.entries()){
+    const lower = k.toLowerCase();
+    if ([
+      'authorization',
+      'api-key',
+      'access_token',
+      'x-api-key'
+    ].includes(lower)) {
+      out[k] = '***redacted***';
+    } else {
+      out[k] = v;
     }
-    console.log('Chave da API do ASAAS carregada com sucesso.');
-
-    // 2. Extrai o endpoint e o corpo da requisição original
-    const body = await req.json();
-    const { endpoint, options } = body;
-    if (!endpoint) {
-      throw new Error('O "endpoint" não foi fornecido no corpo da requisição.');
-    }
-    console.log(`Endpoint recebido: ${endpoint}`);
-    console.log('Opções recebidas:', options);
-
-    // 3. Monta a URL final para a API do ASAAS
-    const url = `${ASAAS_API_URL}${endpoint}`;
-    console.log(`URL final da requisição: ${url}`);
-
-    // 4. Prepara os headers, injetando a chave da API
-    const headers = new Headers(options?.headers || {});
-    headers.set('access_token', asaasApiKey);
-    headers.set('Content-Type', 'application/json');
-    headers.set('User-Agent', 'Supabase-Edge-Function/1.0');
-
-    // 5. Faz a requisição para a API do ASAAS
-    console.log('Realizando a chamada fetch para o ASAAS...');
-    const response = await fetch(url, {
-      method: options?.method || 'GET',
-      headers: headers,
-      body: options?.body ? JSON.stringify(options.body) : undefined,
+  }
+  return out;
+}
+// Parse ASAAS response body as JSON if possible, otherwise text
+async function parseAsaasBody(res) {
+  const text = await res.text();
+  if (!text) return {
+    body: null,
+    raw: null
+  };
+  try {
+    return {
+      body: JSON.parse(text),
+      raw: text
+    };
+  } catch  {
+    return {
+      body: {
+        _raw: text
+      },
+      raw: text
+    };
+  }
+}
+console.info('asaas-proxy initialized');
+Deno.serve(async (req)=>{
+  const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
+  // Preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
     });
-    console.log(`Resposta do ASAAS recebida com status: ${response.status}`);
-
-    // 6. Retorna a resposta (ou o erro) do ASAAS para o cliente
-    const responseData = await response.json();
-
-    if (!response.ok) {
-      // Se a resposta do ASAAS for um erro, repassa o erro
-      return new Response(JSON.stringify(responseData), {
-        status: response.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  }
+  if (req.method !== 'POST') {
+    console.warn('[asaas-proxy]', {
+      requestId,
+      msg: 'Method not allowed',
+      method: req.method
+    });
+    return new Response(JSON.stringify({
+      error: 'Method Not Allowed',
+      requestId
+    }), {
+      status: 405,
+      headers: corsHeaders
+    });
+  }
+  try {
+    const contentType = req.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      console.warn('[asaas-proxy]', {
+        requestId,
+        msg: 'Invalid content type',
+        contentType
+      });
+      return new Response(JSON.stringify({
+        error: 'Invalid content type. Expected application/json',
+        requestId
+      }), {
+        status: 415,
+        headers: corsHeaders
       });
     }
-
-    return new Response(JSON.stringify(responseData), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    let payload;
+    try {
+      payload = await req.json();
+    } catch (e) {
+      console.error('[asaas-proxy] JSON parse error', {
+        requestId,
+        error: e instanceof Error ? e.message : String(e)
+      });
+      return new Response(JSON.stringify({
+        error: 'Invalid JSON body',
+        requestId
+      }), {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+    const asaasApiKey = Deno.env.get('ASAAS_API_KEY');
+    if (!asaasApiKey) {
+      console.error('[asaas-proxy] Missing ASAAS_API_KEY', {
+        requestId
+      });
+      return new Response(JSON.stringify({
+        error: 'ASAAS_API_KEY is not configured',
+        requestId
+      }), {
+        status: 500,
+        headers: corsHeaders
+      });
+    }
+    const endpoint = String(payload?.endpoint || '').trim();
+    const options = payload?.options ?? {};
+    if (!endpoint || !endpoint.startsWith('/')) {
+      console.warn('[asaas-proxy] Invalid endpoint', {
+        requestId,
+        endpoint
+      });
+      return new Response(JSON.stringify({
+        error: 'Invalid endpoint. It must start with /',
+        requestId
+      }), {
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+    const url = `${ASAAS_API_URL}${endpoint}`;
+    const headers = new Headers(options.headers || {});
+    headers.set('access_token', asaasApiKey);
+    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    headers.set('User-Agent', 'Supabase-Edge-Function/asaas-proxy');
+    const method = (options.method || 'GET').toUpperCase();
+    const body = options.body || undefined; // Cliente já fez JSON.stringify - não fazer novamente!
+    
+    console.info('[asaas-proxy] Outbound request', {
+      requestId,
+      method,
+      url,
+      headers: redactHeaders(headers),
+      bodyPreviewBytes: typeof body === 'string' ? Math.min(body.length, 1024) : 0,
+      bodyPreview: typeof body === 'string' ? body.substring(0, 300) : 'N/A' // Debug body
     });
-
-  } catch (error) {
-    // Se qualquer erro ocorrer no processo, retorna um erro 500 detalhado
-    console.error('Erro na Edge Function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const asaasRes = await fetch(url, {
+      method,
+      headers,
+      body
+    });
+    const { body: asaasBody, raw } = await parseAsaasBody(asaasRes);
+    const durationMs = Date.now() - startedAt;
+    if (!asaasRes.ok) {
+      console.error('[asaas-proxy] ASAAS error', {
+        requestId,
+        status: asaasRes.status,
+        statusText: asaasRes.statusText,
+        durationMs,
+        responseHeaders: redactHeaders(asaasRes.headers),
+        responseBody: safeStringify(asaasBody)
+      });
+      return new Response(JSON.stringify({
+        error: 'ASAAS API error',
+        status: asaasRes.status,
+        statusText: asaasRes.statusText,
+        data: asaasBody,
+        requestId
+      }), {
+        status: asaasRes.status,
+        headers: {
+          ...corsHeaders
+        }
+      });
+    }
+    console.info('[asaas-proxy] ASAAS success', {
+      requestId,
+      status: asaasRes.status,
+      durationMs,
+      responseHeaders: redactHeaders(asaasRes.headers),
+      bodyPreviewBytes: raw ? Math.min(raw.length, 2048) : 0
+    });
+    return new Response(JSON.stringify(asaasBody), {
+      status: 200,
+      headers: {
+        ...corsHeaders
+      }
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[asaas-proxy] Unexpected error', {
+      requestId,
+      message
+    });
+    return new Response(JSON.stringify({
+      error: 'Unexpected error',
+      message,
+      requestId
+    }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: corsHeaders
     });
   }
 });
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/asaas-proxy' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/

@@ -2,6 +2,18 @@ export type TipoCobranca = 'royalties' | 'insumos' | 'aluguel' | 'eventual' | 't
 
 export type StatusCobranca = 'pendente' | 'pago' | 'atrasado' | 'cancelado' | 'em_aberto' | 'negociado' | 'em_atraso' | 'vencido' | 'juridico' | 'parcelado';
 
+// Novos tipos para integração ASAAS
+export type TipoCliente = 'cpf' | 'cnpj';
+
+export interface ClienteSelecionado {
+  id: string | number;
+  nome: string;
+  documento: string; // CPF ou CNPJ
+  email?: string;
+  telefone?: string;
+  tipo: TipoCliente;
+}
+
 export interface Cobranca {
   id: string;
   codigo_unidade: number;
@@ -22,6 +34,12 @@ export interface Cobranca {
   link_boleto?: string;
   created_by?: string;
   updated_by?: string;
+  // Novos campos para integração ASAAS
+  tipo_cliente?: TipoCliente;
+  franqueado_id?: string;
+  unidade_id?: number;
+  criado_no_asaas?: boolean;
+  link_pagamento?: string;
 }
 
 export interface CriarCobrancaData {
@@ -40,6 +58,28 @@ export interface CriarCobrancaData {
   asaas_customer_id?: string;
   boleto_id?: string;
   link_boleto?: string;
+  // Novos campos para integração ASAAS
+  tipo_cliente?: TipoCliente;
+  franqueado_id?: string;
+  unidade_id?: number;
+  criar_no_asaas?: boolean;
+  cliente_selecionado?: ClienteSelecionado;
+  link_pagamento?: string;
+}
+
+// Novo tipo para dados do formulário estendido
+export interface CobrancaFormData {
+  codigo_unidade: number;
+  tipo_cobranca: TipoCobranca;
+  valor_original: number;
+  vencimento: Date;
+  observacoes?: string;
+  // Campos específicos para integração ASAAS
+  criar_no_asaas: boolean;
+  tipo_cliente?: TipoCliente;
+  franqueado_id?: string;
+  unidade_id?: number;
+  cliente_selecionado?: ClienteSelecionado;
 }
 
 export interface EditarCobrancaData {
