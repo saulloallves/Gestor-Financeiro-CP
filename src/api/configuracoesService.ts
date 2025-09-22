@@ -9,7 +9,7 @@ import type {
 class ConfiguracoesService {
   async obterConfiguracao(): Promise<ConfiguracaoCobranca> {
     const { data, error } = await supabase
-      .from('configuracoes_cobrancas')
+      .from('configuracoes')
       .select('*')
       .single();
 
@@ -27,20 +27,49 @@ class ConfiguracoesService {
       valor_multa_atraso: Number(data.valor_multa_atraso),
       maximo_juros_acumulado: Number(data.maximo_juros_acumulado),
       desconto_antecipado: data.desconto_antecipado ? Number(data.desconto_antecipado) : null,
+      dias_desconto_antecipado: data.dias_desconto_antecipado || null,
     };
   }
 
   async atualizarConfiguracao(dados: AtualizarConfiguracaoData): Promise<ConfiguracaoCobranca> {
-    const { data, error } = await supabase
-      .from('configuracoes_cobrancas')
-      .update({
-        ...dados,
-        updated_at: new Date().toISOString()
-      })
-      .select()
+    console.log('Dados enviados para atualização:', dados);
+    
+    // Primeiro, tentar buscar o registro existente
+    const { data: existingData } = await supabase
+      .from('configuracoes')
+      .select('id')
       .single();
 
+    let result;
+    
+    if (existingData) {
+      // Se existe, fazer UPDATE
+      result = await supabase
+        .from('configuracoes')
+        .update({
+          ...dados,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingData.id)
+        .select()
+        .single();
+    } else {
+      // Se não existe, fazer INSERT
+      result = await supabase
+        .from('configuracoes')
+        .insert({
+          ...dados,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+    }
+
+    const { data, error } = result;
+
     if (error) {
+      console.error('Erro do Supabase:', error);
       throw new Error(error.message);
     }
 
@@ -50,6 +79,7 @@ class ConfiguracoesService {
       valor_multa_atraso: Number(data.valor_multa_atraso),
       maximo_juros_acumulado: Number(data.maximo_juros_acumulado),
       desconto_antecipado: data.desconto_antecipado ? Number(data.desconto_antecipado) : null,
+      dias_desconto_antecipado: data.dias_desconto_antecipado || null,
     };
   }
 
@@ -61,7 +91,7 @@ class ConfiguracoesService {
     
     // Calcular dias de atraso considerando dias de graça
     const diasDiferenca = Math.floor((dataCalc.getTime() - dataVenc.getTime()) / (1000 * 60 * 60 * 24));
-    const diasAtraso = Math.max(0, diasDiferenca - configuracao.dias_graca);
+    const diasAtraso = Math.max(0, diasDiferenca - (configuracao.dias_graca || 0));
     
     let valorJuros = 0;
     let valorMulta = 0;
@@ -69,9 +99,9 @@ class ConfiguracoesService {
     let valorDesconto = 0;
 
     // Verificar se deve aplicar desconto por pagamento antecipado
-    if (diasDiferenca < 0 && configuracao.desconto_antecipado && configuracao.dias_desconto) {
+    if (diasDiferenca < 0 && configuracao.desconto_antecipado && configuracao.dias_desconto_antecipado) {
       const diasAntecipacao = Math.abs(diasDiferenca);
-      if (diasAntecipacao <= configuracao.dias_desconto) {
+      if (diasAntecipacao <= configuracao.dias_desconto_antecipado) {
         aplicarDesconto = true;
         valorDesconto = (valorOriginal * configuracao.desconto_antecipado) / 100;
       }
@@ -121,7 +151,7 @@ class ConfiguracoesService {
 
   async verificarAmbienteAsaas(): Promise<'sandbox' | 'production'> {
     const configuracao = await this.obterConfiguracao();
-    return configuracao.asaas_environment;
+    return configuracao.asaas_environment || 'sandbox';
   }
 
   async atualizarAmbienteAsaas(ambiente: 'sandbox' | 'production', updatedBy?: string): Promise<ConfiguracaoCobranca> {

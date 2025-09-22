@@ -94,7 +94,6 @@ export default function ConfiguracoesPage() {
         dias_graca: configuracao.dias_graca,
         maximo_juros_acumulado: configuracao.maximo_juros_acumulado,
         desconto_antecipado: configuracao.desconto_antecipado,
-        dias_desconto: configuracao.dias_desconto,
         asaas_webhook_url: configuracao.asaas_webhook_url,
         asaas_environment: configuracao.asaas_environment,
         dias_lembrete_previo: configuracao.dias_lembrete_previo,
@@ -107,7 +106,6 @@ export default function ConfiguracoesPage() {
     const updateData: AtualizarConfiguracaoData = {
       ...data,
       desconto_antecipado: data.desconto_antecipado || null,
-      dias_desconto: data.dias_desconto || null,
       asaas_webhook_url: data.asaas_webhook_url || null,
       dias_lembrete_previo: data.dias_lembrete_previo || null,
       dias_escalonamento_juridico: data.dias_escalonamento_juridico || null,
@@ -782,3 +780,6 @@ export default function ConfiguracoesPage() {
     </Box>
   );
 }
+
+// Exportação nomeada para compatibilidade com o router
+export { ConfiguracoesPage };

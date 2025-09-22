@@ -16,18 +16,17 @@ import {
   LayoutDashboard,
   CreditCard,
   Users,
-  // FileText,
-  // BarChart3,
+  BrainCircuit,
   ChevronDown,
   ChevronRight,
-  // TrendingUp,
-  // AlertCircle,
   Building,
   Pin,
   PinOff,
   Shield,
   UserCog,
   UserSearch,
+  Settings,
+  Database,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -71,6 +70,26 @@ const menuItems: MenuItem[] = [
     title: "Cobranças",
     icon: CreditCard,
     path: "/cobrancas",
+  },
+  {
+    id: "ia",
+    title: "Inteligência Artificial",
+    icon: BrainCircuit,
+    path: "/ia",
+    children: [
+      {
+        id: "base-conhecimento",
+        title: "Base de Conhecimento",
+        icon: Database,
+        path: "/base-conhecimento",
+      },
+      {
+        id: "configuracoes-ia",
+        title: "Configurações de IA",
+        icon: Settings,
+        path: "/configuracoes-ia",
+      },
+    ],
   },
   {
     id: "consultas",

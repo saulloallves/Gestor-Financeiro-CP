@@ -6,7 +6,9 @@ import { FranqueadosPage } from "../pages/FranqueadosPage";
 import { EquipesPage } from "../pages/EquipesPage";
 import { UsuariosInternosPage } from "../pages/UsuariosInternosPage";
 import { CobrancasPage } from "../pages/CobrancasPage";
-import ConfiguracoesPage from "../pages/ConfiguracoesPage";
+import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
+import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
+import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -79,6 +81,22 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <ConfiguracoesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "base-conhecimento",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <BaseConhecimentoPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "configuracoes-ia",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <ConfiguracoesIAPage />
           </ProtectedRoute>
         ),
       },
