@@ -27,6 +27,7 @@ import {
   UserSearch,
   Settings,
   Database,
+  TestTube,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -138,32 +139,12 @@ const menuItems: MenuItem[] = [
       },
     ],
   },
-  // {
-  //   id: "relatorios",
-  //   title: "Relatórios",
-  //   icon: BarChart3,
-  //   path: "/relatorios",
-  //   children: [
-  //     {
-  //       id: "relatorios-financeiro",
-  //       title: "Financeiro",
-  //       icon: TrendingUp,
-  //       path: "/relatorios/financeiro",
-  //     },
-  //     {
-  //       id: "relatorios-inadimplencia",
-  //       title: "Inadimplência",
-  //       icon: AlertCircle,
-  //       path: "/relatorios/inadimplencia",
-  //     },
-  //   ],
-  // },
-  // {
-  //   id: "documentos",
-  //   title: "Documentos",
-  //   icon: FileText,
-  //   path: "/documentos",
-  // },
+  {
+    id: "teste-cache",
+    title: "Página de Teste",
+    icon: TestTube,
+    path: "/teste-cache",
+  },
 ];
 
 export function Sidebar({

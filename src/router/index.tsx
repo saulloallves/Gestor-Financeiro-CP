@@ -9,6 +9,7 @@ import { CobrancasPage } from "../pages/CobrancasPage";
 import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
 import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
 import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
+import { TesteCacheFirstPage } from "../pages/TesteCacheFirstPage";
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -97,6 +98,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <ConfiguracoesIAPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "teste-cache",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <TesteCacheFirstPage />
           </ProtectedRoute>
         ),
       },
