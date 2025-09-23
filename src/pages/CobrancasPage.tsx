@@ -10,6 +10,8 @@ import {
   Chip,
   Grid,
   CircularProgress,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { DataGrid, GridActionsCellItem, type GridColDef, type GridPaginationModel } from '@mui/x-data-grid';
@@ -27,10 +29,13 @@ import {
   CheckCircle,
   AlertTriangle,
   Clock,
+  RefreshCw,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useCobrancasCacheFirst } from '../hooks/useCobrancasCacheFirst';
 import { useCobrancasEstatisticasCacheFirst } from '../hooks/useCobrancasEstatisticasCacheFirst';
+import { useSyncAsaasPayments, useSyncAsaasStatuses } from '../hooks/useAsaasSync';
 import {
   type Cobranca,
   type StatusCobranca,
@@ -45,7 +50,6 @@ const statusLabels: Record<StatusCobranca, string> = {
   atrasado: 'Atrasado', juridico: 'Jurídico',
 };
 
-// Estilos visuais para cada status
 const statusStyles: Record<StatusCobranca, { color: 'default' | 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success'; variant: 'filled' | 'outlined' }> = {
   pago: { color: 'success', variant: 'filled' },
   vencido: { color: 'error', variant: 'outlined' },
@@ -74,7 +78,6 @@ export function CobrancasPage() {
   const [modalUnidadeOpen, setModalUnidadeOpen] = useState(false);
   const [selectedUnidadeCodigo, setSelectedUnidadeCodigo] = useState<number | null>(null);
 
-  // Estado local para os inputs de filtro
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusCobranca | ''>('');
 
@@ -90,6 +93,8 @@ export function CobrancasPage() {
   } = useCobrancasCacheFirst();
 
   const { data: estatisticas, isLoading: isLoadingStats } = useCobrancasEstatisticasCacheFirst();
+  const syncPaymentsMutation = useSyncAsaasPayments();
+  const syncStatusesMutation = useSyncAsaasStatuses();
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -127,6 +132,14 @@ export function CobrancasPage() {
     setModalUnidadeOpen(true);
   };
 
+  const handleSyncPayments = () => {
+    syncPaymentsMutation.mutate();
+  };
+
+  const handleSyncStatuses = () => {
+    syncStatusesMutation.mutate();
+  };
+
   const columns: GridColDef[] = [
     { field: 'codigo_unidade', headerName: 'Unidade', width: 100, renderCell: params => <Chip label={params.value} size="small" onClick={() => handleViewUnidadeDetails(params.value)} sx={{cursor: 'pointer'}} /> },
     { field: 'tipo_cobranca', headerName: 'Tipo', width: 150, renderCell: params => <Chip label={tipoLabels[params.value as TipoCobranca]} size="small" variant="outlined" /> },
@@ -144,8 +157,9 @@ export function CobrancasPage() {
     },
     { field: 'observacoes', headerName: 'Observações', flex: 1 },
     {
-      field: 'actions', type: 'actions', width: 100,
+      field: 'actions', type: 'actions', width: 150,
       getActions: (params) => [
+        <GridActionsCellItem icon={<Eye size={16} />} label="Detalhes" onClick={() => handleViewUnidadeDetails(params.row.codigo_unidade)} />,
         <GridActionsCellItem icon={<Edit size={16} />} label="Editar" onClick={() => handleEditarCobranca(params.row)} />,
         <GridActionsCellItem icon={<FileText size={16} />} label="Boleto" onClick={() => toast.info('Gerar boleto em breve')} />,
         <GridActionsCellItem icon={<MessageSquare size={16} />} label="Negociar" onClick={() => toast.info('Negociar em breve')} />,
@@ -168,7 +182,16 @@ export function CobrancasPage() {
           <Typography variant="body1" color="text.secondary">Gestão de cobranças com performance otimizada.</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" startIcon={<Download size={20} />} disabled>Exportar</Button>
+          <Tooltip title="Sincronizar novos pagamentos do ASAAS">
+            <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={handleSyncPayments} disabled={syncPaymentsMutation.isPending}>
+              {syncPaymentsMutation.isPending ? 'Sincronizando...' : 'Sincronizar Pagamentos'}
+            </Button>
+          </Tooltip>
+          <Tooltip title="Atualizar status de pagamentos existentes">
+            <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={handleSyncStatuses} disabled={syncStatusesMutation.isPending}>
+              {syncStatusesMutation.isPending ? 'Atualizando...' : 'Atualizar Status'}
+            </Button>
+          </Tooltip>
           <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => setFormAberto(true)}>Nova Cobrança</Button>
         </Box>
       </Box>
