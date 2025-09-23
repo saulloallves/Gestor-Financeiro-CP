@@ -69,6 +69,11 @@ class FranqueadosService {
         query = query.eq('receives_prolabore', filtrosMatriz.receives_prolabore);
       }
 
+      // Filtro para sync incremental
+      if (filters.updated_at_gte) {
+        query = query.gte('updated_at', filters.updated_at_gte);
+      }
+
       // Aplicar ordenação (mapear campo para o schema matriz)
       const campoOrdenacao = sort.field === 'nome' ? 'full_name' : sort.field;
       query = query.order(campoOrdenacao, { ascending: sort.direction === 'asc' });

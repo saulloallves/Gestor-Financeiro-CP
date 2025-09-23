@@ -3,7 +3,8 @@ import { Outlet } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { SystemInitializer } from "../auth/SystemInitializer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { realtimeService } from "../../services/realtimeService";
 
 const SIDEBAR_WIDTH_COLLAPSED = 72;
 const SIDEBAR_WIDTH_EXPANDED = 280;
@@ -17,6 +18,16 @@ export function MainLayout() {
     sidebarExpanded || sidebarPinned
       ? SIDEBAR_WIDTH_EXPANDED
       : SIDEBAR_WIDTH_COLLAPSED;
+
+  // Inicializa os serviços de Realtime quando o layout é montado
+  useEffect(() => {
+    realtimeService.initializeSubscriptions();
+
+    // Limpa as assinaturas quando o layout é desmontado (ex: no logout)
+    return () => {
+      realtimeService.cleanupSubscriptions();
+    };
+  }, []); // O array vazio garante que isso rode apenas uma vez
 
   return (
     <SystemInitializer>
@@ -60,7 +71,7 @@ export function MainLayout() {
               flexGrow: 1,
               bgcolor: "background.default",
               padding: theme.spacing(3),
-              paddingTop: `calc(64px + ${theme.spacing(3)})`, // Header height + padding
+              paddingTop: `calc(80px + ${theme.spacing(3)})`, // Header height + padding
               overflow: "auto",
               width: "100%",
               minHeight: "100vh",

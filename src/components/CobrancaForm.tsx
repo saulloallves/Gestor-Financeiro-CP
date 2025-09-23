@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -76,11 +76,13 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
     reset,
     setValue,
     watch,
+    control,
   } = useForm<CobrancaFormData>({
     resolver: zodResolver(cobrancaFormSchema),
-    mode: 'onChange', // Permitir validação em tempo real
+    mode: 'onChange',
     defaultValues: {
-      criar_no_asaas: false, // Valor padrão para criação
+      criar_no_asaas: false,
+      tipo_cobranca: undefined,
     },
   });
 
@@ -107,20 +109,16 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   // Resetar formulário quando a cobrança para edição mudar
   useEffect(() => {
     if (open && cobranca) {
-      // Modo edição - resetar com dados da cobrança
-      console.log('🔧 Abrindo modal de edição com dados:', cobranca);
       reset({
         codigo_unidade: cobranca.codigo_unidade,
-        tipo_cobranca: cobranca.tipo_cobranca,
+        tipo_cobranca: cobranca.tipo_cobranca as TipoCobranca,
         valor_original: cobranca.valor_original,
         vencimento: new Date(cobranca.vencimento),
         observacoes: cobranca.observacoes || '',
-        criar_no_asaas: false, // Sempre false para edição
+        criar_no_asaas: false,
       });
       setDataVencimento(new Date(cobranca.vencimento));
     } else if (open && !cobranca) {
-      // Modo criação - limpar formulário
-      console.log('➕ Abrindo modal de criação');
       reset();
       setDataVencimento(null);
       setCriarNoAsaas(false);
@@ -177,13 +175,9 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
           },
         });
       } else {
-        // Verificar se deve usar integração ASAAS
         if (data.criar_no_asaas) {
-          console.log('🚀 Criando cobrança integrada:', data);
-          // Usar o hook de criação integrada
           await criarCobrancaIntegrada.mutateAsync(data);
         } else {
-          // Método tradicional sem integração ASAAS
           await criarCobranca.mutateAsync({
             codigo_unidade: data.codigo_unidade,
             tipo_cobranca: data.tipo_cobranca,
@@ -252,24 +246,32 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
                 )}
 
                 <Box sx={{ display: 'flex', gap: theme.spacing(2) }}>
-                  <TextField
-                    select
-                    label="Tipo de Cobrança"
-                    sx={{ flex: 1 }}
-                    {...register('tipo_cobranca')}
-                    error={!!errors.tipo_cobranca}
-                    helperText={errors.tipo_cobranca?.message}
-                    disabled={isLoading}
-                  >
-                    <MenuItem value="">
-                      <em>Selecione o tipo</em>
-                    </MenuItem>
-                    {tiposCobranca.map((tipo) => (
-                      <MenuItem key={tipo.value} value={tipo.value}>
-                        {tipo.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                  <Controller
+                    name="tipo_cobranca"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        select
+                        label="Tipo de Cobrança"
+                        sx={{ flex: 1 }}
+                        {...field}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        error={!!errors.tipo_cobranca}
+                        helperText={errors.tipo_cobranca?.message}
+                        disabled={isLoading}
+                      >
+                        <MenuItem value="">
+                          <em>Selecione o tipo</em>
+                        </MenuItem>
+                        {tiposCobranca.map((tipo) => (
+                          <MenuItem key={tipo.value} value={tipo.value}>
+                            {tipo.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    )}
+                  />
 
                   <TextField
                     label="Valor da Cobrança"

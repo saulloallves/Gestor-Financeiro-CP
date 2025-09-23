@@ -25,6 +25,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { PerfilModal } from '../PerfilModal';
 import { usePerfil } from '../../hooks/usePerfil';
+import { RefreshButton } from '../loading/RefreshButton';
 
 interface HeaderProps {
   sidebarWidth: number;
@@ -114,6 +115,9 @@ export function Header({ sidebarWidth }: HeaderProps) {
 
         {/* Actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Sync Button */}
+          <RefreshButton variant="icon" showLastSync force={true} />
+
           {/* Notifications */}
           <IconButton
             size="large"

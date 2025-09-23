@@ -6,6 +6,7 @@ import type { Cobranca } from '../types/cobrancas';
 import type { Franqueado } from '../types/franqueados';
 import type { Unidade } from '../types/unidades';
 import type { UsuarioInterno } from '../types/auth';
+import type { SyncData } from '../services/syncService';
 
 export interface SyncStatus {
   isLoading: boolean;
@@ -30,18 +31,18 @@ export interface DataStoreState extends DataCache {
   sync: SyncStatus;
   
   // Ações principais
-  loadAllData: () => Promise<void>;
+  loadAllData: (force?: boolean) => Promise<void>;
   refreshData: (force?: boolean) => Promise<void>;
   clearCache: () => void;
+  mergeUpdates: (updates: Partial<SyncData>) => void;
   
   // Ações específicas para cada entidade
   updateCobranca: (cobranca: Cobranca) => void;
   addCobranca: (cobranca: Cobranca) => void;
   removeCobranca: (id: string) => void;
   
-  updateFranqueado: (franqueado: Franqueado) => void;
-  addFranqueado: (franqueado: Franqueado) => void;
-  removeFranqueado: (id: string) => void;
+  addOrUpdateUnidade: (unidade: Unidade) => void;
+  addOrUpdateFranqueado: (franqueado: Franqueado) => void;
   
   // Utilitários de busca local
   getCobrancaById: (id: string) => Cobranca | undefined;
@@ -83,11 +84,32 @@ export const useDataStore = create<DataStoreState>()(
       ...initialState,
 
       // Implementações das ações principais
-      loadAllData: async () => {
+      loadAllData: async (force = false) => {
+        const store = get();
+        
+        const hasData = 
+          store.franqueados.length > 0 && 
+          store.unidades.length > 0 &&
+          store.cobrancas.length > 0;
+        
+        const hasCacheValid = store.sync.hasInitialLoad && hasData;
+        
+        if (hasCacheValid && !force) {
+          console.log('✅ Dados já estão em cache - ignorando nova sincronização');
+          return;
+        }
+        
+        if (store.sync.isLoading) {
+          console.log('Sincronização já em andamento, ignorando...');
+          return;
+        }
+
+        console.log(`🔄 ${force ? 'Forçando' : 'Iniciando'} sincronização completa de dados...`);
+
         set((state) => {
           state.sync.isLoading = true;
           state.sync.error = null;
-          state.sync.progress = { current: 0, total: 4, stage: 'Iniciando sincronização...' };
+          state.sync.progress = { current: 0, total: 4, stage: 'Iniciando...' };
         });
 
         try {
@@ -119,17 +141,27 @@ export const useDataStore = create<DataStoreState>()(
       },
 
       refreshData: async (force = false) => {
-        const { lastSyncAt } = get().sync;
+        const { lastSyncAt, isLoading } = get().sync;
         
-        // Se não forçar e a última sync foi há menos de 5 minutos, pular
+        if (isLoading) return;
+
         if (!force && lastSyncAt) {
           const syncDate = lastSyncAt instanceof Date ? lastSyncAt : new Date(lastSyncAt);
-          if ((Date.now() - syncDate.getTime()) < 5 * 60 * 1000) {
+          if ((Date.now() - syncDate.getTime()) < 1 * 60 * 1000) { // 1 minuto
+            console.log('Dados ainda são recentes, pulando refresh incremental.');
             return;
           }
-        }
+          
+          set(state => { state.sync.isLoading = true; });
+          const result = await syncService.syncIncremental(syncDate);
+          if (result.success && result.updates) {
+            get().mergeUpdates(result.updates);
+          }
+          set(state => { state.sync.isLoading = false; state.sync.lastSyncAt = new Date(); });
 
-        await get().loadAllData();
+        } else {
+          await get().loadAllData(force);
+        }
       },
 
       clearCache: () => {
@@ -141,6 +173,24 @@ export const useDataStore = create<DataStoreState>()(
           state.sync.hasInitialLoad = false;
           state.sync.lastSyncAt = null;
           state.sync.error = null;
+          state.sync.isLoading = false;
+          state.sync.progress = null;
+        });
+      },
+
+      mergeUpdates: (updates) => {
+        set(state => {
+          const merge = <T extends { id: string }>(current: T[], updated: T[] | undefined) => {
+            if (!updated || updated.length === 0) return current; // Retorna o array atual se não houver updates
+            const map = new Map(current.map(item => [item.id, item]));
+            updated.forEach(item => map.set(item.id, item));
+            return Array.from(map.values());
+          };
+
+          state.franqueados = merge(state.franqueados, updates.franqueados);
+          state.unidades = merge(state.unidades, updates.unidades);
+          state.cobrancas = merge(state.cobrancas, updates.cobrancas);
+          state.usuariosInternos = merge(state.usuariosInternos, updates.usuariosInternos);
         });
       },
 
@@ -166,28 +216,29 @@ export const useDataStore = create<DataStoreState>()(
         });
       },
 
-      // Ações para Franqueados
-      updateFranqueado: (franqueado: Franqueado) => {
-        set((state) => {
-          const index = state.franqueados.findIndex(f => f.id === franqueado.id);
-          if (index >= 0) {
-            state.franqueados[index] = franqueado;
+      // Ações para Unidades e Franqueados (Realtime)
+      addOrUpdateUnidade: (unidade: Unidade) => {
+        set(state => {
+          const index = state.unidades.findIndex(u => u.id === unidade.id);
+          if (index !== -1) {
+            state.unidades[index] = unidade; // Atualiza
+          } else {
+            state.unidades.push(unidade); // Adiciona
           }
         });
       },
 
-      addFranqueado: (franqueado: Franqueado) => {
-        set((state) => {
-          state.franqueados.push(franqueado);
+      addOrUpdateFranqueado: (franqueado: Franqueado) => {
+        set(state => {
+          const index = state.franqueados.findIndex(f => f.id === franqueado.id);
+          if (index !== -1) {
+            state.franqueados[index] = franqueado; // Atualiza
+          } else {
+            state.franqueados.push(franqueado); // Adiciona
+          }
         });
       },
-
-      removeFranqueado: (id: string) => {
-        set((state) => {
-          state.franqueados = state.franqueados.filter(f => f.id !== id);
-        });
-      },
-
+      
       // Utilitários de busca local para Cobranças
       getCobrancaById: (id: string) => {
         return get().cobrancas.find(c => c.id === id);
