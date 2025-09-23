@@ -9,6 +9,7 @@ import type {
   CobrancaFormData 
 } from '../types/cobrancas';
 import toast from 'react-hot-toast';
+import { useDataStore } from '../store/dataStore';
 
 export function useCobrancas(filters?: CobrancasFilters) {
   return useQuery({
@@ -36,12 +37,14 @@ export function useEstatisticasCobrancas() {
 
 export function useCriarCobranca() {
   const queryClient = useQueryClient();
+  const addCobrancaToCache = useDataStore((state) => state.addCobranca);
 
   return useMutation({
     mutationFn: (dados: CriarCobrancaData) => cobrancasService.criarCobranca(dados),
-    onSuccess: () => {
+    onSuccess: (novaCobranca) => {
       queryClient.invalidateQueries({ queryKey: ['cobrancas'] });
       queryClient.invalidateQueries({ queryKey: ['estatisticas-cobrancas'] });
+      addCobrancaToCache(novaCobranca); // Adiciona ao cache local
       toast.success('Cobrança criada com sucesso!');
     },
     onError: (error: Error) => {
@@ -52,12 +55,14 @@ export function useCriarCobranca() {
 
 export function useCriarCobrancaIntegrada() {
   const queryClient = useQueryClient();
+  const addCobrancaToCache = useDataStore((state) => state.addCobranca);
 
   return useMutation({
     mutationFn: (dados: CobrancaFormData) => cobrancasService.criarCobrancaIntegrada(dados),
-    onSuccess: () => {
+    onSuccess: (novaCobranca) => {
       queryClient.invalidateQueries({ queryKey: ['cobrancas'] });
       queryClient.invalidateQueries({ queryKey: ['estatisticas-cobrancas'] });
+      addCobrancaToCache(novaCobranca); // Adiciona ao cache local
       toast.success('Cobrança integrada criada com sucesso!');
     },
     onError: (error: Error) => {
@@ -68,14 +73,16 @@ export function useCriarCobrancaIntegrada() {
 
 export function useEditarCobranca() {
   const queryClient = useQueryClient();
+  const updateCobrancaInCache = useDataStore((state) => state.updateCobranca);
 
   return useMutation({
     mutationFn: ({ id, dados }: { id: string; dados: EditarCobrancaData }) => 
       cobrancasService.editarCobranca(id, dados),
-    onSuccess: (_, { id }) => {
+    onSuccess: (cobrancaAtualizada) => {
       queryClient.invalidateQueries({ queryKey: ['cobrancas'] });
-      queryClient.invalidateQueries({ queryKey: ['cobranca', id] });
+      queryClient.invalidateQueries({ queryKey: ['cobranca', cobrancaAtualizada.id] });
       queryClient.invalidateQueries({ queryKey: ['estatisticas-cobrancas'] });
+      updateCobrancaInCache(cobrancaAtualizada); // Atualiza no cache local
       toast.success('Cobrança atualizada com sucesso!');
     },
     onError: (error: Error) => {
@@ -86,12 +93,14 @@ export function useEditarCobranca() {
 
 export function useExcluirCobranca() {
   const queryClient = useQueryClient();
+  const removeCobrancaFromCache = useDataStore((state) => state.removeCobranca);
 
   return useMutation({
     mutationFn: (id: string) => cobrancasService.excluirCobranca(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['cobrancas'] });
       queryClient.invalidateQueries({ queryKey: ['estatisticas-cobrancas'] });
+      removeCobrancaFromCache(id); // Remove do cache local
       toast.success('Cobrança excluída com sucesso!');
     },
     onError: (error: Error) => {
