@@ -28,7 +28,6 @@ import {
   Settings,
   Database,
   TestTube,
-  KanbanSquare,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -72,12 +71,6 @@ const menuItems: MenuItem[] = [
     title: "Cobranças",
     icon: CreditCard,
     path: "/cobrancas",
-  },
-  {
-    id: "kanban",
-    title: "Kanban",
-    icon: KanbanSquare,
-    path: "/kanban",
   },
   {
     id: "ia",
