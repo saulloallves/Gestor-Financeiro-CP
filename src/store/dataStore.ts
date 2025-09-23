@@ -6,6 +6,7 @@ import type { Cobranca } from '../types/cobrancas';
 import type { Franqueado } from '../types/franqueados';
 import type { Unidade } from '../types/unidades';
 import type { UsuarioInterno } from '../types/auth';
+import type { SyncData } from '../services/syncService';
 
 export interface SyncStatus {
   isLoading: boolean;
@@ -33,6 +34,7 @@ export interface DataStoreState extends DataCache {
   loadAllData: () => Promise<void>;
   refreshData: (force?: boolean) => Promise<void>;
   clearCache: () => void;
+  mergeUpdates: (updates: Partial<SyncData>) => void;
   
   // Ações específicas para cada entidade
   updateCobranca: (cobranca: Cobranca) => void;
@@ -119,17 +121,27 @@ export const useDataStore = create<DataStoreState>()(
       },
 
       refreshData: async (force = false) => {
-        const { lastSyncAt } = get().sync;
+        const { lastSyncAt, isLoading } = get().sync;
         
-        // Se não forçar e a última sync foi há menos de 5 minutos, pular
+        if (isLoading) return;
+
         if (!force && lastSyncAt) {
           const syncDate = lastSyncAt instanceof Date ? lastSyncAt : new Date(lastSyncAt);
-          if ((Date.now() - syncDate.getTime()) < 5 * 60 * 1000) {
+          if ((Date.now() - syncDate.getTime()) < 1 * 60 * 1000) { // 1 minuto
+            console.log('Dados ainda são recentes, pulando refresh incremental.');
             return;
           }
-        }
+          
+          set(state => { state.sync.isLoading = true; });
+          const result = await syncService.syncIncremental(syncDate);
+          if (result.success && result.updates) {
+            get().mergeUpdates(result.updates);
+          }
+          set(state => { state.sync.isLoading = false; state.sync.lastSyncAt = new Date(); });
 
-        await get().loadAllData();
+        } else {
+          await get().loadAllData();
+        }
       },
 
       clearCache: () => {
@@ -141,6 +153,22 @@ export const useDataStore = create<DataStoreState>()(
           state.sync.hasInitialLoad = false;
           state.sync.lastSyncAt = null;
           state.sync.error = null;
+        });
+      },
+
+      mergeUpdates: (updates) => {
+        set(state => {
+          const merge = <T extends { id: string }>(current: T[], updated: T[] | undefined) => {
+            if (!updated || updated.length === 0) return;
+            const map = new Map(current.map(item => [item.id, item]));
+            updated.forEach(item => map.set(item.id, item));
+            return Array.from(map.values());
+          };
+
+          state.franqueados = merge(state.franqueados, updates.franqueados) || state.franqueados;
+          state.unidades = merge(state.unidades, updates.unidades) || state.unidades;
+          state.cobrancas = merge(state.cobrancas, updates.cobrancas) || state.cobrancas;
+          state.usuariosInternos = merge(state.usuariosInternos, updates.usuariosInternos) || state.usuariosInternos;
         });
       },
 

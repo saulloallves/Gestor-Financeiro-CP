@@ -71,6 +71,11 @@ class UnidadesService {
         query = query.eq('uf', filtrosMatriz.uf);
       }
 
+      // Filtro para sync incremental
+      if (filters.updated_at_gte) {
+        query = query.gte('updated_at', filters.updated_at_gte);
+      }
+
       // Aplicar ordenação (mapear campo para o schema matriz)
       let campoOrdenacao: string = sort.field;
       switch (sort.field) {

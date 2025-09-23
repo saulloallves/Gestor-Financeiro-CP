@@ -14,15 +14,30 @@ export interface SyncProgress {
   stage: string;
 }
 
+export interface SyncData {
+  franqueados: Franqueado[];
+  cobrancas: Cobranca[];
+  unidades: Unidade[];
+  usuariosInternos: UsuarioInterno[];
+}
+
 export interface SyncResult {
   success: boolean;
   error?: string;
-  data?: {
-    franqueados: Franqueado[];
-    cobrancas: Cobranca[];
-    unidades: Unidade[];
-    usuariosInternos: UsuarioInterno[];
+  data?: SyncData;
+  stats?: {
+    franqueados: number;
+    cobrancas: number;
+    unidades: number;
+    usuariosInternos: number;
+    syncTime: number;
   };
+}
+
+export interface IncrementalSyncResult {
+  success: boolean;
+  error?: string;
+  updates?: Partial<SyncData>;
   stats?: {
     franqueados: number;
     cobrancas: number;
@@ -173,39 +188,35 @@ class SyncService {
     }
   }
 
-  async syncIncremental(lastSyncAt: Date): Promise<SyncResult> {
+  async syncIncremental(lastSyncAt: Date): Promise<IncrementalSyncResult> {
     const startTime = Date.now();
     
     try {
       this.updateProgress(0, 4, 'Verificando atualizações...');
+      const lastSyncString = lastSyncAt.toISOString();
 
-      // Buscar apenas dados atualizados desde a última sincronização
-      const franqueados = await this.syncFranqueadosIncremental(lastSyncAt);
-      this.updateProgress(1, 4, 'Atualizando franqueados...');
+      const [franqueados, unidades, cobrancas, usuariosInternos] = await Promise.all([
+        franqueadosService.getFranqueados({ updated_at_gte: lastSyncString }, { field: 'updated_at', direction: 'asc' }, { page: 1, limit: 5000 }).then(r => r.data),
+        unidadesService.getUnidades({ updated_at_gte: lastSyncString }, { field: 'updated_at', direction: 'asc' }, { page: 1, limit: 5000 }).then(r => r.data),
+        cobrancasService.listarCobrancas({ updated_at_gte: lastSyncString }),
+        UsuariosInternosService.buscarUsuarios({ updated_at_gte: lastSyncString }),
+      ]);
 
-      const unidades = await this.syncUnidadesIncremental(lastSyncAt);
-      this.updateProgress(2, 4, 'Atualizando unidades...');
-
-      const cobrancas = await this.syncCobrancasIncremental(lastSyncAt);
-      this.updateProgress(3, 4, 'Atualizando cobranças...');
-
-      const usuariosInternos = await this.syncUsuariosInternosIncremental(lastSyncAt);
       this.updateProgress(4, 4, 'Finalizado!');
-
       const syncTime = Date.now() - startTime;
 
       return {
         success: true,
-        data: {
+        updates: {
           franqueados,
-          cobrancas,
           unidades,
+          cobrancas,
           usuariosInternos,
         },
         stats: {
           franqueados: franqueados.length,
-          cobrancas: cobrancas.length,
           unidades: unidades.length,
+          cobrancas: cobrancas.length,
           usuariosInternos: usuariosInternos.length,
           syncTime,
         },
@@ -215,64 +226,6 @@ class SyncService {
         success: false,
         error: error instanceof Error ? error.message : 'Erro na sincronização incremental',
       };
-    }
-  }
-
-  private async syncFranqueadosIncremental(lastSyncAt: Date): Promise<Franqueado[]> {
-    try {
-      // TODO: Implementar busca incremental quando tivermos banco matriz
-      const { data } = await supabase
-        .from('franqueados')
-        .select('*')
-        .gte('updated_at', lastSyncAt.toISOString())
-        .order('updated_at', { ascending: false });
-      
-      return data || [];
-    } catch (error) {
-      console.error('Erro na sincronização incremental de franqueados:', error);
-      return [];
-    }
-  }
-
-  private async syncUnidadesIncremental(_lastSyncAt: Date): Promise<Unidade[]> {
-    try {
-      // Para unidades do banco matriz, não temos updated_at local
-      // Vamos fazer uma busca completa por simplicidade
-      console.log('Sincronização incremental de unidades - fazendo busca completa do banco matriz...');
-      return await this.syncUnidades();
-    } catch (error) {
-      console.error('Erro na sincronização incremental de unidades:', error);
-      return [];
-    }
-  }
-
-  private async syncCobrancasIncremental(lastSyncAt: Date): Promise<Cobranca[]> {
-    try {
-      const { data } = await supabase
-        .from('cobrancas')
-        .select('*')
-        .gte('updated_at', lastSyncAt.toISOString())
-        .order('updated_at', { ascending: false });
-      
-      return data || [];
-    } catch (error) {
-      console.error('Erro na sincronização incremental de cobranças:', error);
-      return [];
-    }
-  }
-
-  private async syncUsuariosInternosIncremental(lastSyncAt: Date): Promise<UsuarioInterno[]> {
-    try {
-      const { data } = await supabase
-        .from('usuarios_internos')
-        .select('*')
-        .gte('updated_at', lastSyncAt.toISOString())
-        .order('updated_at', { ascending: false });
-      
-      return data || [];
-    } catch (error) {
-      console.error('Erro na sincronização incremental de usuários:', error);
-      return [];
     }
   }
 
