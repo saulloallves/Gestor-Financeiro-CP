@@ -6,6 +6,7 @@ import { FranqueadosPage } from "../pages/FranqueadosPage";
 import { EquipesPage } from "../pages/EquipesPage";
 import { UsuariosInternosPage } from "../pages/UsuariosInternosPage";
 import { CobrancasPage } from "../pages/CobrancasPage";
+import { CobrancasPageCacheFirst } from "../pages/CobrancasPageCacheFirst";
 import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
 import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
 import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
@@ -74,6 +75,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <CobrancasPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "cobrancas-cache",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <CobrancasPageCacheFirst />
           </ProtectedRoute>
         ),
       },
