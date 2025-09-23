@@ -45,10 +45,18 @@ const statusLabels: Record<StatusCobranca, string> = {
   atrasado: 'Atrasado', juridico: 'Jurídico',
 };
 
-const statusColors: Record<StatusCobranca, 'default' | 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success'> = {
-  pendente: 'default', em_aberto: 'primary', pago: 'success', em_atraso: 'warning',
-  vencido: 'error', negociado: 'info', parcelado: 'secondary', cancelado: 'default',
-  atrasado: 'warning', juridico: 'error',
+// Estilos visuais para cada status
+const statusStyles: Record<StatusCobranca, { color: 'default' | 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success'; variant: 'filled' | 'outlined' }> = {
+  pago: { color: 'success', variant: 'filled' },
+  vencido: { color: 'error', variant: 'outlined' },
+  juridico: { color: 'error', variant: 'filled' },
+  em_atraso: { color: 'warning', variant: 'outlined' },
+  atrasado: { color: 'warning', variant: 'outlined' },
+  pendente: { color: 'default', variant: 'outlined' },
+  em_aberto: { color: 'primary', variant: 'outlined' },
+  negociado: { color: 'info', variant: 'filled' },
+  parcelado: { color: 'secondary', variant: 'outlined' },
+  cancelado: { color: 'default', variant: 'filled' },
 };
 
 const tipoLabels: Record<TipoCobranca, string> = {
@@ -124,7 +132,16 @@ export function CobrancasPage() {
     { field: 'tipo_cobranca', headerName: 'Tipo', width: 150, renderCell: params => <Chip label={tipoLabels[params.value as TipoCobranca]} size="small" variant="outlined" /> },
     { field: 'valor_atualizado', headerName: 'Valor', width: 150, valueFormatter: (value: number) => formatCurrency(value) },
     { field: 'vencimento', headerName: 'Vencimento', width: 120, valueFormatter: (value: string) => format(new Date(value), 'dd/MM/yyyy') },
-    { field: 'status', headerName: 'Status', width: 120, renderCell: params => <Chip label={statusLabels[params.value as StatusCobranca]} size="small" color={statusColors[params.value as StatusCobranca]} /> },
+    { 
+      field: 'status', 
+      headerName: 'Status', 
+      width: 120, 
+      renderCell: params => {
+        const status = params.value as StatusCobranca;
+        const style = statusStyles[status] || { color: 'default', variant: 'filled' };
+        return <Chip label={statusLabels[status]} size="small" color={style.color} variant={style.variant} />;
+      } 
+    },
     { field: 'observacoes', headerName: 'Observações', flex: 1 },
     {
       field: 'actions', type: 'actions', width: 100,
