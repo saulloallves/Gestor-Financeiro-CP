@@ -23,7 +23,7 @@ export function useFranqueadosParaSelecao() {
       const result = await franqueadosService.getFranqueados(
         { status: ['ativo'] }, // Filtro correto como array
         { field: 'nome', direction: 'asc' },
-        { page: 1, limit: 200 } // Limite maior para ter todos disponíveis
+        { page: 1, limit: 1000 } // Limite maior para ter todos disponíveis
       );
       
       // Mapear para o formato ClienteSelecionado
@@ -53,9 +53,9 @@ export function useUnidadesParaSelecao() {
     queryKey: ['unidades-selecao-ativa'],
     queryFn: async () => {
       const result = await unidadesService.getUnidades(
-        { status: ['OPERAÇÃO'] }, // Apenas unidades operacionais
+        { fase_loja: 'operacao' }, // CORREÇÃO: Usar o filtro correto para o banco matriz
         { field: 'nome_padrao', direction: 'asc' },
-        { page: 1, limit: 200 } // Limite maior para ter todas disponíveis
+        { page: 1, limit: 1000 } // AUMENTADO: Limite maior para ter todas disponíveis
       );
       
       // Mapear para o formato ClienteSelecionado
