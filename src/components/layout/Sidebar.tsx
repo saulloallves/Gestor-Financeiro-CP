@@ -356,7 +356,6 @@ export function Sidebar({
           alignItems: "center",
           justifyContent: isExpanded ? "space-between" : "center",
           borderBottom: `1px solid ${theme.palette.divider}`,
-          color: "primary.contrastText",
           minHeight: 80,
           transition: theme.transitions.create(["padding", "justify-content"], {
             duration: theme.transitions.duration.standard,
@@ -396,12 +395,12 @@ export function Sidebar({
               onClick={handleTogglePin}
               size="small"
               sx={{
-                color: "primary.contrastText",
+                color: "text.primary",
                 backgroundColor: isPinned
-                  ? "rgba(255,255,255,0.2)"
+                  ? "action.selected"
                   : "transparent",
                 "&:hover": {
-                  backgroundColor: "rgba(255,255,255,0.1)",
+                  backgroundColor: "action.hover",
                 },
                 transition: theme.transitions.create(["background-color"], {
                   duration: theme.transitions.duration.short,
@@ -449,6 +448,28 @@ export function Sidebar({
           </Typography>
         </Box>
       )}
+    </Box>
+  );
+
+  return (
+    <Box
+      component="aside"
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100vh',
+        width: currentWidth,
+        zIndex: theme.zIndex.drawer,
+        transition: theme.transitions.create('width', {
+          easing: theme.transitions.easing.sharp,
+          duration: theme.transitions.duration.enteringScreen,
+        }),
+        overflowX: 'hidden',
+        borderRight: `1px solid ${theme.palette.divider}`,
+      }}
+    >
+      {drawerContent}
     </Box>
   );
 }
