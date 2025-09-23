@@ -14,7 +14,6 @@ import { useTheme } from '@mui/material/styles';
 import { DataGrid, GridActionsCellItem, type GridColDef, type GridPaginationModel } from '@mui/x-data-grid';
 import { ptBR } from '@mui/x-data-grid/locales';
 import { format } from 'date-fns';
-import { ptBR as ptBRLocale } from 'date-fns/locale';
 import {
   Search,
   Edit,
@@ -22,13 +21,6 @@ import {
   MessageSquare,
   Plus,
   Download,
-  Clock,
-  AlertTriangle,
-  DollarSign,
-  CheckCircle,
-  RefreshCw,
-  Filter,
-  Database,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useCobrancasCacheFirst } from '../hooks/useCobrancasCacheFirst';
@@ -58,7 +50,7 @@ const tipoLabels: Record<TipoCobranca, string> = {
   eventual: 'Eventual', taxa_franquia: 'Taxa de Franquia',
 };
 
-export function CobrancasPageCacheFirst() {
+export function CobrancasPage() {
   const theme = useTheme();
   const [cobrancaParaEditar, setCobrancaParaEditar] = useState<Cobranca | undefined>();
   const [formAberto, setFormAberto] = useState(false);
@@ -74,11 +66,7 @@ export function CobrancasPageCacheFirst() {
     handleFilterChange,
     handlePageChange,
     handlePageSizeChange,
-    refetch,
   } = useCobrancasCacheFirst();
-
-  const { getEstatisticasCobrancas } = useDataStore();
-  const estatisticas = getEstatisticasCobrancas();
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -131,7 +119,7 @@ export function CobrancasPageCacheFirst() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>Cobranças (Cache-First)</Typography>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>Cobranças</Typography>
           <Typography variant="body1" color="text.secondary">Gestão de cobranças com performance otimizada.</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
