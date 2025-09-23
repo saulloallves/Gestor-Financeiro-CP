@@ -19,9 +19,9 @@ export function MainLayout() {
       ? SIDEBAR_WIDTH_EXPANDED
       : SIDEBAR_WIDTH_COLLAPSED;
 
-  // Inicializa o serviço de Realtime quando o layout é montado
+  // Inicializa os serviços de Realtime quando o layout é montado
   useEffect(() => {
-    realtimeService.initializeLocalSubscriptions();
+    realtimeService.initializeSubscriptions();
 
     // Limpa as assinaturas quando o layout é desmontado (ex: no logout)
     return () => {
@@ -71,7 +71,7 @@ export function MainLayout() {
               flexGrow: 1,
               bgcolor: "background.default",
               padding: theme.spacing(3),
-              paddingTop: `calc(64px + ${theme.spacing(3)})`, // Header height + padding
+              paddingTop: `calc(80px + ${theme.spacing(3)})`, // Header height + padding
               overflow: "auto",
               width: "100%",
               minHeight: "100vh",

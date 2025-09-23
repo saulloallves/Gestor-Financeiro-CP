@@ -41,9 +41,8 @@ export interface DataStoreState extends DataCache {
   addCobranca: (cobranca: Cobranca) => void;
   removeCobranca: (id: string) => void;
   
-  updateFranqueado: (franqueado: Franqueado) => void;
-  addFranqueado: (franqueado: Franqueado) => void;
-  removeFranqueado: (id: string) => void;
+  addOrUpdateUnidade: (unidade: Unidade) => void;
+  addOrUpdateFranqueado: (franqueado: Franqueado) => void;
   
   // Utilitários de busca local
   getCobrancaById: (id: string) => Cobranca | undefined;
@@ -182,16 +181,16 @@ export const useDataStore = create<DataStoreState>()(
       mergeUpdates: (updates) => {
         set(state => {
           const merge = <T extends { id: string }>(current: T[], updated: T[] | undefined) => {
-            if (!updated || updated.length === 0) return;
+            if (!updated || updated.length === 0) return current; // Retorna o array atual se não houver updates
             const map = new Map(current.map(item => [item.id, item]));
             updated.forEach(item => map.set(item.id, item));
             return Array.from(map.values());
           };
 
-          state.franqueados = merge(state.franqueados, updates.franqueados) || state.franqueados;
-          state.unidades = merge(state.unidades, updates.unidades) || state.unidades;
-          state.cobrancas = merge(state.cobrancas, updates.cobrancas) || state.cobrancas;
-          state.usuariosInternos = merge(state.usuariosInternos, updates.usuariosInternos) || state.usuariosInternos;
+          state.franqueados = merge(state.franqueados, updates.franqueados);
+          state.unidades = merge(state.unidades, updates.unidades);
+          state.cobrancas = merge(state.cobrancas, updates.cobrancas);
+          state.usuariosInternos = merge(state.usuariosInternos, updates.usuariosInternos);
         });
       },
 
@@ -217,28 +216,29 @@ export const useDataStore = create<DataStoreState>()(
         });
       },
 
-      // Ações para Franqueados
-      updateFranqueado: (franqueado: Franqueado) => {
-        set((state) => {
-          const index = state.franqueados.findIndex(f => f.id === franqueado.id);
-          if (index >= 0) {
-            state.franqueados[index] = franqueado;
+      // Ações para Unidades e Franqueados (Realtime)
+      addOrUpdateUnidade: (unidade: Unidade) => {
+        set(state => {
+          const index = state.unidades.findIndex(u => u.id === unidade.id);
+          if (index !== -1) {
+            state.unidades[index] = unidade; // Atualiza
+          } else {
+            state.unidades.push(unidade); // Adiciona
           }
         });
       },
 
-      addFranqueado: (franqueado: Franqueado) => {
-        set((state) => {
-          state.franqueados.push(franqueado);
+      addOrUpdateFranqueado: (franqueado: Franqueado) => {
+        set(state => {
+          const index = state.franqueados.findIndex(f => f.id === franqueado.id);
+          if (index !== -1) {
+            state.franqueados[index] = franqueado; // Atualiza
+          } else {
+            state.franqueados.push(franqueado); // Adiciona
+          }
         });
       },
-
-      removeFranqueado: (id: string) => {
-        set((state) => {
-          state.franqueados = state.franqueados.filter(f => f.id !== id);
-        });
-      },
-
+      
       // Utilitários de busca local para Cobranças
       getCobrancaById: (id: string) => {
         return get().cobrancas.find(c => c.id === id);
