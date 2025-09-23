@@ -108,10 +108,10 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   useEffect(() => {
     if (open && cobranca) {
       // Modo edição - resetar com dados da cobrança
-      console.log('🔧 Abrindo modal de edição com dados:', cobranca);
+      // Corrigido: garantir que tipo_cobranca seja setado corretamente
       reset({
         codigo_unidade: cobranca.codigo_unidade,
-        tipo_cobranca: cobranca.tipo_cobranca,
+        tipo_cobranca: cobranca.tipo_cobranca as TipoCobranca,
         valor_original: cobranca.valor_original,
         vencimento: new Date(cobranca.vencimento),
         observacoes: cobranca.observacoes || '',
@@ -120,7 +120,6 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
       setDataVencimento(new Date(cobranca.vencimento));
     } else if (open && !cobranca) {
       // Modo criação - limpar formulário
-      console.log('➕ Abrindo modal de criação');
       reset();
       setDataVencimento(null);
       setCriarNoAsaas(false);
@@ -179,11 +178,8 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
       } else {
         // Verificar se deve usar integração ASAAS
         if (data.criar_no_asaas) {
-          console.log('🚀 Criando cobrança integrada:', data);
-          // Usar o hook de criação integrada
           await criarCobrancaIntegrada.mutateAsync(data);
         } else {
-          // Método tradicional sem integração ASAAS
           await criarCobranca.mutateAsync({
             codigo_unidade: data.codigo_unidade,
             tipo_cobranca: data.tipo_cobranca,
