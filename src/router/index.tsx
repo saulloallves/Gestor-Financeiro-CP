@@ -5,7 +5,7 @@ import { UnidadesPage } from "../pages/UnidadesPage";
 import { FranqueadosPage } from "../pages/FranqueadosPage";
 import { EquipesPage } from "../pages/EquipesPage";
 import { UsuariosInternosPage } from "../pages/UsuariosInternosPage";
-import { CobrancasPageCacheFirst } from "../pages/CobrancasPageCacheFirst";
+import { CobrancasPage } from "../pages/CobrancasPage";
 import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
 import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
 import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
@@ -41,7 +41,7 @@ export const router = createBrowserRouter([
         path: "cobrancas",
         element: (
           <ProtectedRoute requiredType="interno">
-            <CobrancasPageCacheFirst />
+            <CobrancasPage />
           </ProtectedRoute>
         ),
       },
