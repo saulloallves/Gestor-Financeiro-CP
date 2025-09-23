@@ -52,3 +52,40 @@ export function useCriarCobrancaIntegrada() {
     },
   });
 }
+
+// Hook para gerar boleto
+export function useGerarBoleto() {
+  const updateCobranca = useDataStore((state) => state.updateCobranca);
+  return useMutation({
+    mutationFn: (id: string) => cobrancasService.gerarBoletoAsaas(id),
+    onSuccess: (data, id) => {
+      toast.success('Boleto gerado! URL copiada para a área de transferência.');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(data.boleto_url);
+      }
+      const store = useDataStore.getState();
+      const cobranca = store.getCobrancaById(id);
+      if (cobranca) {
+        updateCobranca({ ...cobranca, link_boleto: data.boleto_url, link_pagamento: data.link_pagamento });
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao gerar boleto: ${error.message}`);
+    },
+  });
+}
+
+// Hook para sincronizar status
+export function useSincronizarStatus() {
+  const updateCobranca = useDataStore((state) => state.updateCobranca);
+  return useMutation({
+    mutationFn: (id: string) => cobrancasService.sincronizarStatusAsaas(id),
+    onSuccess: (cobrancaAtualizada) => {
+      toast.success('Status sincronizado com sucesso!');
+      updateCobranca(cobrancaAtualizada);
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao sincronizar status: ${error.message}`);
+    },
+  });
+}

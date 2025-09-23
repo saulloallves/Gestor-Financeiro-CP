@@ -36,6 +36,7 @@ import { toast } from 'react-hot-toast';
 import { useCobrancasCacheFirst } from '../hooks/useCobrancasCacheFirst';
 import { useCobrancasEstatisticasCacheFirst } from '../hooks/useCobrancasEstatisticasCacheFirst';
 import { useSyncAsaasPayments, useSyncAsaasStatuses } from '../hooks/useAsaasSync';
+import { useGerarBoleto, useSincronizarStatus } from '../hooks/useCobrancas';
 import {
   type Cobranca,
   type StatusCobranca,
@@ -95,6 +96,8 @@ export function CobrancasPage() {
   const { data: estatisticas, isLoading: isLoadingStats } = useCobrancasEstatisticasCacheFirst();
   const syncPaymentsMutation = useSyncAsaasPayments();
   const syncStatusesMutation = useSyncAsaasStatuses();
+  const gerarBoletoMutation = useGerarBoleto();
+  const sincronizarStatusMutation = useSincronizarStatus();
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -140,6 +143,18 @@ export function CobrancasPage() {
     syncStatusesMutation.mutate();
   };
 
+  const handleGerarBoleto = (id: string) => {
+    gerarBoletoMutation.mutate(id);
+  };
+
+  const handleSincronizarStatus = (id: string) => {
+    sincronizarStatusMutation.mutate(id);
+  };
+
+  const handleNegociar = () => {
+    toast.info('Funcionalidade de negociação em breve!');
+  };
+
   const columns: GridColDef[] = [
     { field: 'codigo_unidade', headerName: 'Unidade', width: 100, renderCell: params => <Chip label={params.value} size="small" onClick={() => handleViewUnidadeDetails(params.value)} sx={{cursor: 'pointer'}} /> },
     { field: 'tipo_cobranca', headerName: 'Tipo', width: 150, renderCell: params => <Chip label={tipoLabels[params.value as TipoCobranca]} size="small" variant="outlined" /> },
@@ -157,12 +172,40 @@ export function CobrancasPage() {
     },
     { field: 'observacoes', headerName: 'Observações', flex: 1 },
     {
-      field: 'actions', type: 'actions', width: 150,
+      field: 'actions',
+      type: 'actions',
+      headerName: 'Ações',
+      flex: 0.6,
+      minWidth: 100,
       getActions: (params) => [
-        <GridActionsCellItem icon={<Eye size={16} />} label="Detalhes" onClick={() => handleViewUnidadeDetails(params.row.codigo_unidade)} />,
-        <GridActionsCellItem icon={<Edit size={16} />} label="Editar" onClick={() => handleEditarCobranca(params.row)} />,
-        <GridActionsCellItem icon={<FileText size={16} />} label="Boleto" onClick={() => toast.info('Gerar boleto em breve')} />,
-        <GridActionsCellItem icon={<MessageSquare size={16} />} label="Negociar" onClick={() => toast.info('Negociar em breve')} />,
+        <GridActionsCellItem
+          key="edit"
+          icon={<Edit size={16} />}
+          label="Editar"
+          onClick={() => handleEditarCobranca(params.row)}
+          showInMenu
+        />,
+        <GridActionsCellItem
+          key="boleto"
+          icon={<FileText size={16} />}
+          label="Gerar Boleto"
+          onClick={() => handleGerarBoleto(params.row.id)}
+          showInMenu
+        />,
+        <GridActionsCellItem
+          key="sync"
+          icon={<RefreshCw size={16} />}
+          label="Sincronizar Status"
+          onClick={() => handleSincronizarStatus(params.row.id)}
+          showInMenu
+        />,
+        <GridActionsCellItem
+          key="negociar"
+          icon={<MessageSquare size={16} />}
+          label="Negociar"
+          onClick={() => handleNegociar()}
+          showInMenu
+        />,
       ],
     },
   ];
