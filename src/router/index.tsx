@@ -10,7 +10,6 @@ import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
 import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
 import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
 import { TesteCacheFirstPage } from "../pages/TesteCacheFirstPage";
-import { KanbanPage } from "../pages/KanbanPage";
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -37,14 +36,6 @@ export const router = createBrowserRouter([
       {
         path: "dashboard",
         element: <DashboardPageCacheFirst />,
-      },
-      {
-        path: "kanban",
-        element: (
-          <ProtectedRoute requiredType="interno">
-            <KanbanPage />
-          </ProtectedRoute>
-        ),
       },
       {
         path: "unidades",
