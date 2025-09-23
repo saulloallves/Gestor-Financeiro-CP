@@ -50,6 +50,7 @@ import {
   type CobrancasFilters,
 } from '../types/cobrancas';
 import { CobrancaForm } from '../components/CobrancaForm';
+import { UnidadeDetalhesModal } from '../components/UnidadeDetalhesModal';
 
 const statusLabels: Record<StatusCobranca, string> = {
   pendente: 'Pendente',
@@ -95,6 +96,10 @@ export function CobrancasPage() {
   const [tipoFilter, setTipoFilter] = useState<TipoCobranca | ''>('');
   const [unidadeFilter, setUnidadeFilter] = useState('');
   const [isExporting] = useState(false);
+  
+  // Estado para o modal de detalhes da unidade
+  const [modalUnidadeOpen, setModalUnidadeOpen] = useState(false);
+  const [selectedUnidadeCodigo, setSelectedUnidadeCodigo] = useState<number | null>(null);
 
   const { data: cobrancas = [], isLoading, refetch } = useCobrancas(filters);
   const { data: estatisticas } = useEstatisticasCobrancas();
@@ -102,7 +107,6 @@ export function CobrancasPage() {
   const gerarBoleto = useGerarBoletoAsaas();
   const sincronizarStatus = useSincronizarStatusAsaas();
   
-  // Hooks de sincronização ASAAS
   const syncPayments = useSyncAsaasPayments();
   const syncStatuses = useSyncAsaasStatuses();
 
@@ -162,10 +166,9 @@ export function CobrancasPage() {
     }
   };
 
-  const handleClickUnidade = (codigoUnidade: number | null) => {
-    // TODO: Implementar ação ao clicar na unidade
-    console.log('Clicou na unidade:', codigoUnidade);
-    toast.success(`Clicou na unidade: ${codigoUnidade}`);
+  const handleViewUnidadeDetails = (codigoUnidade: number) => {
+    setSelectedUnidadeCodigo(codigoUnidade);
+    setModalUnidadeOpen(true);
   };
 
   const handleNegociar = () => {
@@ -204,10 +207,9 @@ export function CobrancasPage() {
     setFilters({});
   };
 
-  // Funções de sincronização ASAAS
   const handleSyncAsaasPayments = () => {
     const dateFrom = new Date();
-    dateFrom.setMonth(dateFrom.getMonth() - 3); // Últimos 3 meses
+    dateFrom.setMonth(dateFrom.getMonth() - 3);
     
     syncPayments.mutate({
       dateFrom: dateFrom.toISOString().split('T')[0],
@@ -297,12 +299,12 @@ export function CobrancasPage() {
             width: '100%',
           }}
         >
-          <Tooltip title="Ver informações da Unidade" arrow>
+          <Tooltip title="Ver detalhes da Unidade" arrow>
             <Chip
               label={params.value || '-'}
               size="small"
               variant="filled"
-              onClick={() => handleClickUnidade(params.value)}
+              onClick={() => handleViewUnidadeDetails(params.value)}
               sx={{
                 backgroundColor: 'secondary.main',
                 color: 'secondary.contrastText',
@@ -962,6 +964,12 @@ export function CobrancasPage() {
         open={formAberto}
         onClose={handleFecharForm}
         cobranca={cobrancaParaEditar}
+      />
+
+      <UnidadeDetalhesModal
+        open={modalUnidadeOpen}
+        onClose={() => setModalUnidadeOpen(false)}
+        codigoUnidade={selectedUnidadeCodigo}
       />
     </Box>
   );
