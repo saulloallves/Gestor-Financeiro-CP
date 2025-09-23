@@ -31,7 +31,7 @@ export interface DataStoreState extends DataCache {
   sync: SyncStatus;
   
   // Ações principais
-  loadAllData: () => Promise<void>;
+  loadAllData: (force?: boolean) => Promise<void>;
   refreshData: (force?: boolean) => Promise<void>;
   clearCache: () => void;
   mergeUpdates: (updates: Partial<SyncData>) => void;
@@ -85,11 +85,32 @@ export const useDataStore = create<DataStoreState>()(
       ...initialState,
 
       // Implementações das ações principais
-      loadAllData: async () => {
+      loadAllData: async (force = false) => {
+        const store = get();
+        
+        const hasData = 
+          store.franqueados.length > 0 && 
+          store.unidades.length > 0 &&
+          store.cobrancas.length > 0;
+        
+        const hasCacheValid = store.sync.hasInitialLoad && hasData;
+        
+        if (hasCacheValid && !force) {
+          console.log('✅ Dados já estão em cache - ignorando nova sincronização');
+          return;
+        }
+        
+        if (store.sync.isLoading) {
+          console.log('Sincronização já em andamento, ignorando...');
+          return;
+        }
+
+        console.log(`🔄 ${force ? 'Forçando' : 'Iniciando'} sincronização completa de dados...`);
+
         set((state) => {
           state.sync.isLoading = true;
           state.sync.error = null;
-          state.sync.progress = { current: 0, total: 4, stage: 'Iniciando sincronização...' };
+          state.sync.progress = { current: 0, total: 4, stage: 'Iniciando...' };
         });
 
         try {
@@ -140,7 +161,7 @@ export const useDataStore = create<DataStoreState>()(
           set(state => { state.sync.isLoading = false; state.sync.lastSyncAt = new Date(); });
 
         } else {
-          await get().loadAllData();
+          await get().loadAllData(force);
         }
       },
 
@@ -153,6 +174,8 @@ export const useDataStore = create<DataStoreState>()(
           state.sync.hasInitialLoad = false;
           state.sync.lastSyncAt = null;
           state.sync.error = null;
+          state.sync.isLoading = false;
+          state.sync.progress = null;
         });
       },
 

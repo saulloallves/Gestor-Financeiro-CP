@@ -116,7 +116,7 @@ export function Header({ sidebarWidth }: HeaderProps) {
         {/* Actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Sync Button */}
-          <RefreshButton variant="icon" showLastSync />
+          <RefreshButton variant="icon" showLastSync force={true} />
 
           {/* Notifications */}
           <IconButton
