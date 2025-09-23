@@ -5,12 +5,12 @@ import { UnidadesPage } from "../pages/UnidadesPage";
 import { FranqueadosPage } from "../pages/FranqueadosPage";
 import { EquipesPage } from "../pages/EquipesPage";
 import { UsuariosInternosPage } from "../pages/UsuariosInternosPage";
-import { CobrancasPage } from "../pages/CobrancasPage";
 import { CobrancasPageCacheFirst } from "../pages/CobrancasPageCacheFirst";
 import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
 import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
 import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
 import { TesteCacheFirstPage } from "../pages/TesteCacheFirstPage";
+import { KanbanPage } from "../pages/KanbanPage";
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -37,6 +37,22 @@ export const router = createBrowserRouter([
       {
         path: "dashboard",
         element: <DashboardPageCacheFirst />,
+      },
+      {
+        path: "kanban",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <KanbanPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "cobrancas",
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <CobrancasPageCacheFirst />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "unidades",
@@ -71,22 +87,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "cobrancas",
-        element: (
-          <ProtectedRoute requiredType="interno">
-            <CobrancasPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "cobrancas-cache",
-        element: (
-          <ProtectedRoute requiredType="interno">
-            <CobrancasPageCacheFirst />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: "configuracoes",
         element: (
           <ProtectedRoute requiredType="interno">
@@ -115,22 +115,6 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <TesteCacheFirstPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "admin",
-        element: (
-          <ProtectedRoute requiredType="interno">
-            <DashboardPageCacheFirst />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "franqueado",
-        element: (
-          <ProtectedRoute requiredType="franqueado">
-            <DashboardPageCacheFirst />
           </ProtectedRoute>
         ),
       },

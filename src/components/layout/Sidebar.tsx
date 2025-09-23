@@ -28,6 +28,7 @@ import {
   Settings,
   Database,
   TestTube,
+  KanbanSquare,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -71,6 +72,12 @@ const menuItems: MenuItem[] = [
     title: "Cobranças",
     icon: CreditCard,
     path: "/cobrancas",
+  },
+  {
+    id: "kanban",
+    title: "Kanban",
+    icon: KanbanSquare,
+    path: "/kanban",
   },
   {
     id: "ia",
@@ -141,7 +148,7 @@ const menuItems: MenuItem[] = [
   },
   {
     id: "teste-cache",
-    title: "Página de Teste",
+    title: "Painel de Controle",
     icon: TestTube,
     path: "/teste-cache",
   },
@@ -449,27 +456,6 @@ export function Sidebar({
           </Typography>
         </Box>
       )}
-    </Box>
-  );
-
-  return (
-    <Box
-      sx={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: currentWidth,
-        height: "100vh",
-        zIndex: theme.zIndex.drawer,
-        boxShadow: "2px 0 8px rgba(0, 0, 0, 0.1)",
-        transition: theme.transitions.create(["width"], {
-          duration: theme.transitions.duration.standard,
-          easing: theme.transitions.easing.easeInOut,
-        }),
-        overflow: "hidden",
-      }}
-    >
-      {drawerContent}
     </Box>
   );
 }
