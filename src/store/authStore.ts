@@ -146,7 +146,7 @@ export const useAuthStore = create<AuthState>()(
           set({ usuario: null, tipoAcesso: null });
         }
       },
-    }),
+    })),
     {
       name: "auth-storage",
       partialize: (state) => ({
