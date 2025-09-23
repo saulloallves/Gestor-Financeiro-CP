@@ -182,13 +182,57 @@ export function CobrancasPage() {
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {statCards.map((card, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card sx={{ p: 2, borderRadius: 3, borderLeft: `6px solid ${card.color}`, transition: 'all 0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 8px 25px ${card.color}26` } }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Card
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                backgroundColor: "background.paper",
+                color: "text.primary",
+                boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+                border: "1px solid",
+                borderColor: "divider",
+                borderLeft: `6px solid ${card.color}`,
+                transition: "all 0.3s ease-in-out",
+                "&:hover": {
+                  transform: "translateY(-4px)",
+                  boxShadow: `0 8px 25px ${card.color}26`,
+                  borderLeftColor: card.color,
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>{isLoadingStats ? <CircularProgress size={24} /> : card.value}</Typography>
-                  <Typography variant="body1" color="text.secondary">{card.title}</Typography>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
+                  >
+                    {isLoadingStats ? <CircularProgress size={24} /> : card.value}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ color: "text.secondary", fontWeight: 500 }}
+                  >
+                    {card.title}
+                  </Typography>
                 </Box>
-                <Box sx={{ backgroundColor: `${card.color}1A`, borderRadius: 3, p: 2, display: 'flex' }}><card.icon size={32} color={card.color} /></Box>
+                <Box
+                  sx={{
+                    backgroundColor: `${card.color}1A`,
+                    borderRadius: 3,
+                    p: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <card.icon size={32} color={card.color} />
+                </Box>
               </Box>
             </Card>
           </Grid>
