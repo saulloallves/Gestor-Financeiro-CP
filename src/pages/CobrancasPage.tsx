@@ -8,6 +8,7 @@ import {
   TextField,
   MenuItem,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { DataGrid, GridActionsCellItem, type GridColDef } from '@mui/x-data-grid';
@@ -161,6 +162,12 @@ export function CobrancasPage() {
     }
   };
 
+  const handleClickUnidade = (codigoUnidade: number | null) => {
+    // TODO: Implementar ação ao clicar na unidade
+    console.log('Clicou na unidade:', codigoUnidade);
+    toast.success(`Clicou na unidade: ${codigoUnidade}`);
+  };
+
   const handleNegociar = () => {
     toast.success('Funcionalidade de negociação será implementada');
   };
@@ -219,9 +226,20 @@ export function CobrancasPage() {
       flex: 0.8,
       minWidth: 120,
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 500 }}>
-          #{params.value?.slice(-8) || 'N/A'}
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            width: '100%',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 500 }}>
+            #{params.value?.slice(-8) || 'N/A'}
+          </Typography>
+        </Box>
       ),
     },
     {
@@ -230,9 +248,20 @@ export function CobrancasPage() {
       flex: 2,
       minWidth: 200,
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'text.primary' }}>
-          {params.value || '-'}
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'left',
+            height: '100%',
+            width: '100%',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="body2" sx={{ color: 'text.primary' }}>
+            {params.value || '-'}
+          </Typography>
+        </Box>
       ),
     },
     {
@@ -259,9 +288,33 @@ export function CobrancasPage() {
       flex: 1,
       minWidth: 120,
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
-          {params.value || '-'}
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            width: '100%',
+          }}
+        >
+          <Tooltip title="Ver informações da Unidade" arrow>
+            <Chip
+              label={params.value || '-'}
+              size="small"
+              variant="filled"
+              onClick={() => handleClickUnidade(params.value)}
+              sx={{
+                backgroundColor: 'secondary.main',
+                color: 'secondary.contrastText',
+                fontWeight: 500,
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'secondary.dark',
+                },
+              }}
+            />
+          </Tooltip>
+        </Box>
       ),
     },
     {
@@ -270,9 +323,20 @@ export function CobrancasPage() {
       flex: 0.8,
       minWidth: 120,
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
-          {formatCurrency(params.value)}
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            width: '100%',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+            {formatCurrency(params.value)}
+          </Typography>
+        </Box>
       ),
     },
     {
@@ -281,9 +345,20 @@ export function CobrancasPage() {
       flex: 0.8,
       minWidth: 120,
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'text.primary' }}>
-          {formatDate(params.value)}
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            width: '100%',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="body2" sx={{ color: 'text.primary' }}>
+            {formatDate(params.value)}
+          </Typography>
+        </Box>
       ),
     },
     {
@@ -292,13 +367,23 @@ export function CobrancasPage() {
       flex: 0.8,
       minWidth: 120,
       renderCell: (params) => (
-        <Chip
-          label={statusLabels[params.value as StatusCobranca]}
-          size="small"
-          color={statusColors[params.value as StatusCobranca]}
-          variant="filled"
-          sx={{ fontWeight: 500 }}
-        />
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            width: '100%',
+          }}
+        >
+          <Chip
+            label={statusLabels[params.value as StatusCobranca]}
+            size="small"
+            color={statusColors[params.value as StatusCobranca]}
+            variant="filled"
+            sx={{ fontWeight: 500 }}
+          />
+        </Box>
       ),
     },
     {
@@ -651,7 +736,7 @@ export function CobrancasPage() {
           >
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {estatisticas?.totalCobrancas || 0}
@@ -705,7 +790,7 @@ export function CobrancasPage() {
           >
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {formatCurrency(estatisticas?.cobrancasPagas || 0)}
@@ -759,7 +844,7 @@ export function CobrancasPage() {
           >
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {formatCurrency(estatisticas?.valorTotalEmAberto || 0)}
@@ -813,7 +898,7 @@ export function CobrancasPage() {
           >
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {formatCurrency(estatisticas?.valorTotalVencido || 0)}

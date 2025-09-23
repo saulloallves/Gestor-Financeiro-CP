@@ -369,7 +369,7 @@ export default function ConfiguracoesPage() {
           >
             <Box>
               <Typography
-                variant="h4"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {configuracao?.asaas_environment === 'production' ? 'PRODUÇÃO' : 'SANDBOX'}
@@ -430,7 +430,7 @@ export default function ConfiguracoesPage() {
           >
             <Box>
               <Typography
-                variant="h4"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {configuracao ? (configuracao.taxa_juros_diaria * 100).toFixed(3) : '0.000'}%
@@ -485,7 +485,7 @@ export default function ConfiguracoesPage() {
           >
             <Box>
               <Typography
-                variant="h4"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {configuracao?.valor_multa_atraso || 0}%

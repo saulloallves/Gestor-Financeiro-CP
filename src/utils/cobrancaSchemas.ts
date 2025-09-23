@@ -25,53 +25,87 @@ export const cobrancaFormSchema = cobrancaBaseSchema.extend({
     telefone: z.string().optional(),
     tipo: z.enum(['cpf', 'cnpj']),
   }).optional(),
-}).refine((data) => {
-  // Se criar_no_asaas for true, deve ter tipo_cliente e cliente selecionado
+}).superRefine((data, ctx) => {
+  // Só aplicar validações ASAAS se criar_no_asaas for true
   if (data.criar_no_asaas) {
-    return data.tipo_cliente && data.cliente_selecionado;
-  }
-  return true;
-}, {
-  message: "Quando 'Criar no ASAAS' estiver marcado, é obrigatório selecionar o tipo de cliente e o cliente.",
-  path: ['tipo_cliente'],
-}).refine((data) => {
-  // Se tipo_cliente for CPF, deve ter franqueado_id
-  if (data.criar_no_asaas && data.tipo_cliente === 'cpf') {
-    return data.franqueado_id;
-  }
-  return true;
-}, {
-  message: "Para tipo CPF, é obrigatório selecionar um franqueado.",
-  path: ['franqueado_id'],
-}).refine((data) => {
-  // Se tipo_cliente for CNPJ, deve ter unidade_id
-  if (data.criar_no_asaas && data.tipo_cliente === 'cnpj') {
-    return data.unidade_id;
-  }
-  return true;
-}, {
-  message: "Para tipo CNPJ, é obrigatório selecionar uma unidade.",
-  path: ['unidade_id'],
-}).refine((data) => {
-  // Validar documento do cliente selecionado
-  if (data.cliente_selecionado) {
-    const { documento, tipo } = data.cliente_selecionado;
-    if (tipo === 'cpf') {
-      return validarCpf(documento);
-    } else if (tipo === 'cnpj') {
-      return validarCnpj(documento);
+    if (!data.tipo_cliente) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Quando 'Criar no ASAAS' estiver marcado, é obrigatório selecionar o tipo de cliente.",
+        path: ['tipo_cliente'],
+      });
+    }
+    
+    if (!data.cliente_selecionado) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Quando 'Criar no ASAAS' estiver marcado, é obrigatório selecionar um cliente.",
+        path: ['cliente_selecionado'],
+      });
+    }
+    
+    // Se tipo_cliente for CPF, deve ter franqueado_id
+    if (data.tipo_cliente === 'cpf' && !data.franqueado_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Para tipo CPF, é obrigatório selecionar um franqueado.",
+        path: ['franqueado_id'],
+      });
+    }
+    
+    // Se tipo_cliente for CNPJ, deve ter unidade_id
+    if (data.tipo_cliente === 'cnpj' && !data.unidade_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Para tipo CNPJ, é obrigatório selecionar uma unidade.",
+        path: ['unidade_id'],
+      });
+    }
+    
+    // Validar documento do cliente selecionado
+    if (data.cliente_selecionado) {
+      const { documento, tipo } = data.cliente_selecionado;
+      let documentoValido = false;
+      
+      if (tipo === 'cpf') {
+        documentoValido = validarCpf(documento);
+      } else if (tipo === 'cnpj') {
+        documentoValido = validarCnpj(documento);
+      }
+      
+      if (!documentoValido) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Documento do cliente selecionado é inválido.",
+          path: ['cliente_selecionado', 'documento'],
+        });
+      }
     }
   }
-  return true;
-}, {
-  message: "Documento do cliente selecionado é inválido.",
-  path: ['cliente_selecionado', 'documento'],
 });
 
 // Tipos inferidos do schema
 export type CobrancaFormData = z.infer<typeof cobrancaFormSchema>;
 
-// Schema para edição (sem campos ASAAS)
+// Schema para edição (campos básicos, sem validações ASAAS)
+export const editarCobrancaFormSchema = cobrancaBaseSchema.extend({
+  criar_no_asaas: z.boolean().optional(),
+  tipo_cliente: z.enum(['cpf', 'cnpj']).optional(),
+  franqueado_id: z.string().optional(),
+  unidade_id: z.number().optional(),
+  cliente_selecionado: z.object({
+    id: z.union([z.string(), z.number()]),
+    nome: z.string(),
+    documento: z.string(),
+    email: z.string().optional(),
+    telefone: z.string().optional(),
+    tipo: z.enum(['cpf', 'cnpj']),
+  }).optional(),
+});
+
+export type EditarCobrancaFormData = z.infer<typeof editarCobrancaFormSchema>;
+
+// Schema para edição da API (sem campos ASAAS)
 export const editarCobrancaSchema = cobrancaBaseSchema.partial().extend({
   id: z.string(),
 });

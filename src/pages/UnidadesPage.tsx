@@ -512,7 +512,7 @@ export function UnidadesPage() {
           >
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {isLoadingStats ? (
@@ -571,7 +571,7 @@ export function UnidadesPage() {
           >
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {isLoadingStats ? (
@@ -630,7 +630,7 @@ export function UnidadesPage() {
           >
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {isLoadingStats ? (
@@ -689,7 +689,7 @@ export function UnidadesPage() {
           >
             <Box>
               <Typography
-                variant="h3"
+                variant="h5"
                 sx={{ fontWeight: 700, mb: 0.5, color: "text.primary" }}
               >
                 {isLoadingStats ? (

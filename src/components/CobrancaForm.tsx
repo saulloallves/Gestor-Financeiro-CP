@@ -78,18 +78,10 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
     watch,
   } = useForm<CobrancaFormData>({
     resolver: zodResolver(cobrancaFormSchema),
-    defaultValues: cobranca
-      ? {
-          codigo_unidade: cobranca.codigo_unidade,
-          tipo_cobranca: cobranca.tipo_cobranca,
-          valor_original: cobranca.valor_original,
-          vencimento: new Date(cobranca.vencimento),
-          observacoes: cobranca.observacoes || '',
-          criar_no_asaas: false, // Sempre false para edição
-        }
-      : {
-          criar_no_asaas: false, // Valor padrão para criação
-        },
+    mode: 'onChange', // Permitir validação em tempo real
+    defaultValues: {
+      criar_no_asaas: false, // Valor padrão para criação
+    },
   });
 
   // Observar mudanças no formulário
@@ -98,7 +90,7 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
 
   // Sincronizar estados locais com o formulário
   useEffect(() => {
-    setCriarNoAsaas(watchCriarNoAsaas);
+    setCriarNoAsaas(watchCriarNoAsaas || false);
   }, [watchCriarNoAsaas]);
 
   useEffect(() => {
@@ -111,6 +103,31 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
       setValue('unidade_id', undefined);
     }
   }, [watchTipoCliente, setValue, tipoCliente]);
+
+  // Resetar formulário quando a cobrança para edição mudar
+  useEffect(() => {
+    if (open && cobranca) {
+      // Modo edição - resetar com dados da cobrança
+      console.log('🔧 Abrindo modal de edição com dados:', cobranca);
+      reset({
+        codigo_unidade: cobranca.codigo_unidade,
+        tipo_cobranca: cobranca.tipo_cobranca,
+        valor_original: cobranca.valor_original,
+        vencimento: new Date(cobranca.vencimento),
+        observacoes: cobranca.observacoes || '',
+        criar_no_asaas: false, // Sempre false para edição
+      });
+      setDataVencimento(new Date(cobranca.vencimento));
+    } else if (open && !cobranca) {
+      // Modo criação - limpar formulário
+      console.log('➕ Abrindo modal de criação');
+      reset();
+      setDataVencimento(null);
+      setCriarNoAsaas(false);
+      setTipoCliente('');
+      setClienteSelecionado(null);
+    }
+  }, [open, cobranca, reset]);
 
   const isLoading = criarCobranca.isPending || editarCobranca.isPending || criarCobrancaIntegrada.isPending || atualizarUrls.isPending;
   const isEdit = !!cobranca;
