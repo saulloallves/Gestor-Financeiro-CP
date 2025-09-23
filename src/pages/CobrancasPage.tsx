@@ -8,7 +8,8 @@ import {
   TextField,
   MenuItem,
   Chip,
-  Tooltip,
+  Grid,
+  CircularProgress,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { DataGrid, GridActionsCellItem, type GridColDef, type GridPaginationModel } from '@mui/x-data-grid';
@@ -21,10 +22,15 @@ import {
   MessageSquare,
   Plus,
   Download,
+  Filter,
+  DollarSign,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useCobrancasCacheFirst } from '../hooks/useCobrancasCacheFirst';
-import { useDataStore } from '../store/dataStore';
+import { useCobrancasEstatisticasCacheFirst } from '../hooks/useCobrancasEstatisticasCacheFirst';
 import {
   type Cobranca,
   type StatusCobranca,
@@ -50,12 +56,19 @@ const tipoLabels: Record<TipoCobranca, string> = {
   eventual: 'Eventual', taxa_franquia: 'Taxa de Franquia',
 };
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
 export function CobrancasPage() {
   const theme = useTheme();
   const [cobrancaParaEditar, setCobrancaParaEditar] = useState<Cobranca | undefined>();
   const [formAberto, setFormAberto] = useState(false);
   const [modalUnidadeOpen, setModalUnidadeOpen] = useState(false);
   const [selectedUnidadeCodigo, setSelectedUnidadeCodigo] = useState<number | null>(null);
+
+  // Estado local para os inputs de filtro
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
+  const [localStatusFilter, setLocalStatusFilter] = useState<StatusCobranca | ''>('');
 
   const {
     cobrancas,
@@ -67,6 +80,8 @@ export function CobrancasPage() {
     handlePageChange,
     handlePageSizeChange,
   } = useCobrancasCacheFirst();
+
+  const { data: estatisticas, isLoading: isLoadingStats } = useCobrancasEstatisticasCacheFirst();
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -80,11 +95,17 @@ export function CobrancasPage() {
     });
   }, [pagination.page, pagination.pageSize]);
 
-  const handleSearch = (newFilters: Partial<typeof filters>) => {
-    handleFilterChange({ ...filters, ...newFilters });
+  const handleSearch = () => {
+    handleFilterChange({
+      ...filters,
+      search: localSearchTerm || undefined,
+      status: localStatusFilter || undefined,
+    });
   };
 
   const handleClearFilters = () => {
+    setLocalSearchTerm('');
+    setLocalStatusFilter('');
     handleFilterChange({});
   };
 
@@ -101,7 +122,7 @@ export function CobrancasPage() {
   const columns: GridColDef[] = [
     { field: 'codigo_unidade', headerName: 'Unidade', width: 100, renderCell: params => <Chip label={params.value} size="small" onClick={() => handleViewUnidadeDetails(params.value)} sx={{cursor: 'pointer'}} /> },
     { field: 'tipo_cobranca', headerName: 'Tipo', width: 150, renderCell: params => <Chip label={tipoLabels[params.value as TipoCobranca]} size="small" variant="outlined" /> },
-    { field: 'valor_atualizado', headerName: 'Valor', width: 150, valueFormatter: (value: number) => `R$ ${value.toFixed(2)}` },
+    { field: 'valor_atualizado', headerName: 'Valor', width: 150, valueFormatter: (value: number) => formatCurrency(value) },
     { field: 'vencimento', headerName: 'Vencimento', width: 120, valueFormatter: (value: string) => format(new Date(value), 'dd/MM/yyyy') },
     { field: 'status', headerName: 'Status', width: 120, renderCell: params => <Chip label={statusLabels[params.value as StatusCobranca]} size="small" color={statusColors[params.value as StatusCobranca]} /> },
     { field: 'observacoes', headerName: 'Observações', flex: 1 },
@@ -113,6 +134,13 @@ export function CobrancasPage() {
         <GridActionsCellItem icon={<MessageSquare size={16} />} label="Negociar" onClick={() => toast.info('Negociar em breve')} />,
       ],
     },
+  ];
+
+  const statCards = [
+    { title: 'Valor em Aberto', value: formatCurrency(estatisticas?.valorTotalEmAberto || 0), icon: DollarSign, color: '#667eea' },
+    { title: 'Cobranças Pagas', value: estatisticas?.pagas || 0, icon: CheckCircle, color: '#11998e' },
+    { title: 'Pendentes', value: estatisticas?.emAberto || 0, icon: Clock, color: '#ffa726' },
+    { title: 'Vencidas', value: estatisticas?.vencidas || 0, icon: AlertTriangle, color: '#f44336' },
   ];
 
   return (
@@ -129,16 +157,43 @@ export function CobrancasPage() {
       </Box>
 
       {/* Filtros */}
-      <Card sx={{ mb: 3, p: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <TextField label="Buscar..." size="small" onChange={e => handleSearch({ search: e.target.value })} InputProps={{ startAdornment: <Search size={18} /> }} />
-          <TextField select label="Status" size="small" value={filters.status || ''} onChange={e => handleSearch({ status: e.target.value as StatusCobranca })} sx={{ minWidth: 150 }}>
-            <MenuItem value="">Todos</MenuItem>
-            {Object.entries(statusLabels).map(([key, label]) => <MenuItem key={key} value={key}>{label}</MenuItem>)}
-          </TextField>
-          <Button onClick={handleClearFilters}>Limpar</Button>
-        </Box>
+      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)", border: "1px solid", borderColor: "divider", borderLeft: "6px solid", borderLeftColor: "primary.main" }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+            <Box sx={{ backgroundColor: "primary.main", borderRadius: 3, p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Filter size={24} color="white" /></Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>Filtros de Pesquisa</Typography>
+              <Typography variant="body2" color="text.secondary">Use os filtros para encontrar cobranças específicas</Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <TextField label="Buscar por unidade ou observação..." size="small" value={localSearchTerm} onChange={e => setLocalSearchTerm(e.target.value)} sx={{ flex: '1 1 300px' }} InputProps={{ startAdornment: <Search size={20} style={{ marginRight: 8 }} /> }} />
+            <TextField select label="Status" size="small" value={localStatusFilter} onChange={e => setLocalStatusFilter(e.target.value as StatusCobranca)} sx={{ minWidth: 150 }}>
+              <MenuItem value="">Todos</MenuItem>
+              {Object.entries(statusLabels).map(([key, label]) => <MenuItem key={key} value={key}>{label}</MenuItem>)}
+            </TextField>
+            <Button variant="contained" startIcon={<Search size={16} />} onClick={handleSearch}>Buscar</Button>
+            <Button variant="outlined" onClick={handleClearFilters}>Limpar</Button>
+          </Box>
+        </CardContent>
       </Card>
+
+      {/* Estatísticas */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {statCards.map((card, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <Card sx={{ p: 2, borderRadius: 3, borderLeft: `6px solid ${card.color}`, transition: 'all 0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 8px 25px ${card.color}26` } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>{isLoadingStats ? <CircularProgress size={24} /> : card.value}</Typography>
+                  <Typography variant="body1" color="text.secondary">{card.title}</Typography>
+                </Box>
+                <Box sx={{ backgroundColor: `${card.color}1A`, borderRadius: 3, p: 2, display: 'flex' }}><card.icon size={32} color={card.color} /></Box>
+              </Box>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
       {/* Tabela */}
       <Card>
