@@ -121,7 +121,7 @@ const menuItems: MenuItem[] = [
         title: "Painel de Controle",
         icon: TestTube,
         path: "/teste-cache",
-      },
+      }
     ],
   },
   {
@@ -282,7 +282,7 @@ export function Sidebar({
   }
               >
     <Icon size={ level === 0 ? 22 : 18 } />
-      < /ListItemIcon>
+      </ListItemIcon>
 
   {
     isExpanded && (
@@ -330,8 +330,8 @@ export function Sidebar({
 </>
               )}
 </ListItemButton>
-  < /Tooltip>
-  < /ListItem>
+  </Tooltip>
+  </ListItem>
 
 {/* Submenu - só mostra se expandido */ }
 {
@@ -343,8 +343,8 @@ export function Sidebar({
           renderMenuItem(child, level + 1)
         )
       }
-        < /List>
-        < /Collapse>
+        </List>
+        </Collapse>
         )
 }
 </Box>
@@ -363,7 +363,7 @@ onMouseEnter = { handleMouseEnter }
 onMouseLeave = { handleMouseLeave }
   >
   {/* Header Section com Logo e Pin */ }
-  < Box
+  <Box
 sx = {{
   p: theme.spacing(2),
     display: "flex",
@@ -377,7 +377,7 @@ sx = {{
         }}
       >
   {/* Logo */ }
-  < Box
+  <Box
 sx = {{
   display: "flex",
     alignItems: "center",
@@ -397,7 +397,7 @@ sx = {{
         }),
             }}
 />
-  < /Box>
+  </Box>
 
 {/* Botão de Pin - só aparece quando expandido */ }
 {
@@ -424,8 +424,8 @@ sx = {{
 }
             >
   { isPinned?<Pin size = { 18 } /> : <PinOff size={ 18 } />}
-    < /IconButton>
-    < /Tooltip>
+    </IconButton>
+    </Tooltip>
         )}
 </Box>
 
@@ -433,7 +433,7 @@ sx = {{
 <Box sx={ { flex: 1, py: theme.spacing(2), overflowY: "auto" } }>
   <List component="nav" disablePadding >
     { menuItems.map((item) => renderMenuItem(item)) }
-    < /List>
+    </List>
 
 {
   isExpanded && (
@@ -467,8 +467,8 @@ sx = {{
           >
   Versão 1.0.0
     < br />© 2025 Cresci e Perdi
-      < /Typography>
-      < /Box>
+      </Typography>
+      </Box>
       )}
 </Box>
   );
@@ -492,6 +492,6 @@ sx = {{
       }}
     >
   { drawerContent }
-  < /Box>
+  </Box>
   );
 }
