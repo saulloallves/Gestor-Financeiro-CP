@@ -42,7 +42,6 @@ serve(async (req) => {
       .single();
     if (unidadeError) throw new Error(`Unidade não encontrada para o código ${cobranca.codigo_unidade}: ${unidadeError.message}`);
 
-    // A relação franqueado-unidade não está direta, então buscamos na tabela de junção
     const { data: franqueadoLink, error: linkError } = await supabaseAdmin
       .from('franqueados_unidades')
       .select('franqueado_id')
@@ -118,7 +117,23 @@ serve(async (req) => {
           });
           if (zapiError) throw new Error(`Erro na Z-API: ${zapiError.message}`);
           actionResult = { zapiResponse: zapiData };
-          // TODO: Registrar esta mensagem na tabela 'mensagens'
+          
+          // Registrar mensagem na tabela 'mensagens'
+          const { error: logError } = await supabaseAdmin
+            .from('mensagens')
+            .insert({
+              cobranca_id: cobranca.id,
+              unidade_id: unidade.id,
+              franqueado_id: franqueado.id,
+              canal: 'whatsapp',
+              conteudo: message,
+              status_envio: 'enviado',
+              external_id: zapiData?.id,
+              enviado_por: 'ia_agente_financeiro'
+            });
+          if (logError) {
+            console.error('Falha ao registrar mensagem no banco:', logError.message);
+          }
         } else {
           throw new Error(`Franqueado ${franqueado.id} não possui telefone.`);
         }
