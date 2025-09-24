@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { asaasService } from './asaasService';
+import { iaService } from './iaService'; // Importar o serviço da IA
 import type { Cobranca } from '../types/cobrancas';
 import type { AsaasPaymentResponse, AsaasCustomer } from '../types/asaas';
 
@@ -127,6 +128,29 @@ class AsaasSyncService {
           .single();
 
         if (error) throw new Error(error.message);
+
+        // Notificar a IA sobre a nova cobrança importada
+        try {
+          const titulo = `Cobrança importada do ASAAS #${data.id.substring(0, 8)}`;
+          const conteudo = `Uma cobrança existente no ASAAS foi importada para o sistema.
+Tipo: ${data.tipo_cobranca}
+Valor: R$ ${data.valor_original}
+Vencimento: ${new Date(data.vencimento).toLocaleDateString('pt-BR')}
+Unidade: ${data.codigo_unidade}
+ID ASAAS: ${data.asaas_payment_id}`;
+          
+          await iaService.adicionarEvento(
+            titulo, 
+            'cobrancas', 
+            conteudo, 
+            ['asaas', 'importacao', 'sincronizacao', `unidade_${data.codigo_unidade}`]
+          );
+          console.log(`🧠 IA notificada sobre a cobrança importada ${data.id}`);
+        } catch (iaError) {
+          console.warn(`⚠️ Falha ao notificar a IA sobre a cobrança importada ${data.id}:`, iaError);
+          // Não interrompe o fluxo principal
+        }
+
         return data;
       }
     } catch (error) {
