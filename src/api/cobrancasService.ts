@@ -113,6 +113,10 @@ class CobrancasService {
     console.log('🚀 [INTEGRAÇÃO] Iniciando criação de cobrança integrada...');
     console.log('📋 Dados recebidos:', dados);
 
+    // **CORREÇÃO:** Gerar a descrição padrão uma única vez
+    const descricaoPadrao = `${dados.tipo_cobranca.toUpperCase()} - Unidade ${dados.codigo_unidade}`;
+    const observacoesFinais = dados.observacoes || descricaoPadrao;
+
     // 1. Preparar dados base da cobrança (apenas campos da tabela)
     const cobrancaBase: CriarCobrancaData = {
       codigo_unidade: dados.codigo_unidade,
@@ -120,7 +124,7 @@ class CobrancasService {
       valor_original: dados.valor_original,
       valor_atualizado: dados.valor_original,
       vencimento: dados.vencimento.toISOString(),
-      observacoes: dados.observacoes,
+      observacoes: observacoesFinais, // **CORREÇÃO:** Usar a descrição final
       status: 'pendente',
       juros_aplicado: 0,
       multa_aplicada: 0,
@@ -169,7 +173,7 @@ class CobrancasService {
         billingType: 'BOLETO' as const,
         value: dados.valor_original,
         dueDate: dados.vencimento.toISOString().split('T')[0], // YYYY-MM-DD
-        description: `${dados.tipo_cobranca.toUpperCase()} - Unidade ${dados.codigo_unidade}`,
+        description: observacoesFinais, // **CORREÇÃO:** Usar a descrição final
         externalReference: `unidade-${dados.codigo_unidade}-${Date.now()}`,
       };
 
@@ -238,7 +242,7 @@ class CobrancasService {
       console.log('🔄 Criando cobrança local como fallback...');
       const cobrancaFallbackData: CriarCobrancaData = {
         ...cobrancaBase,
-        observacoes: `${dados.observacoes || ''}\n\n[ERRO ASAAS: ${asaasError}]`.trim(),
+        observacoes: `${cobrancaBase.observacoes}\n\n[ERRO ASAAS: ${asaasError}]`.trim(),
       };
 
       const { data: cobranca, error } = await supabase
