@@ -121,9 +121,6 @@ export function TesteCacheFirstPage() {
                 <Chip icon={<CreditCard />} label={`Cobranças: ${cobrancas.length}`} sx={{ width: '100%' }} />
                 <Chip icon={<UserCog />} label={`Usuários: ${usuariosInternos.length}`} sx={{ width: '100%' }} />
               </Box>
-              <Box sx={{ mt: 2 }}>
-                <Link component={NavLink} to="/cobrancas-cache">Ver página de cobranças otimizada</Link>
-              </Box>
             </CardContent>
           </Card>
 
