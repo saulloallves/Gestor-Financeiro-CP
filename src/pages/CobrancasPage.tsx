@@ -14,7 +14,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { DataGrid, GridActionsCellItem, type GridColDef, type GridPaginationModel } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem, type GridColDef, type GridPaginationModel, type GridRowSelectionModel } from '@mui/x-data-grid';
 import { ptBR } from '@mui/x-data-grid/locales';
 import { format } from 'date-fns';
 import {
@@ -31,12 +31,13 @@ import {
   Clock,
   RefreshCw,
   Eye,
+  Zap, // Novo ícone para ação em lote
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useCobrancasCacheFirst } from '../hooks/useCobrancasCacheFirst';
 import { useCobrancasEstatisticasCacheFirst } from '../hooks/useCobrancasEstatisticasCacheFirst';
 import { useSyncAsaasPayments, useSyncAsaasStatuses } from '../hooks/useAsaasSync';
-import { useGerarBoleto, useSincronizarStatus } from '../hooks/useCobrancas';
+import { useGerarBoleto, useSincronizarStatus, useGerarBoletosEmLote } from '../hooks/useCobrancas';
 import {
   type Cobranca,
   type StatusCobranca,
@@ -45,6 +46,7 @@ import {
 import { CobrancaForm } from '../components/CobrancaForm';
 import { UnidadeDetalhesModal } from '../components/UnidadeDetalhesModal';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
+import { BatchProgressModal } from '../components/BatchProgressModal';
 
 const statusLabels: Record<StatusCobranca, string> = {
   pendente: 'Pendente', em_aberto: 'Em Aberto', pago: 'Pago', em_atraso: 'Em Atraso',
@@ -81,6 +83,8 @@ export function CobrancasPage() {
   const [selectedUnidadeCodigo, setSelectedUnidadeCodigo] = useState<number | null>(null);
   const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
   const [activeBoletoUrl, setActiveBoletoUrl] = useState<string | null>(null);
+  const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
+  const [batchModalOpen, setBatchModalOpen] = useState(false);
 
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusCobranca | ''>('');
@@ -101,6 +105,7 @@ export function CobrancasPage() {
   const syncStatusesMutation = useSyncAsaasStatuses();
   const gerarBoletoMutation = useGerarBoleto();
   const sincronizarStatusMutation = useSincronizarStatus();
+  const gerarBoletosEmLoteMutation = useGerarBoletosEmLote();
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -162,6 +167,15 @@ export function CobrancasPage() {
 
   const handleNegociar = () => {
     toast.info('Funcionalidade de negociação em breve!');
+  };
+
+  const handleGerarBoletosEmLote = () => {
+    if (selectionModel.length === 0) {
+      toast.error('Selecione pelo menos uma cobrança.');
+      return;
+    }
+    setBatchModalOpen(true);
+    gerarBoletosEmLoteMutation.mutate(selectionModel as string[]);
   };
 
   const columns: GridColDef[] = [
@@ -234,16 +248,6 @@ export function CobrancasPage() {
           <Typography variant="body1" color="text.secondary">Gestão de cobranças com performance otimizada.</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Tooltip title="Sincronizar novos pagamentos do ASAAS">
-            <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={handleSyncPayments} disabled={syncPaymentsMutation.isPending}>
-              {syncPaymentsMutation.isPending ? 'Sincronizando...' : 'Sincronizar Pagamentos'}
-            </Button>
-          </Tooltip>
-          <Tooltip title="Atualizar status de pagamentos existentes">
-            <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={handleSyncStatuses} disabled={syncStatusesMutation.isPending}>
-              {syncStatusesMutation.isPending ? 'Atualizando...' : 'Atualizar Status'}
-            </Button>
-          </Tooltip>
           <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => setFormAberto(true)}>Nova Cobrança</Button>
         </Box>
       </Box>
@@ -337,6 +341,23 @@ export function CobrancasPage() {
         ))}
       </Box>
 
+      {/* Ações em Lote */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography>
+            {selectionModel.length} cobrança(s) selecionada(s)
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<Zap size={16} />}
+            disabled={selectionModel.length === 0 || gerarBoletosEmLoteMutation.isPending}
+            onClick={handleGerarBoletosEmLote}
+          >
+            Gerar Boletos em Lote
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Tabela */}
       <Card>
         <DataGrid
@@ -352,6 +373,11 @@ export function CobrancasPage() {
           paginationMode="server"
           pageSizeOptions={[10, 25, 50]}
           autoHeight
+          checkboxSelection
+          onRowSelectionModelChange={(newSelectionModel) => {
+            setSelectionModel(newSelectionModel);
+          }}
+          rowSelectionModel={selectionModel}
           localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
         />
       </Card>
@@ -379,6 +405,13 @@ export function CobrancasPage() {
         message="Deseja abrir o link em uma nova guia?"
         confirmText="Abrir Link"
         cancelText="Copiar Link"
+      />
+      <BatchProgressModal
+        open={batchModalOpen}
+        onClose={() => setBatchModalOpen(false)}
+        isLoading={gerarBoletosEmLoteMutation.isPending}
+        results={gerarBoletosEmLoteMutation.data || null}
+        totalSelected={selectionModel.length}
       />
     </Box>
   );
