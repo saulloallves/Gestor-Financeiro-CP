@@ -18,6 +18,7 @@ export interface ConfiguracaoCobranca {
   ia_provedor: 'openai' | 'lambda' | 'google_gemini';
   ia_modelo: string;
   ia_api_key?: string;
+  ia_prompt_base?: string | null;
 }
 
 export interface AtualizarConfiguracaoData {
@@ -37,6 +38,7 @@ export interface AtualizarConfiguracaoData {
   ia_provedor?: 'openai' | 'lambda' | 'google_gemini';
   ia_modelo?: string;
   ia_api_key?: string;
+  ia_prompt_base?: string | null;
 }
 
 export interface CalculoCobrancaParams {

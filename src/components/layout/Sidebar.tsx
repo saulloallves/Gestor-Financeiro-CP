@@ -28,6 +28,7 @@ import {
   Settings,
   Database,
   TestTube,
+  MessageSquare, // Ícone para o chat
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -98,6 +99,12 @@ const menuItems: MenuItem[] = [
     icon: BrainCircuit,
     path: "/ia",
     children: [
+      {
+        id: "chat-ia",
+        title: "Chat com Agente",
+        icon: MessageSquare,
+        path: "/chat-ia",
+      },
       {
         id: "base-conhecimento",
         title: "Base de Conhecimento",

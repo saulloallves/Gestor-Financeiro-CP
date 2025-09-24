@@ -12,6 +12,7 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  Divider,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { 
@@ -33,6 +34,7 @@ const configIASchema = z.object({
   ia_provedor: z.enum(['openai', 'lambda'] as const),
   ia_modelo: z.string().min(1, "Modelo é obrigatório"),
   ia_api_key: z.string().min(1, "Chave de API é obrigatória"),
+  ia_prompt_base: z.string().min(50, "O prompt base deve ter no mínimo 50 caracteres."),
 });
 
 type ConfigIAForm = z.infer<typeof configIASchema>;
@@ -49,6 +51,7 @@ export function ConfiguracoesIAPage() {
       ia_provedor: 'openai',
       ia_modelo: '',
       ia_api_key: '',
+      ia_prompt_base: '',
     },
   });
 
@@ -64,6 +67,7 @@ export function ConfiguracoesIAPage() {
         ia_provedor: (configuracao.ia_provedor as IAProvider) || 'openai',
         ia_modelo: configuracao.ia_modelo || '',
         ia_api_key: configuracao.ia_api_key || '',
+        ia_prompt_base: configuracao.ia_prompt_base || '',
       });
     }
   }, [configuracao, iaForm]);
@@ -275,6 +279,28 @@ export function ConfiguracoesIAPage() {
                 }}
               />
             </Box>
+
+            <Divider sx={{ my: 4 }} />
+
+            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', mb: 3 }}>
+              Personalidade do Agente (Prompt Base)
+            </Typography>
+
+            <Controller
+              name="ia_prompt_base"
+              control={iaForm.control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  label="Prompt Base da IA"
+                  multiline
+                  rows={15}
+                  fullWidth
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message || "Defina aqui o comportamento, tom e regras do agente de IA."}
+                />
+              )}
+            />
 
             <Box sx={{ mt: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <Button

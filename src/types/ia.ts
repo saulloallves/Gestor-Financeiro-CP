@@ -15,3 +15,10 @@ export interface BaseConhecimento {
 }
 
 export type CriarBaseConhecimento = Omit<BaseConhecimento, 'id' | 'data_criacao' | 'ultima_atualizacao' | 'criado_por'>;
+
+// Novo tipo para mensagens de chat
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}

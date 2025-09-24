@@ -28,33 +28,38 @@ class IaConnectorService {
       if (!config.ia_api_key) {
         throw new Error('Chave de API da IA não configurada.');
       }
+      
+      if (!config.ia_prompt_base) {
+        throw new Error('Prompt base da IA não configurado.');
+      }
 
       // Passo 1: Consultar a base de conhecimento (Retrieval)
       const contexto = await iaService.consultarBase(prompt);
       
-      // Passo 2: Montar o prompt enriquecido (Augmented)
-      let promptEnriquecido = prompt;
-      if (contexto.length > 0) {
-        const contextoFormatado = contexto
-          .map(c => `Título: ${c.titulo}\nConteúdo: ${c.conteudo}`)
-          .join('\n\n---\n\n');
-        
-        promptEnriquecido = `Com base no seguinte contexto da nossa base de conhecimento, responda à pergunta do usuário.
-        
-Contexto:
+      // Passo 2: Montar o prompt final combinando o prompt base, o contexto e a pergunta do usuário
+      const contextoFormatado = contexto.length > 0
+        ? contexto
+            .map(c => `Título: ${c.titulo}\nConteúdo: ${c.conteudo}`)
+            .join('\n\n---\n\n')
+        : "Nenhuma informação encontrada na base de conhecimento para esta pergunta.";
+
+      const promptFinal = `${config.ia_prompt_base}
+
+# Contexto Relevante da Base de Conhecimento
 ---
 ${contextoFormatado}
 ---
 
-Pergunta do usuário: "${prompt}"`;
-      }
+# Pergunta do Usuário
+Com base nas suas regras e no contexto acima, responda à seguinte pergunta:
+"${prompt}"`;
 
-      console.log("🤖 Prompt Enriquecido Enviado para a IA:", promptEnriquecido);
+      console.log("🤖 Prompt Final Enviado para a IA:", promptFinal);
 
-      // Passo 3: Chamar o provedor de IA com o prompt enriquecido (Generation)
+      // Passo 3: Chamar o provedor de IA com o prompt final (Generation)
       switch (config.ia_provedor) {
         case 'openai':
-          return this.chamarOpenAI(promptEnriquecido, config.ia_modelo, config.ia_api_key);
+          return this.chamarOpenAI(promptFinal, config.ia_modelo, config.ia_api_key);
         
         // Futuramente, outros provedores podem ser adicionados aqui
         // case 'lambda':
