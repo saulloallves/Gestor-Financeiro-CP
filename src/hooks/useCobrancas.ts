@@ -59,10 +59,7 @@ export function useGerarBoleto() {
   return useMutation({
     mutationFn: (id: string) => cobrancasService.gerarBoletoAsaas(id),
     onSuccess: (data, id) => {
-      toast.success('Boleto gerado! URL copiada para a área de transferência.');
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(data.boleto_url);
-      }
+      // A lógica de UI (toast/modal) foi movida para o componente
       const store = useDataStore.getState();
       const cobranca = store.getCobrancaById(id);
       if (cobranca) {

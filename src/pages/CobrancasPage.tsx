@@ -44,6 +44,7 @@ import {
 } from '../types/cobrancas';
 import { CobrancaForm } from '../components/CobrancaForm';
 import { UnidadeDetalhesModal } from '../components/UnidadeDetalhesModal';
+import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
 
 const statusLabels: Record<StatusCobranca, string> = {
   pendente: 'Pendente', em_aberto: 'Em Aberto', pago: 'Pago', em_atraso: 'Em Atraso',
@@ -78,6 +79,8 @@ export function CobrancasPage() {
   const [formAberto, setFormAberto] = useState(false);
   const [modalUnidadeOpen, setModalUnidadeOpen] = useState(false);
   const [selectedUnidadeCodigo, setSelectedUnidadeCodigo] = useState<number | null>(null);
+  const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
+  const [activeBoletoUrl, setActiveBoletoUrl] = useState<string | null>(null);
 
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusCobranca | ''>('');
@@ -143,8 +146,14 @@ export function CobrancasPage() {
     syncStatusesMutation.mutate();
   };
 
-  const handleGerarBoleto = (id: string) => {
-    gerarBoletoMutation.mutate(id);
+  const handleGerarBoleto = async (id: string) => {
+    try {
+      const data = await gerarBoletoMutation.mutateAsync(id);
+      setActiveBoletoUrl(data.boleto_url);
+      setConfirmationModalOpen(true);
+    } catch (error) {
+      console.error("Falha ao gerar boleto:", error);
+    }
   };
 
   const handleSincronizarStatus = (id: string) => {
@@ -349,6 +358,28 @@ export function CobrancasPage() {
 
       <CobrancaForm open={formAberto} onClose={() => setFormAberto(false)} cobranca={cobrancaParaEditar} />
       <UnidadeDetalhesModal open={modalUnidadeOpen} onClose={() => setModalUnidadeOpen(false)} codigoUnidade={selectedUnidadeCodigo} />
+      <ConfirmationDialog
+        open={confirmationModalOpen}
+        onClose={() => {
+          if (activeBoletoUrl) {
+            navigator.clipboard.writeText(activeBoletoUrl);
+            toast.success('Link do boleto copiado para a área de transferência!');
+          }
+          setConfirmationModalOpen(false);
+          setActiveBoletoUrl(null);
+        }}
+        onConfirm={() => {
+          if (activeBoletoUrl) {
+            window.open(activeBoletoUrl, '_blank');
+          }
+          setConfirmationModalOpen(false);
+          setActiveBoletoUrl(null);
+        }}
+        title="Boleto Gerado com Sucesso"
+        message="Deseja abrir o link em uma nova guia?"
+        confirmText="Abrir Link"
+        cancelText="Copiar Link"
+      />
     </Box>
   );
 }
