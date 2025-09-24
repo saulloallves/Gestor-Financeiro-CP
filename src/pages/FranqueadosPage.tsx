@@ -340,7 +340,7 @@ export function FranqueadosPage() {
             </Box>
           </Box>
           <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-            Visualize todos os franqueados da rede Cresci e Perdi
+            Visualize todos os franqueados da rede
           </Typography>
         </Box>
 
