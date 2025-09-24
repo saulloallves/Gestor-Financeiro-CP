@@ -12,7 +12,7 @@ interface CobrancasPagination {
 export function useCobrancasCacheFirst() {
   const { cobrancas, sync } = useDataStore();
   const [filters, setFilters] = useState<CobrancasFilters>({});
-  const [pagination, setPagination] = useState({
+  const [paginationModel, setPaginationModel] = useState({
     page: 0, // DataGrid usa 0-based pagination
     pageSize: 25,
   });
@@ -42,47 +42,33 @@ export function useCobrancasCacheFirst() {
   }, [cobrancas, filters]);
 
   const paginatedCobrancas = useMemo(() => {
-    const startIndex = pagination.page * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
+    const startIndex = paginationModel.page * paginationModel.pageSize;
+    const endIndex = startIndex + paginationModel.pageSize;
     return filteredCobrancas.slice(startIndex, endIndex);
-  }, [filteredCobrancas, pagination]);
-
-  const paginationData: CobrancasPagination = useMemo(() => {
-    const total = filteredCobrancas.length;
-    const totalPages = Math.ceil(total / pagination.pageSize);
-    
-    return {
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      total,
-      totalPages,
-    };
-  }, [filteredCobrancas.length, pagination]);
+  }, [filteredCobrancas, paginationModel]);
 
   const handleFilterChange = (newFilters: CobrancasFilters) => {
     setFilters(newFilters);
-    setPagination(prev => ({ ...prev, page: 0 }));
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPagination(prev => ({ ...prev, pageSize: newPageSize, page: 0 }));
+  const handlePaginationModelChange = (newModel: { page: number; pageSize: number }) => {
+    setPaginationModel(newModel);
   };
 
   const isLoading = !sync.lastSyncAt || sync.isLoading;
 
   return {
     cobrancas: paginatedCobrancas,
-    total: paginationData.total,
+    total: filteredCobrancas.length,
     filters,
-    pagination: paginationData,
+    pagination: {
+      page: paginationModel.page,
+      pageSize: paginationModel.pageSize,
+    },
     isLoading,
     handleFilterChange,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePaginationModelChange,
     refetch: useDataStore.getState().refreshData,
   };
 }

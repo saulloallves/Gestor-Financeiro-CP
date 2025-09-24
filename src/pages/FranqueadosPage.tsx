@@ -36,7 +36,7 @@ import {
   Handshake,
   Database,
 } from "lucide-react";
-import { useFranqueadosPageCacheFirst, useFranqueadosEstatisticasCacheFirst } from "../hooks/useFranqueadosCacheFirst";
+import { useFranqueadosPageCacheFirst, useFranqueadosEstatisticasCacheFirst } from "../hooks/useFranqueadosPageCacheFirst";
 import {
   getTipoFranqueadoLabel,
   getTipoFranqueadoColor,
@@ -64,8 +64,7 @@ export function FranqueadosPage() {
     filters,
     pagination,
     handleFilterChange,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePaginationModelChange,
     refetch,
   } = useFranqueadosPageCacheFirst();
 
@@ -74,15 +73,6 @@ export function FranqueadosPage() {
     data: estatisticas,
     isLoading: isLoadingStats,
   } = useFranqueadosEstatisticasCacheFirst();
-
-  // Handler para mudança de paginação do DataGrid
-  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
-    if (newModel.pageSize !== pagination.limit) {
-      handlePageSizeChange(newModel.pageSize);
-    } else if (newModel.page + 1 !== pagination.page) {
-      handlePageChange(newModel.page + 1);
-    }
-  };
 
   // Função para aplicar filtros de busca
   const handleSearch = () => {
@@ -780,7 +770,7 @@ export function FranqueadosPage() {
             columns={columns}
             loading={isLoading}
             rowCount={totalFranqueados}
-            paginationModel={{ page: pagination.page - 1, pageSize: pagination.limit }}
+            paginationModel={pagination}
             onPaginationModelChange={handlePaginationModelChange}
             paginationMode="server"
             pageSizeOptions={[10, 20, 50, 100]}

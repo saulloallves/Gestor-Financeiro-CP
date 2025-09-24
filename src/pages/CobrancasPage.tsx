@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -96,8 +96,7 @@ export function CobrancasPage() {
     filters,
     pagination,
     handleFilterChange,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePaginationModelChange,
   } = useCobrancasCacheFirst();
 
   const { data: estatisticas, isLoading: isLoadingStats } = useCobrancasEstatisticasCacheFirst();
@@ -106,14 +105,6 @@ export function CobrancasPage() {
   const gerarBoletoMutation = useGerarBoleto();
   const sincronizarStatusMutation = useSincronizarStatus();
   const gerarBoletosEmLoteMutation = useGerarBoletosEmLote();
-
-  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
-    if (newModel.pageSize !== pagination.pageSize) {
-      handlePageSizeChange(newModel.pageSize);
-    } else if (newModel.page !== pagination.page) {
-      handlePageChange(newModel.page);
-    }
-  };
 
   const handleSearch = () => {
     handleFilterChange({
@@ -361,7 +352,7 @@ export function CobrancasPage() {
           columns={columns}
           loading={isLoading}
           rowCount={total}
-          paginationModel={{ page: pagination.page, pageSize: pagination.pageSize }}
+          paginationModel={pagination}
           onPaginationModelChange={handlePaginationModelChange}
           paginationMode="server"
           pageSizeOptions={[10, 25, 50]}

@@ -17,21 +17,13 @@ interface UnidadesEstatisticas {
   cancelado: number;
 }
 
-// Interface para paginação
-interface UnidadesPagination {
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-}
-
 export function useUnidadesCacheFirst() {
   const { unidades, sync } = useDataStore();
   const [filters, setFilters] = useState<UnidadeFilters>({
     searchTerm: '',
     status: '',
   });
-  const [pagination, setPagination] = useState({
+  const [paginationModel, setPaginationModel] = useState({
     page: 0, // DataGrid usa 0-based pagination
     pageSize: 50,
   });
@@ -62,36 +54,19 @@ export function useUnidadesCacheFirst() {
 
   // Aplicar paginação
   const paginatedUnidades = useMemo(() => {
-    const startIndex = pagination.page * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
+    const startIndex = paginationModel.page * paginationModel.pageSize;
+    const endIndex = startIndex + paginationModel.pageSize;
     return filteredUnidades.slice(startIndex, endIndex);
-  }, [filteredUnidades, pagination]);
-
-  // Calcular dados de paginação
-  const paginationData: UnidadesPagination = useMemo(() => {
-    const total = filteredUnidades.length;
-    const totalPages = Math.ceil(total / pagination.pageSize);
-    
-    return {
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      total,
-      totalPages,
-    };
-  }, [filteredUnidades.length, pagination]);
+  }, [filteredUnidades, paginationModel]);
 
   // Handlers para filtros
   const handleFilterChange = (key: keyof UnidadeFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 0 })); // Reset para primeira página
+    setPaginationModel(prev => ({ ...prev, page: 0 })); // Reset para primeira página
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    setPagination(prev => ({ ...prev, pageSize: newPageSize, page: 0 }));
+  const handlePaginationModelChange = (newModel: { page: number; pageSize: number }) => {
+    setPaginationModel(newModel);
   };
 
   // Status de carregamento baseado no cache
@@ -100,12 +75,11 @@ export function useUnidadesCacheFirst() {
   return {
     // Dados
     unidades: paginatedUnidades,
-    total: paginationData.total,
-    totalPages: paginationData.totalPages,
+    total: filteredUnidades.length,
     
     // Estado atual
     filters,
-    pagination: paginationData,
+    pagination: paginationModel,
     
     // Status
     isLoading,
@@ -114,8 +88,7 @@ export function useUnidadesCacheFirst() {
     
     // Handlers
     handleFilterChange,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePaginationModelChange,
     
     // Para compatibilidade com a interface existente
     setSearchTerm: (term: string) => handleFilterChange('searchTerm', term),
@@ -160,15 +133,13 @@ export function useUnidadesPageCacheFirst() {
   const {
     unidades,
     total,
-    totalPages,
     filters,
     pagination,
     isLoading,
     isError,
     hasInitialLoad,
     handleFilterChange,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePaginationModelChange,
     setSearchTerm,
     setStatusFilter,
     refetch,
@@ -178,7 +149,6 @@ export function useUnidadesPageCacheFirst() {
     // Dados principais
     unidades,
     total,
-    totalPages,
     
     // Estado de filtros e paginação
     filters,
@@ -191,8 +161,7 @@ export function useUnidadesPageCacheFirst() {
     
     // Handlers
     handleFilterChange,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePaginationModelChange,
     setSearchTerm,
     setStatusFilter,
     refetch,
