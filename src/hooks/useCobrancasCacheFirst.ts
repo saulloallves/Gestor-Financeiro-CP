@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useDataStore } from '../store/dataStore';
-import type { Cobranca, CobrancasFilters } from '../types/cobrancas';
+import type { CobrancasFilters } from '../types/cobrancas';
 
 export function useCobrancasCacheFirst() {
   const { cobrancas, sync } = useDataStore();
