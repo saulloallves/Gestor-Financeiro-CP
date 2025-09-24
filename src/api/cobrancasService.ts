@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { asaasService } from './asaasService';
 import { configuracoesService } from './configuracoesService';
+import { iaService } from './iaService'; // Importar o serviço da IA
 import type { 
   Cobranca, 
   CriarCobrancaData, 
@@ -92,12 +93,13 @@ class CobrancasService {
       throw new Error(error.message);
     }
 
+    // Fluxo 2: Alimentação automática da base de conhecimento
     try {
-      // Integração com ASAAS será implementada futuramente
-      // quando tivermos os dados do franqueado disponíveis
-      console.log('Cobrança criada para a unidade:', cobranca.codigo_unidade);
-    } catch (asaasError) {
-      console.error('Erro na integração ASAAS:', asaasError);
+      const titulo = `Cobrança #${cobranca.id.substring(0, 8)} criada`;
+      const conteudo = `Uma nova cobrança do tipo "${cobranca.tipo_cobranca}" no valor de R$ ${cobranca.valor_original} foi criada para a unidade ${cobranca.codigo_unidade} com vencimento em ${new Date(cobranca.vencimento).toLocaleDateString('pt-BR')}.`;
+      await iaService.adicionarEvento(titulo, 'cobrancas', conteudo, ['cobranca', 'criacao', `unidade_${cobranca.codigo_unidade}`]);
+    } catch (iaError) {
+      console.warn('Falha ao registrar evento na base de conhecimento:', iaError);
     }
 
     return cobranca;
@@ -213,6 +215,15 @@ class CobrancasService {
         throw new Error(`Erro ao salvar cobrança: ${error.message}`);
       }
 
+      // Fluxo 2: Alimentação automática da base de conhecimento
+      try {
+        const titulo = `Cobrança #${cobranca.id.substring(0, 8)} criada (ASAAS)`;
+        const conteudo = `Uma nova cobrança integrada com ASAAS (ID: ${payment.id}) do tipo "${cobranca.tipo_cobranca}" no valor de R$ ${cobranca.valor_original} foi criada para a unidade ${cobranca.codigo_unidade}.`;
+        await iaService.adicionarEvento(titulo, 'cobrancas', conteudo, ['cobranca', 'criacao', 'asaas', `unidade_${cobranca.codigo_unidade}`]);
+      } catch (iaError) {
+        console.warn('Falha ao registrar evento na base de conhecimento:', iaError);
+      }
+
       console.log('🎉 Cobrança integrada criada com sucesso!');
       console.log('📋 ID Local:', cobranca.id);
       console.log('🏦 ID ASAAS Payment:', payment.id);
@@ -230,7 +241,7 @@ class CobrancasService {
         observacoes: `${dados.observacoes || ''}\n\n[ERRO ASAAS: ${asaasError}]`.trim(),
       };
 
-      const { error } = await supabase
+      const { data: cobranca, error } = await supabase
         .from('cobrancas')
         .insert(cobrancaFallbackData)
         .select('*')
@@ -643,6 +654,7 @@ class CobrancasService {
           cpfCnpj: cpfCnpjLimpo,
           email: dados.customerData.email,
           phone: dados.customerData.phone,
+          mobilePhone: dados.customerData.phone,
           address: dados.customerData.address,
           addressNumber: dados.customerData.addressNumber,
           complement: dados.customerData.complement,
