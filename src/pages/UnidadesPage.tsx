@@ -283,7 +283,7 @@ export function UnidadesPage() {
               component="h1"
               sx={{ fontWeight: 700, color: "text.primary" }}
             >
-              Visualização de Unidades
+              Unidades da Rede
             </Typography>
             <Box 
               sx={{ 
