@@ -11,11 +11,13 @@ import {
 import { Send, BrainCircuit, User, RefreshCcw } from 'lucide-react';
 import { useChatIA } from '../hooks/useChatIA';
 import { useAuthStore } from '../store/authStore';
+import { usePerfil } from '../hooks/usePerfil'; // Importar o hook de perfil
 import cabecaIcon from '../assets/cabeca.png';
 
 export function ChatIAPage() {
   const { messages, sendMessage, isLoading, clearChat } = useChatIA();
   const { usuario } = useAuthStore();
+  const { data: perfilData } = usePerfil(); // Buscar dados do perfil do usuário
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
@@ -60,7 +62,7 @@ export function ChatIAPage() {
             >
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, maxWidth: '80%' }}>
                 {message.role === 'assistant' && (
-                  <Avatar src={cabecaIcon} sx={{ bgcolor: 'primary.main' }}>
+                  <Avatar src={cabecaIcon} sx={{ bgcolor: 'transparent' }}>
                     <BrainCircuit />
                   </Avatar>
                 )}
@@ -78,8 +80,11 @@ export function ChatIAPage() {
                   </Typography>
                 </Paper>
                 {message.role === 'user' && (
-                  <Avatar sx={{ bgcolor: 'secondary.main' }}>
-                    {usuario?.nome?.charAt(0) || <User />}
+                  <Avatar 
+                    src={perfilData?.fotoPerfil || undefined} 
+                    sx={{ bgcolor: 'secondary.main' }}
+                  >
+                    {!perfilData?.fotoPerfil && (usuario?.nome?.charAt(0) || <User />)}
                   </Avatar>
                 )}
               </Box>
