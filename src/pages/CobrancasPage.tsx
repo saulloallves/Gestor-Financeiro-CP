@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   Clock,
   RefreshCw,
+  Calendar,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useCobrancasCacheFirst } from "../hooks/useCobrancasCacheFirst";
@@ -43,7 +44,6 @@ import { useGerarBoleto, useSincronizarStatus } from "../hooks/useCobrancas";
 import {
   type Cobranca,
   type StatusCobranca,
-  type TipoCobranca,
 } from "../types/cobrancas";
 import { CobrancaForm } from "../components/CobrancaForm";
 import { UnidadeDetalhesModal } from "../components/UnidadeDetalhesModal";
@@ -86,14 +86,6 @@ const statusStyles: Record<
   negociado: { color: "info", variant: "filled" },
   parcelado: { color: "secondary", variant: "outlined" },
   cancelado: { color: "default", variant: "filled" },
-};
-
-const tipoLabels: Record<TipoCobranca, string> = {
-  royalties: "Royalties",
-  insumos: "Insumos",
-  aluguel: "Aluguel",
-  eventual: "Eventual",
-  taxa_franquia: "Taxa de Franquia",
 };
 
 const formatCurrency = (value: number) =>
@@ -202,43 +194,74 @@ export function CobrancasPage() {
     {
       field: "codigo_unidade",
       headerName: "Unidade",
+      headerAlign: "center",
+      width: 120,
       renderCell: (params) => (
         <Chip
           label={params.value}
           size="small"
-          color="primary"
           onClick={() => handleViewUnidadeDetails(params.value)}
-          sx={{ cursor: "pointer" }}
+          sx={{
+            cursor: "pointer",
+            backgroundColor: "primary.main",
+            color: "primary.contrastText",
+            fontWeight: "bold",
+          }}
         />
       ),
     },
     {
-      field: "tipo_cobranca",
-      headerName: "Tipo",
-      width: 150,
+      field: "observacoes",
+      headerName: "Observações",
+      flex: 1,
+      minWidth: 250,
+      align: "left",
+      headerAlign: "left",
       renderCell: (params) => (
-        <Chip
-          label={tipoLabels[params.value as TipoCobranca]}
-          size="small"
-          variant="outlined"
-        />
+        <Typography
+          variant="body2"
+          sx={{
+            whiteSpace: "normal",
+            wordBreak: "break-word",
+            lineHeight: 1.4,
+            textAlign: "left",
+            width: "100%",
+          }}
+        >
+          {params.value}
+        </Typography>
       ),
     },
     {
       field: "valor_atualizado",
       headerName: "Valor",
-      width: 150,
-      valueFormatter: (value: number) => formatCurrency(value),
+      headerAlign: "center",
+      flex: 0.1,
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          {formatCurrency(params.value)}
+        </Typography>
+      ),
     },
     {
       field: "vencimento",
       headerName: "Vencimento",
-      width: 120,
-      valueFormatter: (value: string) => format(new Date(value), "dd/MM/yyyy"),
+      width: 150,
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Calendar size={16} />
+          <Typography variant="body2">
+            {format(new Date(params.value), "dd/MM/yyyy")}
+          </Typography>
+        </Box>
+      ),
     },
     {
       field: "status",
       headerName: "Status",
+      headerAlign: "center",
+      width: 110,
       renderCell: (params) => {
         const status = params.value as StatusCobranca;
         const style = statusStyles[status] || {
@@ -255,11 +278,11 @@ export function CobrancasPage() {
         );
       },
     },
-    { field: "observacoes", headerName: "Observações", flex: 1 },
     {
       field: "actions",
       type: "actions",
       headerName: "Ações",
+      headerAlign: "center",
       getActions: (params) => [
         <GridActionsCellItem
           key="edit"
@@ -525,7 +548,15 @@ export function CobrancasPage() {
       </Box>
 
       {/* Tabela */}
-      <Card>
+      <Card
+        sx={{
+          width: "100%",
+          overflow: "hidden",
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <DataGrid
           rows={cobrancas}
           columns={columns}
@@ -537,9 +568,50 @@ export function CobrancasPage() {
             handlePageSizeChange(model.pageSize);
           }}
           paginationMode="server"
-          pageSizeOptions={[10, 25, 50]}
+          pageSizeOptions={[10, 25, 50, 100]}
           autoHeight
           localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
+          sx={{
+            border: "none",
+            backgroundColor: "#ffffff",
+            "& .MuiDataGrid-cell": {
+              borderColor: "divider",
+              padding: (theme) => theme.spacing(2, 1.5),
+              fontSize: "1rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              "& .MuiTypography-root": {
+                fontSize: "1rem !important",
+              },
+              "& .MuiChip-root": {
+                fontSize: "0.9rem",
+              },
+            },
+            "& .MuiDataGrid-columnHeaders": {
+              backgroundColor: "#ffffff",
+              borderColor: "divider",
+              "& .MuiDataGrid-columnHeader": {
+                backgroundColor: "#ffffff",
+                padding: (theme) => theme.spacing(1.5, 1.5),
+                fontSize: "1rem",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+              },
+            },
+            "& .MuiDataGrid-row": {
+              minHeight: "65px !important",
+              "&:hover": {
+                backgroundColor: "action.hover",
+              },
+            },
+          }}
+          disableRowSelectionOnClick
+          hideFooterSelectedRowCount
+          rowHeight={64}
         />
       </Card>
 
