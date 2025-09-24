@@ -181,24 +181,13 @@ class CobrancasService {
       let linkPagamento: string | undefined;
 
       try {
-        const urls = await Promise.allSettled([
-          asaasService.getBankSlipUrl(payment.id!),
-          asaasService.getPaymentUrl(payment.id!),
-        ]);
+        // As URLs já vêm na resposta da criação do payment
+        boletoUrl = payment.bankSlipUrl;
+        linkPagamento = payment.invoiceUrl;
+        
+        if (boletoUrl) console.log('✅ URL do boleto obtida da criação');
+        if (linkPagamento) console.log('✅ URL de pagamento obtida da criação');
 
-        if (urls[0].status === 'fulfilled') {
-          boletoUrl = urls[0].value;
-          console.log('✅ URL do boleto obtida com sucesso');
-        } else {
-          console.warn('⚠️ Erro ao obter URL do boleto:', urls[0].reason);
-        }
-
-        if (urls[1].status === 'fulfilled') {
-          linkPagamento = urls[1].value;
-          console.log('✅ URL de pagamento obtida com sucesso');
-        } else {
-          console.warn('⚠️ Erro ao obter URL de pagamento:', urls[1].reason);
-        }
       } catch (urlError) {
         console.warn('⚠️ Erro geral ao obter URLs:', urlError);
       }
@@ -354,24 +343,29 @@ class CobrancasService {
       throw new Error('Cobrança não encontrada');
     }
 
-    if (cobranca.asaas_payment_id) {
-      // Já tem boleto ASAAS, apenas obter URLs
-      const boletoUrl = await asaasService.getBankSlipUrl(cobranca.asaas_payment_id);
-      const linkPagamento = await asaasService.getPaymentUrl(cobranca.asaas_payment_id);
-      
-      // Atualizar URLs no banco
-      await supabase
-        .from('cobrancas')
-        .update({ 
-          boleto_url: boletoUrl,
-          link_pagamento: linkPagamento,
-        })
-        .eq('id', id);
-
-      return { boleto_url: boletoUrl, link_pagamento: linkPagamento };
+    if (!cobranca.asaas_payment_id) {
+      throw new Error('Esta cobrança não foi criada no ASAAS. Crie uma nova cobrança com a integração ativada.');
     }
 
-    throw new Error('Cobrança não possui integração com ASAAS. Recriar a cobrança.');
+    // Já tem boleto ASAAS, apenas obter os detalhes do payment
+    const payment = await asaasService.getPayment(cobranca.asaas_payment_id);
+    const boletoUrl = payment.bankSlipUrl;
+    const linkPagamento = payment.invoiceUrl;
+
+    if (!boletoUrl || !linkPagamento) {
+      throw new Error('Não foi possível obter as URLs do boleto. Verifique o status da cobrança no ASAAS.');
+    }
+    
+    // Atualizar URLs no banco para garantir que estão sincronizadas
+    await supabase
+      .from('cobrancas')
+      .update({ 
+        link_boleto: boletoUrl,
+        link_pagamento: linkPagamento,
+      })
+      .eq('id', id);
+
+    return { boleto_url: boletoUrl, link_pagamento: linkPagamento };
   }
 
   async sincronizarStatusAsaas(id: string): Promise<Cobranca> {

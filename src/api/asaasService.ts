@@ -208,22 +208,6 @@ class AsaasService {
     });
   }
 
-  // Obter URL do boleto bancário
-  async getBankSlipUrl(paymentId: string): Promise<string> {
-    const response = await this.makeRequest<{ identificationField: string }>(`/payments/${paymentId}/bankSlipUrl`, {
-      method: 'GET',
-    });
-    return response.identificationField;
-  }
-
-  // Obter URL da página de pagamento
-  async getPaymentUrl(paymentId: string): Promise<string> {
-    const response = await this.makeRequest<{ invoiceUrl: string }>(`/payments/${paymentId}/invoiceUrl`, {
-      method: 'GET',
-    });
-    return response.invoiceUrl;
-  }
-
   // ================================
   // MÉTODOS AVANÇADOS PARA INTEGRAÇÃO
   // ================================
