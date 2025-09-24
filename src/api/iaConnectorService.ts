@@ -1,23 +1,6 @@
 import { configuracoesService } from './configuracoesService';
 import { iaService } from './iaService';
-
-// Este é um placeholder para a biblioteca da OpenAI
-// Em um projeto real, instalaríamos com `npm install openai`
-const OpenAI = ({ apiKey }: { apiKey: string }) => {
-  return {
-    chat: {
-      completions: {
-        create: async ({ model, messages }: { model: string, messages: { role: string, content: string }[] }) => {
-          console.log('Chamando OpenAI (simulado)', { model, messages, apiKey });
-          // Simula uma resposta da API
-          return Promise.resolve({
-            choices: [{ message: { content: `Resposta simulada para: "${messages.find(m => m.role === 'user')?.content}"` } }]
-          });
-        }
-      }
-    }
-  };
-};
+import OpenAI from 'openai';
 
 class IaConnectorService {
   
@@ -75,7 +58,7 @@ Com base nas suas regras e no contexto acima, responda à seguinte pergunta:
   }
 
   private async chamarOpenAI(prompt: string, modelo: string, apiKey: string): Promise<string> {
-    const openai = OpenAI({ apiKey });
+    const openai = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
 
     const response = await openai.chat.completions.create({
       model: modelo,
