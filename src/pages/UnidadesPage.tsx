@@ -110,7 +110,6 @@ export function UnidadesPage() {
       field: "codigo_unidade",
       headerName: "Código",
       width: 100,
-      flex: 0,
       renderCell: (params) => (
         <Chip
           label={params.value}
@@ -135,7 +134,7 @@ export function UnidadesPage() {
             alignItems: "center",
             gap: 1,
             width: "100%",
-            justifyContent: "center",
+            justifyContent: "left",
           }}
         >
           <Building2 size={16} color={theme.palette.primary.main} />
@@ -148,8 +147,7 @@ export function UnidadesPage() {
     {
       field: "cnpj",
       headerName: "CNPJ",
-      flex: 1,
-      minWidth: 120,
+      flex: 0.5,
       renderCell: (params) => (
         <Typography
           variant="body2"
@@ -163,8 +161,7 @@ export function UnidadesPage() {
     {
       field: "status",
       headerName: "Status",
-      flex: 0.8,
-      minWidth: 130,
+      flex: 0.5,
       renderCell: (params) => {
         const status = params.value as StatusUnidade;
         return (
@@ -180,8 +177,7 @@ export function UnidadesPage() {
     {
       field: "telefone_comercial",
       headerName: "Telefone",
-      flex: 1,
-      minWidth: 130,
+      flex: 0.5,
       renderCell: (params) => (
         <Box
           sx={{
@@ -204,8 +200,7 @@ export function UnidadesPage() {
     {
       field: "endereco_cidade",
       headerName: "Cidade",
-      flex: 1,
-      minWidth: 100,
+      flex: 0.8,
       renderCell: (params) => (
         <Box
           sx={{
@@ -229,8 +224,6 @@ export function UnidadesPage() {
       field: "endereco_uf",
       headerName: "UF",
       flex: 0.3,
-      minWidth: 60,
-      maxWidth: 80,
       renderCell: (params) => (
         <Typography
           variant="body2"
@@ -753,9 +746,11 @@ export function UnidadesPage() {
             localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
             sx={{
               border: "none",
+              backgroundColor: "#FFFFFF",
               width: "100%",
               minWidth: 0,
               "& .MuiDataGrid-main": {
+                backgroundColor: "#FFFFFF",
                 minWidth: 0,
               },
               "& .MuiDataGrid-cell": {
@@ -777,9 +772,9 @@ export function UnidadesPage() {
                 },
               },
               "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "background.default",
                 borderColor: "divider",
                 "& .MuiDataGrid-columnHeader": {
+                  backgroundColor: "#FFFFFF",
                   padding: theme.spacing(1.5, 1.5), // Padding para headers
                   fontSize: "1rem", // Aumenta ainda mais o tamanho da fonte dos headers
                   fontWeight: 600,
@@ -793,7 +788,7 @@ export function UnidadesPage() {
                 overflow: "auto",
               },
               "& .MuiDataGrid-row": {
-                minHeight: "64px !important", // Altura mínima das linhas
+                minHeight: "65px !important", // Altura mínima das linhas
                 "&:hover": {
                   backgroundColor: "action.hover",
                 },
