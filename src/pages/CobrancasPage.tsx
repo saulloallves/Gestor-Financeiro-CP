@@ -8,13 +8,9 @@ import {
   TextField,
   MenuItem,
   Chip,
-  Grid,
   CircularProgress,
-  Tooltip,
-  IconButton,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { DataGrid, GridActionsCellItem, type GridColDef, type GridPaginationModel, type GridRowSelectionModel } from '@mui/x-data-grid';
+import { DataGrid, GridActionsCellItem, type GridColDef, type GridRowSelectionModel } from '@mui/x-data-grid';
 import { ptBR } from '@mui/x-data-grid/locales';
 import { format } from 'date-fns';
 import {
@@ -23,20 +19,17 @@ import {
   FileText,
   MessageSquare,
   Plus,
-  Download,
   Filter,
   DollarSign,
   CheckCircle,
   AlertTriangle,
   Clock,
   RefreshCw,
-  Eye,
-  Zap, // Novo ícone para ação em lote
+  Zap,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useCobrancasCacheFirst } from '../hooks/useCobrancasCacheFirst';
 import { useCobrancasEstatisticasCacheFirst } from '../hooks/useCobrancasEstatisticasCacheFirst';
-import { useSyncAsaasPayments, useSyncAsaasStatuses } from '../hooks/useAsaasSync';
 import { useGerarBoleto, useSincronizarStatus, useGerarBoletosEmLote } from '../hooks/useCobrancas';
 import {
   type Cobranca,
@@ -76,7 +69,6 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 export function CobrancasPage() {
-  const theme = useTheme();
   const [cobrancaParaEditar, setCobrancaParaEditar] = useState<Cobranca | undefined>();
   const [formAberto, setFormAberto] = useState(false);
   const [modalUnidadeOpen, setModalUnidadeOpen] = useState(false);
@@ -100,8 +92,6 @@ export function CobrancasPage() {
   } = useCobrancasCacheFirst();
 
   const { data: estatisticas, isLoading: isLoadingStats } = useCobrancasEstatisticasCacheFirst();
-  const syncPaymentsMutation = useSyncAsaasPayments();
-  const syncStatusesMutation = useSyncAsaasStatuses();
   const gerarBoletoMutation = useGerarBoleto();
   const sincronizarStatusMutation = useSincronizarStatus();
   const gerarBoletosEmLoteMutation = useGerarBoletosEmLote();
@@ -130,14 +120,6 @@ export function CobrancasPage() {
     setModalUnidadeOpen(true);
   };
 
-  const handleSyncPayments = () => {
-    syncPaymentsMutation.mutate();
-  };
-
-  const handleSyncStatuses = () => {
-    syncStatusesMutation.mutate();
-  };
-
   const handleGerarBoleto = async (id: string) => {
     try {
       const data = await gerarBoletoMutation.mutateAsync(id);
@@ -153,16 +135,17 @@ export function CobrancasPage() {
   };
 
   const handleNegociar = () => {
-    toast.info('Funcionalidade de negociação em breve!');
+    toast('Funcionalidade de negociação em breve!');
   };
 
   const handleGerarBoletosEmLote = () => {
-    if (selectionModel.length === 0) {
+    const selection = Array.isArray(selectionModel) ? selectionModel : [];
+    if (selection.length === 0) {
       toast.error('Selecione pelo menos uma cobrança.');
       return;
     }
     setBatchModalOpen(true);
-    gerarBoletosEmLoteMutation.mutate(selectionModel as string[]);
+    gerarBoletosEmLoteMutation.mutate(selection as string[]);
   };
 
   const columns: GridColDef[] = [
@@ -226,6 +209,8 @@ export function CobrancasPage() {
     { title: 'Pendentes', value: estatisticas?.emAberto || 0, icon: Clock, color: '#ffa726' },
     { title: 'Vencidas', value: estatisticas?.vencidas || 0, icon: AlertTriangle, color: '#f44336' },
   ];
+
+  const selectionCount = Array.isArray(selectionModel) ? selectionModel.length : 0;
 
   return (
     <Box sx={{ p: 3 }}>
@@ -332,12 +317,12 @@ export function CobrancasPage() {
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography>
-            {selectionModel.length} cobrança(s) selecionada(s)
+            {selectionCount} cobrança(s) selecionada(s)
           </Typography>
           <Button
             variant="contained"
             startIcon={<Zap size={16} />}
-            disabled={selectionModel.length === 0 || gerarBoletosEmLoteMutation.isPending}
+            disabled={selectionCount === 0 || gerarBoletosEmLoteMutation.isPending}
             onClick={handleGerarBoletosEmLote}
           >
             Gerar Boletos em Lote
@@ -395,7 +380,7 @@ export function CobrancasPage() {
         onClose={() => setBatchModalOpen(false)}
         isLoading={gerarBoletosEmLoteMutation.isPending}
         results={gerarBoletosEmLoteMutation.data || null}
-        totalSelected={selectionModel.length}
+        totalSelected={selectionCount}
       />
     </Box>
   );

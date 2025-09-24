@@ -1,13 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useDataStore } from '../store/dataStore';
-import type { Cobranca, CobrancasFilters, StatusCobranca, TipoCobranca } from '../types/cobrancas';
-
-interface CobrancasPagination {
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-}
+import type { Cobranca, CobrancasFilters } from '../types/cobrancas';
 
 export function useCobrancasCacheFirst() {
   const { cobrancas, sync } = useDataStore();
@@ -29,7 +22,6 @@ export function useCobrancasCacheFirst() {
     if (filters.tipo_cobranca) {
       result = result.filter(c => c.tipo_cobranca === filters.tipo_cobranca);
     }
-    // Adicionar busca por termo
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       result = result.filter(c => 
@@ -40,6 +32,17 @@ export function useCobrancasCacheFirst() {
 
     return result;
   }, [cobrancas, filters]);
+
+  // Efeito para corrigir a página se ela se tornar inválida após a filtragem
+  useEffect(() => {
+    const total = filteredCobrancas.length;
+    const totalPages = Math.ceil(total / paginationModel.pageSize);
+    if (paginationModel.page >= totalPages && totalPages > 0) {
+      setPaginationModel(prev => ({ ...prev, page: totalPages - 1 }));
+    } else if (total === 0 && paginationModel.page !== 0) {
+      setPaginationModel(prev => ({ ...prev, page: 0 }));
+    }
+  }, [filteredCobrancas.length, paginationModel]);
 
   const paginatedCobrancas = useMemo(() => {
     const startIndex = paginationModel.page * paginationModel.pageSize;
@@ -62,10 +65,7 @@ export function useCobrancasCacheFirst() {
     cobrancas: paginatedCobrancas,
     total: filteredCobrancas.length,
     filters,
-    pagination: {
-      page: paginationModel.page,
-      pageSize: paginationModel.pageSize,
-    },
+    pagination: paginationModel,
     isLoading,
     handleFilterChange,
     handlePaginationModelChange,
