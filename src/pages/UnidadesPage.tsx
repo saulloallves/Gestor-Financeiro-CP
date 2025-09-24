@@ -283,7 +283,7 @@ export function UnidadesPage() {
               component="h1"
               sx={{ fontWeight: 700, color: "text.primary" }}
             >
-              Cadastro de Unidades
+              Visualização de Unidades
             </Typography>
             <Box 
               sx={{ 
