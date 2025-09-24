@@ -93,6 +93,26 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    id: "ia",
+    title: "Inteligência Artificial",
+    icon: BrainCircuit,
+    path: "/ia",
+    children: [
+      {
+        id: "base-conhecimento",
+        title: "Base de Conhecimento",
+        icon: Database,
+        path: "/base-conhecimento",
+      },
+      {
+        id: "configuracoes-ia",
+        title: "Configurações de IA",
+        icon: Settings,
+        path: "/configuracoes-ia",
+      },
+    ],
+  },
+  {
     id: "administracao",
     title: "Administração",
     icon: Shield,
@@ -122,26 +142,6 @@ const menuItems: MenuItem[] = [
         icon: TestTube,
         path: "/teste-cache",
       }
-    ],
-  },
-  {
-    id: "ia",
-    title: "Inteligência Artificial",
-    icon: BrainCircuit,
-    path: "/ia",
-    children: [
-      {
-        id: "base-conhecimento",
-        title: "Base de Conhecimento",
-        icon: Database,
-        path: "/base-conhecimento",
-      },
-      {
-        id: "configuracoes-ia",
-        title: "Configurações de IA",
-        icon: Settings,
-        path: "/configuracoes-ia",
-      },
     ],
   },
 ];
