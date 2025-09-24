@@ -10,9 +10,7 @@ import {
   ListItem,
   ListItemText,
   Paper,
-  Link,
 } from '@mui/material';
-import { NavLink } from 'react-router-dom';
 import {
   RefreshCw,
   DownloadCloud,
