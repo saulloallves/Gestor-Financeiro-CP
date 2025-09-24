@@ -143,7 +143,7 @@ const menuItems: MenuItem[] = [
         path: "/teste-cache",
       },
     ],
-  }
+  },
 ];
 
 export function Sidebar({
