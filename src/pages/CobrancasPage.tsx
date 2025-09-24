@@ -107,17 +107,13 @@ export function CobrancasPage() {
   const sincronizarStatusMutation = useSincronizarStatus();
   const gerarBoletosEmLoteMutation = useGerarBoletosEmLote();
 
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 25,
-  });
-
-  useEffect(() => {
-    setPaginationModel({
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-    });
-  }, [pagination.page, pagination.pageSize]);
+  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
+    if (newModel.pageSize !== pagination.pageSize) {
+      handlePageSizeChange(newModel.pageSize);
+    } else if (newModel.page !== pagination.page) {
+      handlePageChange(newModel.page);
+    }
+  };
 
   const handleSearch = () => {
     handleFilterChange({
@@ -365,11 +361,8 @@ export function CobrancasPage() {
           columns={columns}
           loading={isLoading}
           rowCount={total}
-          paginationModel={paginationModel}
-          onPaginationModelChange={(model) => {
-            handlePageChange(model.page);
-            handlePageSizeChange(model.pageSize);
-          }}
+          paginationModel={{ page: pagination.page, pageSize: pagination.pageSize }}
+          onPaginationModelChange={handlePaginationModelChange}
           paginationMode="server"
           pageSizeOptions={[10, 25, 50]}
           autoHeight

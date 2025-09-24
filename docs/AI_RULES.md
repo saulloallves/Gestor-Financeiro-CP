@@ -120,8 +120,6 @@ export function Alerta({ titulo, mensagem, onConfirmar }: AlertaProps) {
 4. **Documentação.** Comente partes complexas do código para facilitar a manutenção futura.
 5. **Testes.** Sempre que possível, escreva testes unitários para componentes críticos.
 6. **Revisão de Código.** Antes de finalizar uma feature, revise o código para garantir que todas as diretrizes foram seguidas.
-7. **IDE** Ao executar comando no terminal, sempre utilize o operador ";" e não "&&" pois o terminal do Windows não reconhece o "&&", além disso não execute o comando "npm run dev" no terminal do VSCode pois eu já vou estar rodando o projeto no meu computador para testar, só faça isso se eu solicitar.
-8. **Supabase** Ao executar comando do supabase CLI, sempre utilize o comando ``supabase`` e não ``npx supabase`` pois eu tenho o supabase CLI instalado globalmente na minha máquina.
 
 ---
 

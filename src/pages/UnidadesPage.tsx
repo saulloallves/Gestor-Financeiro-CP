@@ -1,7 +1,7 @@
 // Página de Listagem de Unidades - Módulo 2.1
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -44,20 +44,14 @@ export function UnidadesPage() {
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusUnidade | "">("");
 
-  // Estado de paginação do DataGrid
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 50, // Aumentando para 50 para mostrar mais unidades inicialmente
-  });
-
   const {
     unidades,
     total,
     isLoading,
     isError,
+    pagination,
     handlePageChange,
     handlePageSizeChange,
-    pagination,
     refetch,
     setSearchTerm,
     setStatusFilter,
@@ -71,24 +65,12 @@ export function UnidadesPage() {
 
   // Handler para mudança de paginação do DataGrid
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
-    setPaginationModel(newModel);
-    
-    // Se o pageSize mudou, atualize a paginação e volte para a primeira página
-    if (newModel.pageSize !== paginationModel.pageSize) {
+    if (newModel.pageSize !== pagination.pageSize) {
       handlePageSizeChange(newModel.pageSize);
-    } else {
-      // Se apenas a página mudou (cache-first já usa base 0)
+    } else if (newModel.page !== pagination.page) {
       handlePageChange(newModel.page);
     }
   };
-
-  // Sincronizar estado do DataGrid com estado do hook
-  useEffect(() => {
-    setPaginationModel({
-      page: pagination.page, // Cache-first já usa base 0
-      pageSize: pagination.pageSize,
-    });
-  }, [pagination.page, pagination.pageSize]);
 
   // Função para aplicar filtros de busca
   const handleSearch = () => {
@@ -746,7 +728,7 @@ export function UnidadesPage() {
             columns={columns}
             loading={isLoading}
             rowCount={total}
-            paginationModel={paginationModel}
+            paginationModel={{ page: pagination.page, pageSize: pagination.pageSize }}
             onPaginationModelChange={handlePaginationModelChange}
             paginationMode="server"
             pageSizeOptions={[10, 20, 50, 100]}

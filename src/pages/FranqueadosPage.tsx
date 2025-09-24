@@ -1,7 +1,7 @@
 // Página de Listagem de Franqueados - Módulo 2.2
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -56,21 +56,16 @@ export function FranqueadosPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFranqueado | "">("");
   const [tipoFilter, setTipoFilter] = useState<TipoFranqueado | "">("");
 
-  // Estado de paginação do DataGrid
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 20, // Começando com 20 registros igual às Unidades
-  });
-
   const {
     franqueados,
+    totalFranqueados,
     isLoading,
     isError,
     filters,
+    pagination,
     handleFilterChange,
     handlePageChange,
     handlePageSizeChange,
-    pagination,
     refetch,
   } = useFranqueadosPageCacheFirst();
 
@@ -82,24 +77,12 @@ export function FranqueadosPage() {
 
   // Handler para mudança de paginação do DataGrid
   const handlePaginationModelChange = (newModel: GridPaginationModel) => {
-    setPaginationModel(newModel);
-    
-    // Se o pageSize mudou, atualize a paginação e volte para a primeira página
-    if (newModel.pageSize !== paginationModel.pageSize) {
+    if (newModel.pageSize !== pagination.limit) {
       handlePageSizeChange(newModel.pageSize);
-    } else {
-      // Se apenas a página mudou
-      handlePageChange(newModel.page + 1); // DataGrid usa base 0, backend usa base 1
+    } else if (newModel.page + 1 !== pagination.page) {
+      handlePageChange(newModel.page + 1);
     }
   };
-
-  // Sincronizar estado do DataGrid com estado do hook
-  useEffect(() => {
-    setPaginationModel({
-      page: pagination.page - 1, // Backend usa base 1, DataGrid usa base 0
-      pageSize: pagination.limit,
-    });
-  }, [pagination.page, pagination.limit]);
 
   // Função para aplicar filtros de busca
   const handleSearch = () => {
@@ -796,8 +779,8 @@ export function FranqueadosPage() {
             rows={franqueados}
             columns={columns}
             loading={isLoading}
-            rowCount={estatisticas?.total || 0}
-            paginationModel={paginationModel}
+            rowCount={totalFranqueados}
+            paginationModel={{ page: pagination.page - 1, pageSize: pagination.limit }}
             onPaginationModelChange={handlePaginationModelChange}
             paginationMode="server"
             pageSizeOptions={[10, 20, 50, 100]}
