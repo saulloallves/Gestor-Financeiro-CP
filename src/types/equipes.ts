@@ -153,7 +153,6 @@ export interface FiltrosUsuarios {
   perfil?: PerfilUsuario;
   status?: StatusUsuario;
   termo_busca?: string;
-  updated_at_gte?: string;
 }
 
 export interface FiltrosEquipes {

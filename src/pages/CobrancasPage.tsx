@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -8,9 +8,13 @@ import {
   TextField,
   MenuItem,
   Chip,
+  Grid,
   CircularProgress,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
-import { DataGrid, GridActionsCellItem, type GridColDef, type GridRowSelectionModel } from '@mui/x-data-grid';
+import { useTheme } from '@mui/material/styles';
+import { DataGrid, GridActionsCellItem, type GridColDef, type GridPaginationModel } from '@mui/x-data-grid';
 import { ptBR } from '@mui/x-data-grid/locales';
 import { format } from 'date-fns';
 import {
@@ -19,18 +23,20 @@ import {
   FileText,
   MessageSquare,
   Plus,
+  Download,
   Filter,
   DollarSign,
   CheckCircle,
   AlertTriangle,
   Clock,
   RefreshCw,
-  Zap,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useCobrancasCacheFirst } from '../hooks/useCobrancasCacheFirst';
 import { useCobrancasEstatisticasCacheFirst } from '../hooks/useCobrancasEstatisticasCacheFirst';
-import { useGerarBoleto, useSincronizarStatus, useGerarBoletosEmLote } from '../hooks/useCobrancas';
+import { useSyncAsaasPayments, useSyncAsaasStatuses } from '../hooks/useAsaasSync';
+import { useGerarBoleto, useSincronizarStatus } from '../hooks/useCobrancas';
 import {
   type Cobranca,
   type StatusCobranca,
@@ -39,7 +45,6 @@ import {
 import { CobrancaForm } from '../components/CobrancaForm';
 import { UnidadeDetalhesModal } from '../components/UnidadeDetalhesModal';
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog';
-import { BatchProgressModal } from '../components/BatchProgressModal';
 
 const statusLabels: Record<StatusCobranca, string> = {
   pendente: 'Pendente', em_aberto: 'Em Aberto', pago: 'Pago', em_atraso: 'Em Atraso',
@@ -69,30 +74,45 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 export function CobrancasPage() {
+  const theme = useTheme();
   const [cobrancaParaEditar, setCobrancaParaEditar] = useState<Cobranca | undefined>();
   const [formAberto, setFormAberto] = useState(false);
   const [modalUnidadeOpen, setModalUnidadeOpen] = useState(false);
   const [selectedUnidadeCodigo, setSelectedUnidadeCodigo] = useState<number | null>(null);
   const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
   const [activeBoletoUrl, setActiveBoletoUrl] = useState<string | null>(null);
-  const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
-  const [batchModalOpen, setBatchModalOpen] = useState(false);
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
 
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusCobranca | ''>('');
 
   const {
     cobrancas,
+    total,
     isLoading,
     filters,
+    pagination,
     handleFilterChange,
+    handlePageChange,
+    handlePageSizeChange,
   } = useCobrancasCacheFirst();
 
   const { data: estatisticas, isLoading: isLoadingStats } = useCobrancasEstatisticasCacheFirst();
+  const syncPaymentsMutation = useSyncAsaasPayments();
+  const syncStatusesMutation = useSyncAsaasStatuses();
   const gerarBoletoMutation = useGerarBoleto();
   const sincronizarStatusMutation = useSincronizarStatus();
-  const gerarBoletosEmLoteMutation = useGerarBoletosEmLote();
+
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 25,
+  });
+
+  useEffect(() => {
+    setPaginationModel({
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+    });
+  }, [pagination.page, pagination.pageSize]);
 
   const handleSearch = () => {
     handleFilterChange({
@@ -100,14 +120,12 @@ export function CobrancasPage() {
       search: localSearchTerm || undefined,
       status: localStatusFilter || undefined,
     });
-    setPaginationModel(prev => ({ ...prev, page: 0 }));
   };
 
   const handleClearFilters = () => {
     setLocalSearchTerm('');
     setLocalStatusFilter('');
     handleFilterChange({});
-    setPaginationModel(prev => ({ ...prev, page: 0 }));
   };
 
   const handleEditarCobranca = (cobranca: Cobranca) => {
@@ -118,6 +136,14 @@ export function CobrancasPage() {
   const handleViewUnidadeDetails = (codigoUnidade: number) => {
     setSelectedUnidadeCodigo(codigoUnidade);
     setModalUnidadeOpen(true);
+  };
+
+  const handleSyncPayments = () => {
+    syncPaymentsMutation.mutate();
+  };
+
+  const handleSyncStatuses = () => {
+    syncStatusesMutation.mutate();
   };
 
   const handleGerarBoleto = async (id: string) => {
@@ -135,17 +161,7 @@ export function CobrancasPage() {
   };
 
   const handleNegociar = () => {
-    toast('Funcionalidade de negociação em breve!');
-  };
-
-  const handleGerarBoletosEmLote = () => {
-    const selection = Array.isArray(selectionModel) ? selectionModel : [];
-    if (selection.length === 0) {
-      toast.error('Selecione pelo menos uma cobrança.');
-      return;
-    }
-    setBatchModalOpen(true);
-    gerarBoletosEmLoteMutation.mutate(selection as string[]);
+    toast.info('Funcionalidade de negociação em breve!');
   };
 
   const columns: GridColDef[] = [
@@ -210,8 +226,6 @@ export function CobrancasPage() {
     { title: 'Vencidas', value: estatisticas?.vencidas || 0, icon: AlertTriangle, color: '#f44336' },
   ];
 
-  const selectionCount = Array.isArray(selectionModel) ? selectionModel.length : 0;
-
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -220,6 +234,16 @@ export function CobrancasPage() {
           <Typography variant="body1" color="text.secondary">Gestão de cobranças com performance otimizada.</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
+          <Tooltip title="Sincronizar novos pagamentos do ASAAS">
+            <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={handleSyncPayments} disabled={syncPaymentsMutation.isPending}>
+              {syncPaymentsMutation.isPending ? 'Sincronizando...' : 'Sincronizar Pagamentos'}
+            </Button>
+          </Tooltip>
+          <Tooltip title="Atualizar status de pagamentos existentes">
+            <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={handleSyncStatuses} disabled={syncStatusesMutation.isPending}>
+              {syncStatusesMutation.isPending ? 'Atualizando...' : 'Atualizar Status'}
+            </Button>
+          </Tooltip>
           <Button variant="contained" startIcon={<Plus size={20} />} onClick={() => setFormAberto(true)}>Nova Cobrança</Button>
         </Box>
       </Box>
@@ -313,38 +337,21 @@ export function CobrancasPage() {
         ))}
       </Box>
 
-      {/* Ações em Lote */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography>
-            {selectionCount} cobrança(s) selecionada(s)
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Zap size={16} />}
-            disabled={selectionCount === 0 || gerarBoletosEmLoteMutation.isPending}
-            onClick={handleGerarBoletosEmLote}
-          >
-            Gerar Boletos em Lote
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* Tabela */}
       <Card>
         <DataGrid
           rows={cobrancas}
           columns={columns}
           loading={isLoading}
+          rowCount={total}
           paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
+          onPaginationModelChange={(model) => {
+            handlePageChange(model.page);
+            handlePageSizeChange(model.pageSize);
+          }}
+          paginationMode="server"
           pageSizeOptions={[10, 25, 50]}
           autoHeight
-          checkboxSelection
-          onRowSelectionModelChange={(newSelectionModel) => {
-            setSelectionModel(newSelectionModel);
-          }}
-          rowSelectionModel={selectionModel}
           localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
         />
       </Card>
@@ -372,13 +379,6 @@ export function CobrancasPage() {
         message="Deseja abrir o link em uma nova guia?"
         confirmText="Abrir Link"
         cancelText="Copiar Link"
-      />
-      <BatchProgressModal
-        open={batchModalOpen}
-        onClose={() => setBatchModalOpen(false)}
-        isLoading={gerarBoletosEmLoteMutation.isPending}
-        results={gerarBoletosEmLoteMutation.data || null}
-        totalSelected={selectionCount}
       />
     </Box>
   );

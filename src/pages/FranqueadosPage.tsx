@@ -1,7 +1,7 @@
 // Página de Listagem de Franqueados - Módulo 2.2
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -16,6 +16,7 @@ import {
 import {
   DataGrid,
   type GridColDef,
+  type GridPaginationModel,
 } from "@mui/x-data-grid";
 import { ptBR } from "@mui/x-data-grid/locales";
 import { useTheme } from "@mui/material/styles";
@@ -35,7 +36,7 @@ import {
   Handshake,
   Database,
 } from "lucide-react";
-import { useFranqueadosPageCacheFirst, useFranqueadosEstatisticasCacheFirst } from "../hooks/useFranqueadosPageCacheFirst";
+import { useFranqueadosPageCacheFirst, useFranqueadosEstatisticasCacheFirst } from "../hooks/useFranqueadosCacheFirst";
 import {
   getTipoFranqueadoLabel,
   getTipoFranqueadoColor,
@@ -55,15 +56,21 @@ export function FranqueadosPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFranqueado | "">("");
   const [tipoFilter, setTipoFilter] = useState<TipoFranqueado | "">("");
 
+  // Estado de paginação do DataGrid
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 20, // Começando com 20 registros igual às Unidades
+  });
+
   const {
     franqueados,
-    totalFranqueados,
     isLoading,
     isError,
     filters,
-    pagination,
     handleFilterChange,
-    handlePaginationModelChange,
+    handlePageChange,
+    handlePageSizeChange,
+    pagination,
     refetch,
   } = useFranqueadosPageCacheFirst();
 
@@ -72,6 +79,27 @@ export function FranqueadosPage() {
     data: estatisticas,
     isLoading: isLoadingStats,
   } = useFranqueadosEstatisticasCacheFirst();
+
+  // Handler para mudança de paginação do DataGrid
+  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
+    setPaginationModel(newModel);
+    
+    // Se o pageSize mudou, atualize a paginação e volte para a primeira página
+    if (newModel.pageSize !== paginationModel.pageSize) {
+      handlePageSizeChange(newModel.pageSize);
+    } else {
+      // Se apenas a página mudou
+      handlePageChange(newModel.page + 1); // DataGrid usa base 0, backend usa base 1
+    }
+  };
+
+  // Sincronizar estado do DataGrid com estado do hook
+  useEffect(() => {
+    setPaginationModel({
+      page: pagination.page - 1, // Backend usa base 1, DataGrid usa base 0
+      pageSize: pagination.limit,
+    });
+  }, [pagination.page, pagination.limit]);
 
   // Função para aplicar filtros de busca
   const handleSearch = () => {
@@ -257,7 +285,7 @@ export function FranqueadosPage() {
         <Typography color="error" variant="h6">
           Erro ao carregar franqueados
         </Typography>
-        <Button onClick={() => refetch(true)} sx={{ mt: 2 }} variant="outlined">
+        <Button onClick={() => refetch()} sx={{ mt: 2 }} variant="outlined">
           Tentar novamente
         </Button>
       </Card>
@@ -768,8 +796,8 @@ export function FranqueadosPage() {
             rows={franqueados}
             columns={columns}
             loading={isLoading}
-            rowCount={totalFranqueados}
-            paginationModel={pagination}
+            rowCount={estatisticas?.total || 0}
+            paginationModel={paginationModel}
             onPaginationModelChange={handlePaginationModelChange}
             paginationMode="server"
             pageSizeOptions={[10, 20, 50, 100]}

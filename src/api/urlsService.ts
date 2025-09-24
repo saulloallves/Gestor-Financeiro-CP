@@ -14,23 +14,25 @@ export const urlsService = {
     try {
       console.log('🔄 Tentando atualizar URLs para pagamento:', data.asaas_payment_id);
 
-      // Busca o payment completo para obter as URLs
-      const payment = await asaasService.getPayment(data.asaas_payment_id);
+      const urls = await Promise.allSettled([
+        asaasService.getBankSlipUrl(data.asaas_payment_id),
+        asaasService.getPaymentUrl(data.asaas_payment_id),
+      ]);
 
       const updateData: { link_boleto?: string; link_pagamento?: string } = {};
 
-      if (payment.bankSlipUrl) {
-        updateData.link_boleto = payment.bankSlipUrl;
-        console.log('✅ URL do boleto obtida:', payment.bankSlipUrl);
+      if (urls[0].status === 'fulfilled') {
+        updateData.link_boleto = urls[0].value;
+        console.log('✅ URL do boleto obtida:', urls[0].value);
       } else {
-        console.warn('⚠️ URL do boleto não encontrada no payment');
+        console.warn('⚠️ Erro ao obter URL do boleto:', urls[0].reason);
       }
 
-      if (payment.invoiceUrl) {
-        updateData.link_pagamento = payment.invoiceUrl;
-        console.log('✅ URL de pagamento obtida:', payment.invoiceUrl);
+      if (urls[1].status === 'fulfilled') {
+        updateData.link_pagamento = urls[1].value;
+        console.log('✅ URL de pagamento obtida:', urls[1].value);
       } else {
-        console.warn('⚠️ URL de pagamento não encontrada no payment');
+        console.warn('⚠️ Erro ao obter URL de pagamento:', urls[1].reason);
       }
 
       // Se obteve pelo menos uma URL, atualiza o registro

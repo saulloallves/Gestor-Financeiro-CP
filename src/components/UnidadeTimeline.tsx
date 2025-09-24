@@ -72,7 +72,7 @@ export function UnidadeTimeline({ cobrancas }: UnidadeTimelineProps) {
         }}
       />
 
-      {cobrancas.map((cobranca) => {
+      {cobrancas.map((cobranca, index) => {
         const StatusIcon = statusInfo[cobranca.status]?.icon || DollarSign;
         const statusColor = statusInfo[cobranca.status]?.color || 'default';
 

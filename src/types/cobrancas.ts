@@ -109,6 +109,4 @@ export interface CobrancasFilters {
   data_vencimento_fim?: string;
   valor_minimo?: number;
   valor_maximo?: number;
-  search?: string;
-  updated_at_gte?: string;
 }

@@ -86,22 +86,3 @@ export function useSincronizarStatus() {
     },
   });
 }
-
-// Hook para gerar boletos em lote
-export function useGerarBoletosEmLote() {
-  const refreshData = useDataStore((state) => state.refreshData);
-
-  return useMutation({
-    mutationFn: (ids: string[]) => cobrancasService.gerarBoletosEmLote(ids),
-    onSuccess: (results) => {
-      toast.success(
-        `Processamento em lote concluído: ${results.success} sucessos, ${results.failures.length} falhas.`
-      );
-      // Força a atualização do cache para refletir as mudanças
-      refreshData(true);
-    },
-    onError: (error: Error) => {
-      toast.error(`Erro no processamento em lote: ${error.message}`);
-    },
-  });
-}

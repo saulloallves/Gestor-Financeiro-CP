@@ -96,7 +96,6 @@ export interface UnidadeFilter {
   codigo_unidade?: string;
   nome_padrao?: string;
   franqueado_principal_id?: string;
-  updated_at_gte?: string;
 }
 
 // Tipo para ordenação

@@ -368,17 +368,6 @@ class CobrancasService {
     return { boleto_url: boletoUrl, link_pagamento: linkPagamento };
   }
 
-  async gerarBoletosEmLote(ids: string[]): Promise<any> {
-    const { data, error } = await supabase.functions.invoke('gerar-boletos-em-lote', {
-      body: { ids },
-    });
-
-    if (error) {
-      throw new Error(`Erro ao invocar a Edge Function: ${error.message}`);
-    }
-    return data;
-  }
-
   async sincronizarStatusAsaas(id: string): Promise<Cobranca> {
     const cobranca = await this.obterCobranca(id);
     if (!cobranca?.asaas_payment_id) {

@@ -1,7 +1,7 @@
 // Página de Listagem de Unidades - Módulo 2.1
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -44,13 +44,20 @@ export function UnidadesPage() {
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusUnidade | "">("");
 
+  // Estado de paginação do DataGrid
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 50, // Aumentando para 50 para mostrar mais unidades inicialmente
+  });
+
   const {
     unidades,
     total,
     isLoading,
     isError,
+    handlePageChange,
+    handlePageSizeChange,
     pagination,
-    handlePaginationModelChange,
     refetch,
     setSearchTerm,
     setStatusFilter,
@@ -62,10 +69,31 @@ export function UnidadesPage() {
     isLoading: isLoadingStats,
   } = useUnidadesEstatisticasCacheFirst();
 
+  // Handler para mudança de paginação do DataGrid
+  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
+    setPaginationModel(newModel);
+    
+    // Se o pageSize mudou, atualize a paginação e volte para a primeira página
+    if (newModel.pageSize !== paginationModel.pageSize) {
+      handlePageSizeChange(newModel.pageSize);
+    } else {
+      // Se apenas a página mudou (cache-first já usa base 0)
+      handlePageChange(newModel.page);
+    }
+  };
+
+  // Sincronizar estado do DataGrid com estado do hook
+  useEffect(() => {
+    setPaginationModel({
+      page: pagination.page, // Cache-first já usa base 0
+      pageSize: pagination.pageSize,
+    });
+  }, [pagination.page, pagination.pageSize]);
+
   // Função para aplicar filtros de busca
   const handleSearch = () => {
-    setSearchTerm(localSearchTerm);
-    setStatusFilter(localStatusFilter);
+    // Os filtros já são aplicados automaticamente através dos valores dos inputs
+    // que são controlados pelos setters do hook
   };
 
   // Limpar filtros
@@ -221,7 +249,7 @@ export function UnidadesPage() {
         <Typography color="error" variant="h6">
           Erro ao carregar unidades
         </Typography>
-        <Button onClick={() => refetch(true)} sx={{ mt: 2 }} variant="outlined">
+        <Button onClick={() => refetch()} sx={{ mt: 2 }} variant="outlined">
           Tentar novamente
         </Button>
       </Card>
@@ -364,7 +392,10 @@ export function UnidadesPage() {
             <TextField
               placeholder="Buscar por nome da unidade..."
               value={localSearchTerm}
-              onChange={(e) => setLocalSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setLocalSearchTerm(e.target.value);
+                setSearchTerm(e.target.value);
+              }}
               InputProps={{
                 startAdornment: (
                   <Box
@@ -391,7 +422,11 @@ export function UnidadesPage() {
               select
               label="Status"
               value={localStatusFilter}
-              onChange={(e) => setLocalStatusFilter(e.target.value as StatusUnidade | "")}
+              onChange={(e) => {
+                const value = e.target.value as StatusUnidade | "";
+                setLocalStatusFilter(value);
+                setStatusFilter(value);
+              }}
               size="small"
               sx={{
                 minWidth: 150,
@@ -711,7 +746,7 @@ export function UnidadesPage() {
             columns={columns}
             loading={isLoading}
             rowCount={total}
-            paginationModel={pagination}
+            paginationModel={paginationModel}
             onPaginationModelChange={handlePaginationModelChange}
             paginationMode="server"
             pageSizeOptions={[10, 20, 50, 100]}
