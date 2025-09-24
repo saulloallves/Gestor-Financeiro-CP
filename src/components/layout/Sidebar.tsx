@@ -112,7 +112,6 @@ const menuItems: MenuItem[] = [
       },
     ],
   },
-
   {
     id: "administracao",
     title: "Administração",
@@ -137,14 +136,14 @@ const menuItems: MenuItem[] = [
         icon: CreditCard,
         path: "/configuracoes",
       },
+      {
+        id: "teste-cache",
+        title: "Painel de Controle",
+        icon: TestTube,
+        path: "/teste-cache",
+      },
     ],
-  },
-  {
-    id: "teste-cache",
-    title: "Painel de Controle",
-    icon: TestTube,
-    path: "/teste-cache",
-  },
+  }
 ];
 
 export function Sidebar({
@@ -230,246 +229,269 @@ export function Sidebar({
     }
 
     return (
-      <Box key={item.id}>
-        <ListItem disablePadding>
-          <Tooltip
-            title={!isExpanded ? item.title : ""}
-            placement="right"
-            arrow
-          >
-            <ListItemButton
-              onClick={() => handleItemClick(item)}
-              sx={{
-                pl: isExpanded
-                  ? theme.spacing(2 + level * 2)
-                  : theme.spacing(1.5),
-                pr: isExpanded ? theme.spacing(2) : theme.spacing(1.5),
-                py: theme.spacing(1.25),
-                borderRadius: level === 0 ? "12px" : "8px",
-                mx: theme.spacing(1),
+      <Box key= { item.id } >
+      <ListItem disablePadding >
+      <Tooltip
+            title={ !isExpanded ? item.title : "" }
+    placement = "right"
+    arrow
+      >
+      <ListItemButton
+              onClick={ () => handleItemClick(item) }
+    sx = {{
+      pl: isExpanded
+        ? theme.spacing(2 + level * 2)
+        : theme.spacing(1.5),
+        pr: isExpanded ? theme.spacing(2) : theme.spacing(1.5),
+          py: theme.spacing(1.25),
+            borderRadius: level === 0 ? "12px" : "8px",
+              mx: theme.spacing(1),
                 mb: level === 0 ? theme.spacing(0.5) : theme.spacing(0.25),
-                backgroundColor: isActive ? "primary.main" : "transparent",
-                color: isActive ? "primary.contrastText" : "text.primary",
-                minHeight: 50,
-                justifyContent: isExpanded ? "flex-start" : "center",
-                "&:hover": {
-                  backgroundColor: isActive
-                    ? "primary.dark"
-                    : level === 0
-                    ? "action.hover"
-                    : "action.selected",
-                  transform: "translateX(2px)",
+                  backgroundColor: isActive ? "primary.main" : "transparent",
+                    color: isActive ? "primary.contrastText" : "text.primary",
+                      minHeight: 50,
+                        justifyContent: isExpanded ? "flex-start" : "center",
+                          "&:hover": {
+        backgroundColor: isActive
+          ? "primary.dark"
+          : level === 0
+            ? "action.hover"
+            : "action.selected",
+          transform: "translateX(2px)",
                 },
-                transition: theme.transitions.create(
-                  ["background-color", "transform", "padding"],
-                  {
-                    duration: theme.transitions.duration.short,
-                  }
-                ),
-              }}
+      transition: theme.transitions.create(
+        ["background-color", "transform", "padding"],
+        {
+          duration: theme.transitions.duration.short,
+        }
+      ),
+              }
+  }
             >
-              <ListItemIcon
-                sx={{
-                  color: isActive
-                    ? "primary.contrastText"
-                    : isParentActiveItem
-                    ? "primary.main"
-                    : "text.secondary",
-                  minWidth: isExpanded ? 40 : 24,
-                  justifyContent: "center",
-                }}
+    <ListItemIcon
+                sx={
+    {
+      color: isActive
+        ? "primary.contrastText"
+        : isParentActiveItem
+          ? "primary.main"
+          : "text.secondary",
+        minWidth: isExpanded ? 40 : 24,
+          justifyContent: "center",
+                }
+  }
               >
-                <Icon size={level === 0 ? 22 : 18} />
-              </ListItemIcon>
+    <Icon size={ level === 0 ? 22 : 18 } />
+      < /ListItemIcon>
 
-              {isExpanded && (
-                <>
-                  <ListItemText
-                    primary={item.title}
-                    primaryTypographyProps={{
-                      fontSize: level === 0 ? "0.95rem" : "0.875rem",
-                      fontWeight: isActive ? 600 : level === 0 ? 500 : 400,
-                    }}
-                  />
+  {
+    isExpanded && (
+      <>
+      <ListItemText
+                    primary={ item.title }
+    primaryTypographyProps = {{
+      fontSize: level === 0 ? "0.95rem" : "0.875rem",
+        fontWeight: isActive ? 600 : level === 0 ? 500 : 400,
+                    }
+  }
+  />
 
-                  {/* Badge */}
-                  {item.badge && (
-                    <Chip
+  {/* Badge */ }
+  {
+    item.badge && (
+      <Chip
                       size="small"
-                      label={item.badge.value}
-                      color={item.badge.color}
-                      sx={{
-                        height: 20,
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        mr: item.children ? 1 : 0,
-                      }}
-                    />
-                  )}
+    label = { item.badge.value }
+    color = { item.badge.color }
+    sx = {{
+      height: 20,
+        fontSize: "0.75rem",
+          fontWeight: 600,
+            mr: item.children ? 1 : 0,
+                      }
+  }
+  />
+                  )
+}
 
-                  {/* Expand/Collapse Icon */}
-                  {item.children && (
-                    <Box sx={{ color: "text.secondary" }}>
-                      {isItemExpanded ? (
-                        <ChevronDown size={18} />
-                      ) : (
-                        <ChevronRight size={18} />
-                      )}
-                    </Box>
+{/* Expand/Collapse Icon */ }
+{
+  item.children && (
+    <Box sx={ { color: "text.secondary" } }>
+      {
+        isItemExpanded?(
+                        <ChevronDown size = { 18} />
+                      ): (
+            <ChevronRight size = { 18 } />
+                      )
+}
+</Box>
                   )}
-                </>
+</>
               )}
-            </ListItemButton>
-          </Tooltip>
-        </ListItem>
+</ListItemButton>
+  < /Tooltip>
+  < /ListItem>
 
-        {/* Submenu - só mostra se expandido */}
-        {item.children && isExpanded && (
-          <Collapse in={isItemExpanded} timeout="auto" unmountOnExit>
-            <List component="div" disablePadding>
-              {item.children.map((child: MenuItem) =>
-                renderMenuItem(child, level + 1)
-              )}
-            </List>
-          </Collapse>
-        )}
-      </Box>
+{/* Submenu - só mostra se expandido */ }
+{
+  item.children && isExpanded && (
+    <Collapse in={ isItemExpanded } timeout = "auto" unmountOnExit >
+      <List component="div" disablePadding >
+      {
+        item.children.map((child: MenuItem) =>
+          renderMenuItem(child, level + 1)
+        )
+      }
+        < /List>
+        < /Collapse>
+        )
+}
+</Box>
     );
   };
 
-  const drawerContent = (
-    <Box
-      sx={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "background.paper",
-      }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Header Section com Logo e Pin */}
-      <Box
-        sx={{
-          p: theme.spacing(2),
-          display: "flex",
-          alignItems: "center",
-          justifyContent: isExpanded ? "space-between" : "center",
+const drawerContent = (
+  <Box
+      sx= {{
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    backgroundColor: "background.paper",
+  }}
+onMouseEnter = { handleMouseEnter }
+onMouseLeave = { handleMouseLeave }
+  >
+  {/* Header Section com Logo e Pin */ }
+  < Box
+sx = {{
+  p: theme.spacing(2),
+    display: "flex",
+      alignItems: "center",
+        justifyContent: isExpanded ? "space-between" : "center",
           borderBottom: `1px solid ${theme.palette.divider}`,
-          minHeight: 80,
-          transition: theme.transitions.create(["padding", "justify-content"], {
-            duration: theme.transitions.duration.standard,
-          }),
-        }}
-      >
-        {/* Logo */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            component="img"
-            src={isExpanded ? logoImage : cabecaIcon}
-            alt="Cresci e Perdi"
-            sx={{
-              height: isExpanded ? 40 : 32,
-              width: isExpanded ? "auto" : 100,
-              objectFit: "contain",
-              transition: theme.transitions.create(["height", "width"], {
+            minHeight: 80,
+              transition: theme.transitions.create(["padding", "justify-content"], {
                 duration: theme.transitions.duration.standard,
               }),
-            }}
-          />
-        </Box>
-
-        {/* Botão de Pin - só aparece quando expandido */}
-        {isExpanded && (
-          <Tooltip
-            title={isPinned ? "Desfixar sidebar" : "Fixar sidebar"}
-            placement="bottom"
-          >
-            <IconButton
-              onClick={handleTogglePin}
-              size="small"
-              sx={{
-                color: "text.primary",
-                backgroundColor: isPinned
-                  ? "action.selected"
-                  : "transparent",
-                "&:hover": {
-                  backgroundColor: "action.hover",
-                },
-                transition: theme.transitions.create(["background-color"], {
-                  duration: theme.transitions.duration.short,
-                }),
-              }}
-            >
-              {isPinned ? <Pin size={18} /> : <PinOff size={18} />}
-            </IconButton>
-          </Tooltip>
-        )}
-      </Box>
-
-      {/* Menu Section */}
-      <Box sx={{ flex: 1, py: theme.spacing(2), overflowY: "auto" }}>
-        <List component="nav" disablePadding>
-          {menuItems.map((item) => renderMenuItem(item))}
-        </List>
-
-        {isExpanded && (
-          <Divider sx={{ mx: theme.spacing(2), my: theme.spacing(2) }} />
-        )}
-      </Box>
-
-      {/* Footer */}
-      {isExpanded && (
-        <Box
-          sx={{
-            p: theme.spacing(2),
-            borderTop: `1px solid ${theme.palette.divider}`,
-            backgroundColor: "background.default",
+        }}
+      >
+  {/* Logo */ }
+  < Box
+sx = {{
+  display: "flex",
+    alignItems: "center",
+      overflow: "hidden",
           }}
         >
-          <Typography
-            variant="caption"
-            sx={{
-              color: "text.secondary",
-              fontSize: "0.7rem",
-              fontWeight: 900,
-              textAlign: "center",
-              display: "block",
+  <Box
+            component="img"
+src = { isExpanded? logoImage: cabecaIcon }
+alt = "Cresci e Perdi"
+sx = {{
+  height: isExpanded ? 40 : 32,
+    width: isExpanded ? "auto" : 100,
+      objectFit: "contain",
+        transition: theme.transitions.create(["height", "width"], {
+          duration: theme.transitions.duration.standard,
+        }),
             }}
+/>
+  < /Box>
+
+{/* Botão de Pin - só aparece quando expandido */ }
+{
+  isExpanded && (
+    <Tooltip
+            title={ isPinned ? "Desfixar sidebar" : "Fixar sidebar" }
+  placement = "bottom"
+    >
+    <IconButton
+              onClick={ handleTogglePin }
+  size = "small"
+  sx = {{
+    color: "text.primary",
+      backgroundColor: isPinned
+        ? "action.selected"
+        : "transparent",
+        "&:hover": {
+      backgroundColor: "action.hover",
+                },
+    transition: theme.transitions.create(["background-color"], {
+      duration: theme.transitions.duration.short,
+    }),
+              }
+}
+            >
+  { isPinned?<Pin size = { 18 } /> : <PinOff size={ 18 } />}
+    < /IconButton>
+    < /Tooltip>
+        )}
+</Box>
+
+{/* Menu Section */ }
+<Box sx={ { flex: 1, py: theme.spacing(2), overflowY: "auto" } }>
+  <List component="nav" disablePadding >
+    { menuItems.map((item) => renderMenuItem(item)) }
+    < /List>
+
+{
+  isExpanded && (
+    <Divider sx={ { mx: theme.spacing(2), my: theme.spacing(2) } } />
+        )
+}
+</Box>
+
+{/* Footer */ }
+{
+  isExpanded && (
+    <Box
+          sx={
+    {
+      p: theme.spacing(2),
+        borderTop: `1px solid ${theme.palette.divider}`,
+          backgroundColor: "background.default",
+          }
+  }
+        >
+    <Typography
+            variant="caption"
+  sx = {{
+    color: "text.secondary",
+      fontSize: "0.7rem",
+        fontWeight: 900,
+          textAlign: "center",
+            display: "block",
+            }
+}
           >
-            Versão 1.0.0
-            <br />© 2025 Cresci e Perdi
-          </Typography>
-        </Box>
+  Versão 1.0.0
+    < br />© 2025 Cresci e Perdi
+      < /Typography>
+      < /Box>
       )}
-    </Box>
+</Box>
   );
 
-  return (
-    <Box
-      component="aside"
-      sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
+return (
+  <Box
+      component= "aside"
+sx = {{
+  position: 'fixed',
+    top: 0,
+      left: 0,
         height: '100vh',
-        width: currentWidth,
-        zIndex: theme.zIndex.drawer,
-        transition: theme.transitions.create('width', {
-          easing: theme.transitions.easing.sharp,
-          duration: theme.transitions.duration.enteringScreen,
-        }),
-        overflowX: 'hidden',
-        borderRight: `1px solid ${theme.palette.divider}`,
+          width: currentWidth,
+            zIndex: theme.zIndex.drawer,
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+                overflowX: 'hidden',
+                  borderRight: `1px solid ${theme.palette.divider}`,
       }}
     >
-      {drawerContent}
-    </Box>
+  { drawerContent }
+  < /Box>
   );
 }
