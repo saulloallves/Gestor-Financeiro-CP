@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useDataStore } from '../store/dataStore';
-import type { Cobranca, CobrancasFilters, StatusCobranca, TipoCobranca } from '../types/cobrancas';
+import type { CobrancasFilters } from '../types/cobrancas';
 
 interface CobrancasPagination {
   page: number;

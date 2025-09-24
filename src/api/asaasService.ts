@@ -369,6 +369,16 @@ class AsaasService {
 
     return { customer: newCustomer, isNew: true };
   }
+
+  async getBankSlipUrl(paymentId: string): Promise<string> {
+    const response = await this.makeRequest<{ bankSlipUrl: string }>(`/payments/${paymentId}/identificationField`);
+    return response.bankSlipUrl;
+  }
+
+  async getPaymentUrl(paymentId: string): Promise<string> {
+    const response = await this.makeRequest<{ invoiceUrl: string }>(`/payments/${paymentId}/invoiceUrl`);
+    return response.invoiceUrl;
+  }
 }
 
 export const asaasService = new AsaasService();

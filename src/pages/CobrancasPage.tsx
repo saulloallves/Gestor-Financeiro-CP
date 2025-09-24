@@ -8,12 +8,9 @@ import {
   TextField,
   MenuItem,
   Chip,
-  Grid,
   CircularProgress,
   Tooltip,
-  IconButton,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import { DataGrid, GridActionsCellItem, type GridColDef, type GridPaginationModel } from '@mui/x-data-grid';
 import { ptBR } from '@mui/x-data-grid/locales';
 import { format } from 'date-fns';
@@ -23,14 +20,12 @@ import {
   FileText,
   MessageSquare,
   Plus,
-  Download,
   Filter,
   DollarSign,
   CheckCircle,
   AlertTriangle,
   Clock,
   RefreshCw,
-  Eye,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useCobrancasCacheFirst } from '../hooks/useCobrancasCacheFirst';
@@ -74,7 +69,6 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 export function CobrancasPage() {
-  const theme = useTheme();
   const [cobrancaParaEditar, setCobrancaParaEditar] = useState<Cobranca | undefined>();
   const [formAberto, setFormAberto] = useState(false);
   const [modalUnidadeOpen, setModalUnidadeOpen] = useState(false);
@@ -139,7 +133,7 @@ export function CobrancasPage() {
   };
 
   const handleSyncPayments = () => {
-    syncPaymentsMutation.mutate();
+    syncPaymentsMutation.mutate({});
   };
 
   const handleSyncStatuses = () => {
@@ -161,7 +155,7 @@ export function CobrancasPage() {
   };
 
   const handleNegociar = () => {
-    toast.info('Funcionalidade de negociação em breve!');
+    toast('Funcionalidade de negociação em breve!', { icon: 'ℹ️' });
   };
 
   const columns: GridColDef[] = [

@@ -1,7 +1,6 @@
 import {
   Box,
   Typography,
-  Grid,
   Chip,
   Paper,
 } from '@mui/material';
@@ -22,19 +21,17 @@ interface UnidadeInfoBasicasProps {
 }
 
 const InfoItem = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) => (
-  <Grid item xs={12} sm={6}>
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <Box sx={{ color: 'primary.main' }}>{icon}</Box>
-      <Box>
-        <Typography variant="body2" color="text.secondary">
-          {label}
-        </Typography>
-        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-          {value || '-'}
-        </Typography>
-      </Box>
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, flex: 1 }}>
+    <Box sx={{ color: 'primary.main' }}>{icon}</Box>
+    <Box>
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+        {value || '-'}
+      </Typography>
     </Box>
-  </Grid>
+  </Box>
 );
 
 export function UnidadeInfoBasicas({ unidade }: UnidadeInfoBasicasProps) {
@@ -48,7 +45,11 @@ export function UnidadeInfoBasicas({ unidade }: UnidadeInfoBasicasProps) {
 
   return (
     <Paper variant="outlined" sx={{ p: 3, backgroundColor: 'background.default' }}>
-      <Grid container spacing={3}>
+      <Box sx={{ 
+        display: 'grid', 
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, 
+        gap: 3 
+      }}>
         <InfoItem
           icon={<Building size={20} />}
           label="Nome da Unidade"
@@ -85,14 +86,14 @@ export function UnidadeInfoBasicas({ unidade }: UnidadeInfoBasicasProps) {
           label="Email Comercial"
           value={unidade.email_comercial}
         />
-        <Grid item xs={12}>
+        <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
           <InfoItem
             icon={<MapPin size={20} />}
             label="Endereço Completo"
             value={`${unidade.endereco_rua || ''}, ${unidade.endereco_numero || ''} - ${unidade.endereco_bairro || ''}, ${unidade.endereco_cidade || ''} - ${unidade.endereco_uf || ''}, ${unidade.endereco_cep || ''}`}
           />
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Paper>
   );
 }
