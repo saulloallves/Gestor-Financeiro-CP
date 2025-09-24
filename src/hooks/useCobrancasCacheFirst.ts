@@ -1,14 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useDataStore } from '../store/dataStore';
 import type { CobrancasFilters } from '../types/cobrancas';
 
 export function useCobrancasCacheFirst() {
   const { cobrancas, sync } = useDataStore();
   const [filters, setFilters] = useState<CobrancasFilters>({});
-  const [paginationModel, setPaginationModel] = useState({
-    page: 0, // DataGrid usa 0-based pagination
-    pageSize: 25,
-  });
 
   const filteredCobrancas = useMemo(() => {
     let result = [...cobrancas];
@@ -33,42 +29,17 @@ export function useCobrancasCacheFirst() {
     return result;
   }, [cobrancas, filters]);
 
-  // Efeito para corrigir a página se ela se tornar inválida após a filtragem
-  useEffect(() => {
-    const total = filteredCobrancas.length;
-    const totalPages = Math.ceil(total / paginationModel.pageSize);
-    if (paginationModel.page >= totalPages && totalPages > 0) {
-      setPaginationModel(prev => ({ ...prev, page: totalPages - 1 }));
-    } else if (total === 0 && paginationModel.page !== 0) {
-      setPaginationModel(prev => ({ ...prev, page: 0 }));
-    }
-  }, [filteredCobrancas.length, paginationModel]);
-
-  const paginatedCobrancas = useMemo(() => {
-    const startIndex = paginationModel.page * paginationModel.pageSize;
-    const endIndex = startIndex + paginationModel.pageSize;
-    return filteredCobrancas.slice(startIndex, endIndex);
-  }, [filteredCobrancas, paginationModel]);
-
   const handleFilterChange = (newFilters: CobrancasFilters) => {
     setFilters(newFilters);
-    setPaginationModel(prev => ({ ...prev, page: 0 }));
-  };
-
-  const handlePaginationModelChange = (newModel: { page: number; pageSize: number }) => {
-    setPaginationModel(newModel);
   };
 
   const isLoading = !sync.lastSyncAt || sync.isLoading;
 
   return {
-    cobrancas: paginatedCobrancas,
-    total: filteredCobrancas.length,
-    filters,
-    pagination: paginationModel,
+    cobrancas: filteredCobrancas,
     isLoading,
+    filters,
     handleFilterChange,
-    handlePaginationModelChange,
     refetch: useDataStore.getState().refreshData,
   };
 }

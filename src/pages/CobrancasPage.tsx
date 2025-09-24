@@ -77,18 +77,16 @@ export function CobrancasPage() {
   const [activeBoletoUrl, setActiveBoletoUrl] = useState<string | null>(null);
   const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]);
   const [batchModalOpen, setBatchModalOpen] = useState(false);
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
 
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusCobranca | ''>('');
 
   const {
     cobrancas,
-    total,
     isLoading,
     filters,
-    pagination,
     handleFilterChange,
-    handlePaginationModelChange,
   } = useCobrancasCacheFirst();
 
   const { data: estatisticas, isLoading: isLoadingStats } = useCobrancasEstatisticasCacheFirst();
@@ -102,12 +100,14 @@ export function CobrancasPage() {
       search: localSearchTerm || undefined,
       status: localStatusFilter || undefined,
     });
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
   };
 
   const handleClearFilters = () => {
     setLocalSearchTerm('');
     setLocalStatusFilter('');
     handleFilterChange({});
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
   };
 
   const handleEditarCobranca = (cobranca: Cobranca) => {
@@ -336,10 +336,8 @@ export function CobrancasPage() {
           rows={cobrancas}
           columns={columns}
           loading={isLoading}
-          rowCount={total}
-          paginationModel={pagination}
-          onPaginationModelChange={handlePaginationModelChange}
-          paginationMode="server"
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
           pageSizeOptions={[10, 25, 50]}
           autoHeight
           checkboxSelection
