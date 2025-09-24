@@ -805,11 +805,13 @@ export function FranqueadosPage() {
             sx={{
               border: "none",
               width: "100%",
+              backgroundColor: "#FFFFFF",
               minWidth: 0,
               "& .MuiDataGrid-main": {
                 minWidth: 0,
               },
               "& .MuiDataGrid-cell": {
+                backgroundColor: "#FFFFFF",
                 borderColor: "divider",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -831,6 +833,7 @@ export function FranqueadosPage() {
                 backgroundColor: "background.default",
                 borderColor: "divider",
                 "& .MuiDataGrid-columnHeader": {
+                  backgroundColor: "#FFFFFF",
                   padding: theme.spacing(1.5, 1.5),
                   fontSize: "1rem",
                   fontWeight: 600,
