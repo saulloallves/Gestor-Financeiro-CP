@@ -82,7 +82,7 @@ export function TesteCacheFirstPage() {
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid xs={12} md={4}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>Controles do Cache</Typography>
@@ -104,15 +104,15 @@ export function TesteCacheFirstPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid xs={12} md={8}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>Estatísticas do Cache</Typography>
               <Grid container spacing={2}>
-                <Grid item xs={6} sm={3}><Chip icon={<Users />} label={`Franqueados: ${franqueados.length}`} sx={{ width: '100%' }} /></Grid>
-                <Grid item xs={6} sm={3}><Chip icon={<Building />} label={`Unidades: ${unidades.length}`} sx={{ width: '100%' }} /></Grid>
-                <Grid item xs={6} sm={3}><Chip icon={<CreditCard />} label={`Cobranças: ${cobrancas.length}`} sx={{ width: '100%' }} /></Grid>
-                <Grid item xs={6} sm={3}><Chip icon={<UserCog />} label={`Usuários: ${usuariosInternos.length}`} sx={{ width: '100%' }} /></Grid>
+                <Grid xs={6} sm={3}><Chip icon={<Users />} label={`Franqueados: ${franqueados.length}`} sx={{ width: '100%' }} /></Grid>
+                <Grid xs={6} sm={3}><Chip icon={<Building />} label={`Unidades: ${unidades.length}`} sx={{ width: '100%' }} /></Grid>
+                <Grid xs={6} sm={3}><Chip icon={<CreditCard />} label={`Cobranças: ${cobrancas.length}`} sx={{ width: '100%' }} /></Grid>
+                <Grid xs={6} sm={3}><Chip icon={<UserCog />} label={`Usuários: ${usuariosInternos.length}`} sx={{ width: '100%' }} /></Grid>
               </Grid>
               <Box sx={{ mt: 2 }}>
                 <Link component={NavLink} to="/cobrancas-cache">Ver página de cobranças otimizada</Link>
@@ -121,13 +121,13 @@ export function TesteCacheFirstPage() {
           </Card>
 
           <Grid container spacing={3}>
-            <Grid item xs={12} lg={6}>
+            <Grid xs={12} lg={6}>
               <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Typography variant="h6" gutterBottom>Live Data Preview (Franqueados)</Typography>
                 <List dense>{franqueados.slice(0, 5).map(f => <ListItem key={f.id} divider><ListItemText primary={f.nome} secondary={`CPF: ${f.cpf}`} /></ListItem>)}{franqueados.length === 0 && <ListItem><ListItemText primary="Nenhum franqueado no cache." /></ListItem>}</List>
               </Paper>
             </Grid>
-            <Grid item xs={12} lg={6}>
+            <Grid xs={12} lg={6}>
               <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Activity size={20} />Log de Eventos Real-time</Typography>
                 <List dense>{realtimeLog.map((log, index) => <ListItem key={index}><ListItemText primary={log} /></ListItem>)}{realtimeLog.length === 0 && <ListItem><ListItemText primary="Aguardando eventos..." /></ListItem>}</List>

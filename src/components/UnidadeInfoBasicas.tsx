@@ -22,7 +22,7 @@ interface UnidadeInfoBasicasProps {
 }
 
 const InfoItem = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) => (
-  <Grid item xs={12} sm={6}>
+  <Grid xs={12} sm={6}>
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
       <Box sx={{ color: 'primary.main' }}>{icon}</Box>
       <Box>
@@ -85,7 +85,7 @@ export function UnidadeInfoBasicas({ unidade }: UnidadeInfoBasicasProps) {
           label="Email Comercial"
           value={unidade.email_comercial}
         />
-        <Grid item xs={12}>
+        <Grid xs={12}>
           <InfoItem
             icon={<MapPin size={20} />}
             label="Endereço Completo"

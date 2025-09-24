@@ -123,6 +123,7 @@ export interface FranqueadoFilter {
   unidade_id?: string;
   contrato_social?: boolean;
   empreendedor_previo?: boolean;
+  updated_at_gte?: string;
 }
 
 // Tipo para ordenação

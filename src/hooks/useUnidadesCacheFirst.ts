@@ -59,12 +59,6 @@ export function useUnidadesCacheFirst() {
     return filteredUnidades.slice(startIndex, endIndex);
   }, [filteredUnidades, paginationModel]);
 
-  // Handlers para filtros
-  const handleFilterChange = (key: keyof UnidadeFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setPaginationModel(prev => ({ ...prev, page: 0 })); // Reset para primeira página
-  };
-
   const handlePaginationModelChange = (newModel: { page: number; pageSize: number }) => {
     setPaginationModel(newModel);
   };
@@ -83,16 +77,19 @@ export function useUnidadesCacheFirst() {
     
     // Status
     isLoading,
-    isError: false, // Cache não tem erro, seria sempre false
+    isError: !!sync.error,
     hasInitialLoad: !!sync.lastSyncAt,
     
     // Handlers
-    handleFilterChange,
     handlePaginationModelChange,
-    
-    // Para compatibilidade com a interface existente
-    setSearchTerm: (term: string) => handleFilterChange('searchTerm', term),
-    setStatusFilter: (status: StatusUnidade | '') => handleFilterChange('status', status),
+    setSearchTerm: (term: string) => {
+      setFilters(prev => ({ ...prev, searchTerm: term }));
+      setPaginationModel(prev => ({ ...prev, page: 0 }));
+    },
+    setStatusFilter: (status: StatusUnidade | '') => {
+      setFilters(prev => ({ ...prev, status }));
+      setPaginationModel(prev => ({ ...prev, page: 0 }));
+    },
     
     // Função de refetch (força sync do cache)
     refetch: useDataStore.getState().refreshData,
@@ -124,7 +121,7 @@ export function useUnidadesEstatisticasCacheFirst() {
   return {
     data: estatisticas,
     isLoading,
-    isError: false,
+    isError: !!sync.error,
     hasInitialLoad: !!sync.lastSyncAt,
   };
 }
@@ -138,7 +135,6 @@ export function useUnidadesPageCacheFirst() {
     isLoading,
     isError,
     hasInitialLoad,
-    handleFilterChange,
     handlePaginationModelChange,
     setSearchTerm,
     setStatusFilter,
@@ -160,7 +156,6 @@ export function useUnidadesPageCacheFirst() {
     hasInitialLoad,
     
     // Handlers
-    handleFilterChange,
     handlePaginationModelChange,
     setSearchTerm,
     setStatusFilter,

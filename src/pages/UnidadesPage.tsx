@@ -50,8 +50,7 @@ export function UnidadesPage() {
     isLoading,
     isError,
     pagination,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePaginationModelChange,
     refetch,
     setSearchTerm,
     setStatusFilter,
@@ -63,19 +62,10 @@ export function UnidadesPage() {
     isLoading: isLoadingStats,
   } = useUnidadesEstatisticasCacheFirst();
 
-  // Handler para mudança de paginação do DataGrid
-  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
-    if (newModel.pageSize !== pagination.pageSize) {
-      handlePageSizeChange(newModel.pageSize);
-    } else if (newModel.page !== pagination.page) {
-      handlePageChange(newModel.page);
-    }
-  };
-
   // Função para aplicar filtros de busca
   const handleSearch = () => {
-    // Os filtros já são aplicados automaticamente através dos valores dos inputs
-    // que são controlados pelos setters do hook
+    setSearchTerm(localSearchTerm);
+    setStatusFilter(localStatusFilter);
   };
 
   // Limpar filtros
@@ -231,7 +221,7 @@ export function UnidadesPage() {
         <Typography color="error" variant="h6">
           Erro ao carregar unidades
         </Typography>
-        <Button onClick={() => refetch()} sx={{ mt: 2 }} variant="outlined">
+        <Button onClick={() => refetch(true)} sx={{ mt: 2 }} variant="outlined">
           Tentar novamente
         </Button>
       </Card>
@@ -374,10 +364,7 @@ export function UnidadesPage() {
             <TextField
               placeholder="Buscar por nome da unidade..."
               value={localSearchTerm}
-              onChange={(e) => {
-                setLocalSearchTerm(e.target.value);
-                setSearchTerm(e.target.value);
-              }}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <Box
@@ -404,11 +391,7 @@ export function UnidadesPage() {
               select
               label="Status"
               value={localStatusFilter}
-              onChange={(e) => {
-                const value = e.target.value as StatusUnidade | "";
-                setLocalStatusFilter(value);
-                setStatusFilter(value);
-              }}
+              onChange={(e) => setLocalStatusFilter(e.target.value as StatusUnidade | "")}
               size="small"
               sx={{
                 minWidth: 150,
@@ -728,7 +711,7 @@ export function UnidadesPage() {
             columns={columns}
             loading={isLoading}
             rowCount={total}
-            paginationModel={{ page: pagination.page, pageSize: pagination.pageSize }}
+            paginationModel={pagination}
             onPaginationModelChange={handlePaginationModelChange}
             paginationMode="server"
             pageSizeOptions={[10, 20, 50, 100]}

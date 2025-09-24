@@ -16,7 +16,6 @@ import {
 import {
   DataGrid,
   type GridColDef,
-  type GridPaginationModel,
 } from "@mui/x-data-grid";
 import { ptBR } from "@mui/x-data-grid/locales";
 import { useTheme } from "@mui/material/styles";
@@ -258,7 +257,7 @@ export function FranqueadosPage() {
         <Typography color="error" variant="h6">
           Erro ao carregar franqueados
         </Typography>
-        <Button onClick={() => refetch()} sx={{ mt: 2 }} variant="outlined">
+        <Button onClick={() => refetch(true)} sx={{ mt: 2 }} variant="outlined">
           Tentar novamente
         </Button>
       </Card>

@@ -12,6 +12,7 @@ import {
   ListItemText,
   ListItemIcon,
   Paper,
+  Chip,
 } from '@mui/material';
 import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
