@@ -1,7 +1,7 @@
 // Página de Listagem de Unidades - Módulo 2.1
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -33,78 +33,53 @@ import {
   XCircle,
   Database,
 } from "lucide-react";
-import { useUnidadesPageCacheFirst, useUnidadesEstatisticasCacheFirst } from "../hooks/useUnidadesCacheFirst";
+import { useUnidades, useUnidadesEstatisticas } from "../hooks/useUnidades";
 import { getStatusLabel, getStatusColor } from "../utils/statusMask";
-import type { StatusUnidade } from "../types/unidades";
+import type { StatusUnidade, UnidadeFilter } from "../types/unidades";
 
 export function UnidadesPage() {
   const theme = useTheme();
   
+  const [filters, setFilters] = useState<UnidadeFilter>({});
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 50,
+  });
+
   // Estado local para os inputs de filtro
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusUnidade | "">("");
 
-  // Estado de paginação do DataGrid
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 50, // Aumentando para 50 para mostrar mais unidades inicialmente
-  });
-
   const {
-    unidades,
-    total,
+    data: unidadesData,
     isLoading,
     isError,
-    handlePageChange,
-    handlePageSizeChange,
-    pagination,
     refetch,
-    setSearchTerm,
-    setStatusFilter,
-  } = useUnidadesPageCacheFirst();
+  } = useUnidades(
+    filters,
+    { field: "codigo_unidade", direction: "asc" },
+    { page: paginationModel.page + 1, limit: paginationModel.pageSize }
+  );
 
-  // Buscar estatísticas gerais (todas as unidades, não apenas da página atual)
-  const {
-    data: estatisticas,
-    isLoading: isLoadingStats,
-  } = useUnidadesEstatisticasCacheFirst();
+  const unidades = unidadesData?.data || [];
+  const total = unidadesData?.pagination.total || 0;
 
-  // Handler para mudança de paginação do DataGrid
-  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
-    setPaginationModel(newModel);
-    
-    // Se o pageSize mudou, atualize a paginação e volte para a primeira página
-    if (newModel.pageSize !== paginationModel.pageSize) {
-      handlePageSizeChange(newModel.pageSize);
-    } else {
-      // Se apenas a página mudou (cache-first já usa base 0)
-      handlePageChange(newModel.page);
-    }
-  };
+  const { data: estatisticas, isLoading: isLoadingStats } =
+    useUnidadesEstatisticas();
 
-  // Sincronizar estado do DataGrid com estado do hook
-  useEffect(() => {
-    setPaginationModel({
-      page: pagination.page, // Cache-first já usa base 0
-      pageSize: pagination.pageSize,
-    });
-  }, [pagination.page, pagination.pageSize]);
-
-  // Função para aplicar filtros de busca
   const handleSearch = () => {
-    // Os filtros já são aplicados automaticamente através dos valores dos inputs
-    // que são controlados pelos setters do hook
+    setFilters({
+      nome_padrao: localSearchTerm || undefined,
+      status: localStatusFilter ? [localStatusFilter] : undefined,
+    });
   };
 
-  // Limpar filtros
   const handleClearFilters = () => {
     setLocalSearchTerm("");
     setLocalStatusFilter("");
-    setSearchTerm("");
-    setStatusFilter("");
+    setFilters({});
   };
 
-  // Definir colunas da tabela
   const columns: GridColDef[] = [
     {
       field: "codigo_unidade",
@@ -292,7 +267,7 @@ export function UnidadesPage() {
             >
               <Database size={16} />
               <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
-                CACHE
+                LIVE
               </Typography>
             </Box>
           </Box>
@@ -385,10 +360,7 @@ export function UnidadesPage() {
             <TextField
               placeholder="Buscar por nome da unidade..."
               value={localSearchTerm}
-              onChange={(e) => {
-                setLocalSearchTerm(e.target.value);
-                setSearchTerm(e.target.value);
-              }}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <Box
@@ -415,11 +387,9 @@ export function UnidadesPage() {
               select
               label="Status"
               value={localStatusFilter}
-              onChange={(e) => {
-                const value = e.target.value as StatusUnidade | "";
-                setLocalStatusFilter(value);
-                setStatusFilter(value);
-              }}
+              onChange={(e) =>
+                setLocalStatusFilter(e.target.value as StatusUnidade | "")
+              }
               size="small"
               sx={{
                 minWidth: 150,
@@ -740,7 +710,7 @@ export function UnidadesPage() {
             loading={isLoading}
             rowCount={total}
             paginationModel={paginationModel}
-            onPaginationModelChange={handlePaginationModelChange}
+            onPaginationModelChange={setPaginationModel}
             paginationMode="server"
             pageSizeOptions={[10, 20, 50, 100]}
             localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}

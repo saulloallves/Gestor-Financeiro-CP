@@ -1,7 +1,7 @@
 // Página de Listagem de Franqueados - Módulo 2.2
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -36,7 +36,7 @@ import {
   Handshake,
   Database,
 } from "lucide-react";
-import { useFranqueadosPageCacheFirst, useFranqueadosEstatisticasCacheFirst } from "../hooks/useFranqueadosCacheFirst";
+import { useFranqueados, useFranqueadosEstatisticas } from "../hooks/useFranqueados";
 import {
   getTipoFranqueadoLabel,
   getTipoFranqueadoColor,
@@ -48,79 +48,54 @@ import {
 import type {
   StatusFranqueado,
   TipoFranqueado,
+  FranqueadoFilter,
 } from "../types/franqueados";
 
 export function FranqueadosPage() {
   const theme = useTheme();
+  const [filters, setFilters] = useState<FranqueadoFilter>({});
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 20,
+  });
+
+  // Local state for filter inputs
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFranqueado | "">("");
   const [tipoFilter, setTipoFilter] = useState<TipoFranqueado | "">("");
 
-  // Estado de paginação do DataGrid
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 20, // Começando com 20 registros igual às Unidades
-  });
-
   const {
-    franqueados,
+    data: franqueadosData,
     isLoading,
     isError,
-    filters,
-    handleFilterChange,
-    handlePageChange,
-    handlePageSizeChange,
-    pagination,
     refetch,
-  } = useFranqueadosPageCacheFirst();
+  } = useFranqueados(
+    filters,
+    { field: "nome", direction: "asc" },
+    { page: paginationModel.page + 1, limit: paginationModel.pageSize }
+  );
 
-  // Buscar estatísticas gerais (todos os franqueados, não apenas da página atual)
-  const {
-    data: estatisticas,
-    isLoading: isLoadingStats,
-  } = useFranqueadosEstatisticasCacheFirst();
+  const franqueados = franqueadosData?.data || [];
+  const total = franqueadosData?.pagination.total || 0;
 
-  // Handler para mudança de paginação do DataGrid
-  const handlePaginationModelChange = (newModel: GridPaginationModel) => {
-    setPaginationModel(newModel);
-    
-    // Se o pageSize mudou, atualize a paginação e volte para a primeira página
-    if (newModel.pageSize !== paginationModel.pageSize) {
-      handlePageSizeChange(newModel.pageSize);
-    } else {
-      // Se apenas a página mudou
-      handlePageChange(newModel.page + 1); // DataGrid usa base 0, backend usa base 1
-    }
-  };
+  const { data: estatisticas, isLoading: isLoadingStats } =
+    useFranqueadosEstatisticas();
 
-  // Sincronizar estado do DataGrid com estado do hook
-  useEffect(() => {
-    setPaginationModel({
-      page: pagination.page - 1, // Backend usa base 1, DataGrid usa base 0
-      pageSize: pagination.limit,
-    });
-  }, [pagination.page, pagination.limit]);
-
-  // Função para aplicar filtros de busca
   const handleSearch = () => {
-    const newFilters = {
-      ...filters,
+    setFilters({
       nome: searchTerm || undefined,
       status: statusFilter ? [statusFilter] : undefined,
       tipo: tipoFilter ? [tipoFilter] : undefined,
-    };
-    handleFilterChange(newFilters);
+    });
   };
 
-  // Limpar filtros
   const handleClearFilters = () => {
     setSearchTerm("");
     setStatusFilter("");
     setTipoFilter("");
-    handleFilterChange({});
+    setFilters({});
   };
 
-  // Definir colunas da tabela
   const columns: GridColDef[] = [
     {
       field: "nome",
@@ -335,7 +310,7 @@ export function FranqueadosPage() {
             >
               <Database size={16} />
               <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
-                CACHE
+                LIVE
               </Typography>
             </Box>
           </Box>
@@ -796,9 +771,9 @@ export function FranqueadosPage() {
             rows={franqueados}
             columns={columns}
             loading={isLoading}
-            rowCount={estatisticas?.total || 0}
+            rowCount={total}
             paginationModel={paginationModel}
-            onPaginationModelChange={handlePaginationModelChange}
+            onPaginationModelChange={setPaginationModel}
             paginationMode="server"
             pageSizeOptions={[10, 20, 50, 100]}
             localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
