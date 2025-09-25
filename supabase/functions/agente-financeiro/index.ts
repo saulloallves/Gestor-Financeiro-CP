@@ -38,6 +38,17 @@ serve(async (req) => {
     if (cobrancaError) throw new Error(`Cobrança não encontrada: ${cobrancaError.message}`);
     console.log("[Agente] INFO: Dados da cobrança encontrados:", cobranca);
 
+    // **NOVA LÓGICA: CALCULAR DIAS DE ATRASO EM TEMPO REAL**
+    console.log("[Agente] INFO: Calculando dias de atraso em tempo real...");
+    const hoje = new Date();
+    const vencimento = new Date(cobranca.vencimento);
+    hoje.setHours(0, 0, 0, 0);
+    vencimento.setHours(0, 0, 0, 0);
+    const diffTime = hoje.getTime() - vencimento.getTime();
+    const diasAtrasoReal = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    console.log(`[Agente] DEBUG: Vencimento: ${vencimento.toISOString()}, Hoje: ${hoje.toISOString()}, Dias de Atraso Calculado: ${diasAtrasoReal}`);
+
+
     // Simulação de dados de unidade e franqueado (pois não estão no mesmo DB)
     const unidadeInfo = {
         codigo_unidade: cobranca.codigo_unidade,
@@ -83,7 +94,7 @@ serve(async (req) => {
       .replace('{{cobranca.valor_original}}', cobranca.valor_original)
       .replace('{{cobranca.valor_atualizado}}', cobranca.valor_atualizado)
       .replace('{{cobranca.vencimento}}', formatDate(cobranca.vencimento))
-      .replace('{{cobranca.dias_atraso}}', cobranca.dias_atraso)
+      .replace('{{cobranca.dias_atraso}}', diasAtrasoReal) // **CORREÇÃO APLICADA AQUI**
       .replace('{{cobranca.status}}', cobranca.status)
       .replace('{{cobranca.observacoes}}', cobranca.observacoes || 'N/A')
       .replace(new RegExp('{{franqueado.nome}}', 'g'), franqueadoInfo.nome)
