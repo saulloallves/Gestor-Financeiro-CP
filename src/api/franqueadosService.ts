@@ -1,8 +1,7 @@
 // Serviço de API para o módulo de Franqueados
-// REFATORADO PARA USAR BANCO MATRIZ (SOMENTE LEITURA)
+// REFATORADO PARA CONSULTAR TABELA LOCAL (RÉPLICA DA MATRIZ)
 
-import { supabaseMatriz } from "./supabaseMatrizClient";
-import { supabase } from "./supabaseClient"; // Para operações no banco local
+import { supabase } from "./supabaseClient";
 import type {
   Franqueado,
   FranqueadoFilter,
@@ -10,22 +9,10 @@ import type {
   FranqueadoPagination,
   FranqueadoListResponse,
 } from "../types/franqueados";
-import type {
-  VFranqueadosUnidadesDetalhes,
-  FranqueadoMatriz,
-} from "../types/matriz";
-import { 
-  mapearFranqueadoMatriz, 
-  mapearFiltrosFranqueado 
-} from "../utils/matrizMappers";
 
 class FranqueadosService {
-  // ================================
-  // CONSULTAS (BANCO MATRIZ - SOMENTE LEITURA)
-  // ================================
-
   /**
-   * Buscar todos os franqueados do banco matriz
+   * Buscar todos os franqueados da tabela local
    */
   async getFranqueados(
     filters: FranqueadoFilter = {},
@@ -33,50 +20,23 @@ class FranqueadosService {
     pagination: FranqueadoPagination = { page: 1, limit: 50 }
   ): Promise<FranqueadoListResponse> {
     try {
-      console.log('🔍 Buscando franqueados no banco matriz...');
-      console.log('🔍 Filtros recebidos:', filters);
-      
-      // Mapear filtros para o schema do banco matriz
-      const filtrosMatriz = mapearFiltrosFranqueado(filters as Record<string, unknown>);
-      console.log('🔍 Filtros mapeados:', filtrosMatriz);
-      
-      let query = supabaseMatriz
+      let query = supabase
         .from('franqueados')
         .select('*', { count: 'exact' });
 
       // Aplicar filtros
-      if (filtrosMatriz.search && typeof filtrosMatriz.search === 'string') {
-        query = query.or(`
-          full_name.ilike.%${filtrosMatriz.search}%,
-          contact.ilike.%${filtrosMatriz.search}%,
-          cpf_rnm.ilike.%${filtrosMatriz.search}%
-        `);
+      if (filters.nome) {
+        query = query.or(`nome.ilike.%${filters.nome}%,cpf.ilike.%${filters.nome}%,email.ilike.%${filters.nome}%`);
       }
-      
-      if (filtrosMatriz.owner_type) {
-        if (Array.isArray(filtrosMatriz.owner_type)) {
-          query = query.in('owner_type', filtrosMatriz.owner_type);
-        } else if (typeof filtrosMatriz.owner_type === 'string') {
-          query = query.eq('owner_type', filtrosMatriz.owner_type);
-        }
+      if (filters.status && filters.status.length > 0) {
+        query = query.in('status', filters.status);
       }
-      
-      if (typeof filtrosMatriz.is_in_contract === 'boolean') {
-        query = query.eq('is_in_contract', filtrosMatriz.is_in_contract);
-      }
-      
-      if (typeof filtrosMatriz.receives_prolabore === 'boolean') {
-        query = query.eq('receives_prolabore', filtrosMatriz.receives_prolabore);
+      if (filters.tipo && filters.tipo.length > 0) {
+        query = query.in('tipo', filters.tipo);
       }
 
-      // Filtro para sync incremental
-      if (filters.updated_at_gte) {
-        query = query.gte('updated_at', filters.updated_at_gte);
-      }
-
-      // Aplicar ordenação (mapear campo para o schema matriz)
-      const campoOrdenacao = sort.field === 'nome' ? 'full_name' : sort.field;
-      query = query.order(campoOrdenacao, { ascending: sort.direction === 'asc' });
+      // Aplicar ordenação
+      query = query.order(sort.field, { ascending: sort.direction === 'asc' });
 
       // Aplicar paginação
       const offset = (pagination.page - 1) * pagination.limit;
@@ -85,39 +45,11 @@ class FranqueadosService {
       const { data, error, count } = await query;
 
       if (error) {
-        console.error('❌ Erro ao buscar franqueados:', error);
         throw new Error(`Erro ao buscar franqueados: ${error.message}`);
       }
 
-      // Mapear dados do banco matriz para formato do sistema
-      const franqueadosMapeados = (data as FranqueadoMatriz[]).map(franqueado => mapearFranqueadoMatriz({
-        ...franqueado,
-        unidade_ids: [],
-        total_unidades: 0,
-        unidade_group_codes: [],
-        unidade_group_names: []
-      } as unknown as VFranqueadosUnidadesDetalhes));
-
-      console.log(`✅ ${franqueadosMapeados.length} franqueados encontrados`);
-
-      console.log('🔍 Debug - Dados originais (primeiros 3):', 
-        (data as FranqueadoMatriz[]).slice(0, 3).map(f => ({ 
-          nome: f.full_name, 
-          owner_type: f.owner_type,
-          id: f.id
-        }))
-      );
-
-      console.log('🔍 Debug - Dados mapeados (primeiros 3):', 
-        franqueadosMapeados.slice(0, 3).map(f => ({ 
-          nome: f.nome, 
-          tipo: f.tipo,
-          id: f.id
-        }))
-      );
-
       return {
-        data: franqueadosMapeados as Franqueado[],
+        data: data || [],
         pagination: {
           page: pagination.page,
           limit: pagination.limit,
@@ -132,155 +64,31 @@ class FranqueadosService {
   }
 
   /**
-   * Buscar franqueado específico por ID
+   * Obter estatísticas dos franqueados
    */
-  async getFranqueadoById(id: string): Promise<Franqueado | null> {
-    try {
-      console.log(`🔍 Buscando franqueado ${id} no banco matriz...`);
-      
-      const { data, error } = await supabaseMatriz
-        .from('franqueados')
-        .select('*')
-        .eq('id', id)
-        .single();
+  async getEstatisticas(): Promise<{
+    total: number;
+    ativos: number;
+    inativos: number;
+    principais: number;
+  }> {
+    const { data, error } = await supabase
+      .from('franqueados')
+      .select('status, tipo', { count: 'exact' });
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          console.log('❌ Franqueado não encontrado');
-          return null;
-        }
-        throw new Error(`Erro ao buscar franqueado: ${error.message}`);
-      }
-
-      const franqueadoMapeado = mapearFranqueadoMatriz({
-        ...(data as FranqueadoMatriz),
-        unidade_ids: [],
-        total_unidades: 0,
-        unidade_group_codes: [],
-        unidade_group_names: []
-      } as unknown as VFranqueadosUnidadesDetalhes);
-      
-      console.log('✅ Franqueado encontrado:', franqueadoMapeado.nome);
-      return franqueadoMapeado as unknown as Franqueado;
-    } catch (error) {
-      console.error('❌ Erro no getFranqueadoById:', error);
-      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar franqueado');
+    if (error) {
+      throw new Error(`Erro ao buscar estatísticas: ${error.message}`);
     }
+
+    const stats = {
+      total: data.length,
+      ativos: data.filter(f => f.status === 'ativo').length,
+      inativos: data.filter(f => f.status === 'inativo').length,
+      principais: data.filter(f => f.tipo === 'principal').length,
+    };
+
+    return stats;
   }
-
-  /**
-   * Buscar franqueados por código de unidade
-   * NOTA: Método temporariamente simplificado - precisa ser implementado com JOIN ou view
-   */
-  async getFranqueadosByUnidade(codigoUnidade: number): Promise<Franqueado[]> {
-    try {
-      console.log(`🔍 Buscando franqueados da unidade ${codigoUnidade}...`);
-      
-      // Por enquanto, retornamos todos os franqueados
-      // TODO: Implementar JOIN com tabela de unidades ou recriar view
-      const { data, error } = await supabaseMatriz
-        .from('franqueados')
-        .select('*');
-
-      if (error) {
-        throw new Error(`Erro ao buscar franqueados da unidade: ${error.message}`);
-      }
-
-      const franqueadosMapeados = (data as FranqueadoMatriz[]).map(franqueado => mapearFranqueadoMatriz({
-        ...(franqueado as FranqueadoMatriz),
-        unidade_ids: [],
-        total_unidades: 0,
-        unidade_group_codes: [],
-        unidade_group_names: []
-      } as unknown as VFranqueadosUnidadesDetalhes));
-      
-      console.log(`✅ ${franqueadosMapeados.length} franqueados encontrados para a unidade`);
-      return franqueadosMapeados as unknown as Franqueado[];
-    } catch (error) {
-      console.error('❌ Erro no getFranqueadosByUnidade:', error);
-      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar franqueados da unidade');
-    }
-  }
-
-  // ================================
-  // OPERAÇÕES RELACIONADAS (BANCO LOCAL)
-  // ================================
-
-  /**
-   * Buscar cobranças do franqueado no banco local
-   */
-  async getCobrancasByFranqueado(franqueadoId: string): Promise<unknown[]> {
-    try {
-      console.log(`🔍 Buscando cobranças do franqueado ${franqueadoId}...`);
-      
-      // Primeiro buscar unidades do franqueado no banco matriz
-      const franqueado = await this.getFranqueadoById(franqueadoId);
-      const franqueadoMapeado = franqueado as unknown as import('../types/matriz').FranqueadoMapeado;
-      
-      if (!franqueadoMapeado?.unidades_ids || franqueadoMapeado.unidades_ids.length === 0) {
-        console.log('❌ Franqueado não possui unidades vinculadas');
-        return [];
-      }
-
-      // Buscar cobranças no banco local usando os IDs das unidades
-      const { data, error } = await supabase
-        .from('cobrancas')
-        .select('*')
-        .in('unidade_id', franqueadoMapeado.unidades_ids);
-
-      if (error) {
-        throw new Error(`Erro ao buscar cobranças: ${error.message}`);
-      }
-
-      console.log(`✅ ${data?.length || 0} cobranças encontradas`);
-      return data || [];
-    } catch (error) {
-      console.error('❌ Erro no getCobrancasByFranqueado:', error);
-      throw error instanceof Error ? error : new Error('Erro desconhecido ao buscar cobranças do franqueado');
-    }
-  }
-
-  /**
-   * Estatísticas do franqueado (usando dados do banco local)
-   */
-  async getEstatisticasFranqueado(franqueadoId: string): Promise<Record<string, unknown>> {
-    try {
-      console.log(`📊 Calculando estatísticas do franqueado ${franqueadoId}...`);
-      
-      const cobrancas = await this.getCobrancasByFranqueado(franqueadoId);
-      
-      type CobrancaBasica = { status?: string; valor?: number };
-      const cobrancasTyped = cobrancas as CobrancaBasica[];
-      
-      const estatisticas = {
-        total_cobrancas: cobrancasTyped.length,
-        cobrancas_pendentes: cobrancasTyped.filter(c => c.status === 'pendente').length,
-        cobrancas_pagas: cobrancasTyped.filter(c => c.status === 'pago').length,
-        valor_total: cobrancasTyped.reduce((sum, c) => sum + (c.valor || 0), 0),
-        valor_pendente: cobrancasTyped.filter(c => c.status === 'pendente').reduce((sum, c) => sum + (c.valor || 0), 0),
-        valor_pago: cobrancasTyped.filter(c => c.status === 'pago').reduce((sum, c) => sum + (c.valor || 0), 0),
-      };
-      
-      console.log('✅ Estatísticas calculadas:', estatisticas);
-      return estatisticas;
-    } catch (error) {
-      console.error('❌ Erro no getEstatisticasFranqueado:', error);
-      throw error instanceof Error ? error : new Error('Erro desconhecido ao calcular estatísticas');
-    }
-  }
-
-  // ================================
-  // MÉTODOS REMOVIDOS (NÃO FAZEMOS MAIS CRUD)
-  // ================================
-  
-  // Os seguintes métodos foram REMOVIDOS pois agora só fazemos consulta:
-  // - createFranqueado()
-  // - updateFranqueado() 
-  // - deleteFranqueado()
-  // - vincularUnidade()
-  // - desvincularUnidade()
-  // 
-  // Estes dados agora são gerenciados diretamente no banco matriz
 }
 
 export const franqueadosService = new FranqueadosService();

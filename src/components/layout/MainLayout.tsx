@@ -4,6 +4,7 @@ import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { SystemInitializer } from "../auth/SystemInitializer";
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { realtimeService } from "../../services/realtimeService";
 
 const SIDEBAR_WIDTH_COLLAPSED = 72;
@@ -11,6 +12,7 @@ const SIDEBAR_WIDTH_EXPANDED = 280;
 
 export function MainLayout() {
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(false);
 
@@ -21,13 +23,13 @@ export function MainLayout() {
 
   // Inicializa os serviços de Realtime quando o layout é montado
   useEffect(() => {
-    realtimeService.initializeSubscriptions();
+    realtimeService.initialize(queryClient);
 
     // Limpa as assinaturas quando o layout é desmontado (ex: no logout)
     return () => {
-      realtimeService.cleanupSubscriptions();
+      realtimeService.cleanup();
     };
-  }, []); // O array vazio garante que isso rode apenas uma vez
+  }, [queryClient]);
 
   return (
     <SystemInitializer>
