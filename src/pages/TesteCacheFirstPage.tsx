@@ -10,6 +10,7 @@ import {
   ListItem,
   ListItemText,
   Paper,
+  LinearProgress,
 } from '@mui/material';
 import {
   RefreshCw,
@@ -23,9 +24,11 @@ import {
   CreditCard,
   UserCog,
   Activity,
+  GitMerge,
 } from 'lucide-react';
 import { useDataSync } from '../hooks/useDataSync';
 import { useDataStore } from '../store/dataStore';
+import { useMatrizSync } from '../hooks/useMatrizSync';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -42,6 +45,7 @@ export function TesteCacheFirstPage() {
   } = useDataSync();
 
   const { franqueados, unidades, cobrancas, usuariosInternos } = useDataStore();
+  const matrizSync = useMatrizSync();
   const [realtimeLog, setRealtimeLog] = useState<string[]>([]);
 
   useEffect(() => {
@@ -94,6 +98,41 @@ export function TesteCacheFirstPage() {
               </Box>
             </CardContent>
           </Card>
+          
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Sincronização com a Matriz</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Execute uma sincronização completa para popular o banco de dados local com todos os dados da matriz.
+              </Typography>
+              <Button 
+                variant="contained" 
+                color="secondary" 
+                startIcon={<GitMerge />} 
+                onClick={matrizSync.startSync} 
+                disabled={matrizSync.isLoading}
+              >
+                {matrizSync.isLoading ? 'Sincronizando...' : 'Sincronizar Dados da Matriz'}
+              </Button>
+              {matrizSync.isLoading && (
+                <Box sx={{ mt: 2 }}>
+                  <LinearProgress />
+                  <Typography variant="caption" color="text.secondary">{matrizSync.progressMessage}</Typography>
+                </Box>
+              )}
+              {matrizSync.stats && !matrizSync.isLoading && (
+                <Typography variant="caption" color="success.main" sx={{ mt: 1, display: 'block' }}>
+                  Sincronização concluída!
+                </Typography>
+              )}
+              {matrizSync.error && (
+                <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                  {matrizSync.error}
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Status da Sincronização</Typography>
