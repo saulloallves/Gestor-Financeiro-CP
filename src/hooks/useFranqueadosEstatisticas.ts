@@ -8,8 +8,8 @@ export function useFranqueadosEstatisticas() {
   const data = useMemo(() => {
     return {
       total: franqueados.length,
-      ativos: franqueados.filter(f => f.status === 'ativo').length,
-      inativos: franqueados.filter(f => f.status === 'inativo').length,
+      ativos: franqueados.filter(f => f.is_active_system).length,
+      inativos: franqueados.filter(f => !f.is_active_system).length,
       principais: franqueados.filter(f => f.tipo === 'principal').length,
     };
   }, [franqueados]);
