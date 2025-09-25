@@ -23,6 +23,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // 1. Buscar a cobrança para obter o código da unidade
     const { data: cobranca, error: cobrancaError } = await supabaseAdmin
       .from('cobrancas')
       .select('*')
@@ -30,23 +31,36 @@ serve(async (req) => {
       .single();
     if (cobrancaError) throw new Error(`Cobrança não encontrada: ${cobrancaError.message}`);
 
+    // 2. Buscar dados reais do franqueado e da unidade usando o código da unidade
+    const { data: franqueadoData, error: rpcError } = await supabaseAdmin.rpc('get_franchisee_by_unit_code', {
+      codigo_param: String(cobranca.codigo_unidade),
+    });
+
+    if (rpcError) throw new Error(`Erro ao buscar franqueado/unidade: ${rpcError.message}`);
+    if (!franqueadoData || franqueadoData.length === 0) {
+      throw new Error(`Nenhum franqueado principal encontrado para a unidade ${cobranca.codigo_unidade}`);
+    }
+    
+    const franqueadoUnidadeInfo = franqueadoData[0];
+    
+    // Mapear para os objetos esperados
+    const unidadeInfo = {
+        codigo_unidade: franqueadoUnidadeInfo.codigo_unidade,
+        nome_padrao: franqueadoUnidadeInfo.nome_unidade
+    };
+    const franqueadoInfo = {
+        id: franqueadoUnidadeInfo.id,
+        nome: franqueadoUnidadeInfo.nome,
+        telefone: franqueadoUnidadeInfo.telefone,
+        whatsapp: franqueadoUnidadeInfo.whatsapp
+    };
+
     const hoje = new Date();
     const vencimento = new Date(cobranca.vencimento);
     hoje.setHours(0, 0, 0, 0);
     vencimento.setHours(0, 0, 0, 0);
     const diffTime = hoje.getTime() - vencimento.getTime();
     const diasAtrasoReal = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
-    const unidadeInfo = {
-        codigo_unidade: cobranca.codigo_unidade,
-        nome_padrao: `Unidade ${cobranca.codigo_unidade}`
-    };
-    const franqueadoInfo = {
-        id: '00000000-0000-0000-0000-000000000000',
-        nome: `Franqueado da Unidade ${cobranca.codigo_unidade}`,
-        telefone: '11981996294',
-        whatsapp: '11981996294'
-    };
 
     const { data: config, error: configError } = await supabaseAdmin
       .from('configuracoes')
@@ -92,40 +106,38 @@ serve(async (req) => {
       case 'SEND_WHATSAPP':
         const phone = franqueadoInfo.telefone || franqueadoInfo.whatsapp;
         if (phone) {
-          // **NOVO: Buscar template do banco**
-          const { data: template, error: templateError } = await supabaseAdmin
+          const { data: templateData, error: templateError } = await supabaseAdmin
             .from('templates')
-            .select('conteudo')
+            .select('id, conteudo')
             .eq('nome', template_name)
             .eq('canal', 'whatsapp')
             .single();
           
-          if (templateError || !template) {
+          if (templateError || !templateData) {
             throw new Error(`Template '${template_name}' não encontrado ou erro ao buscar.`);
           }
 
-          // **NOVO: Preencher variáveis no template**
-          const message = template.conteudo
-            .replace('{{franqueado.nome}}', franqueadoInfo.nome)
-            .replace('{{cobranca.valor_atualizado}}', cobranca.valor_atualizado)
-            .replace('{{cobranca.vencimento}}', formatDate(cobranca.vencimento))
-            .replace('{{cobranca.link_pagamento}}', cobranca.link_pagamento || 'Link não disponível');
+          const message = templateData.conteudo
+            .replace(new RegExp('{{franqueado.nome}}', 'g'), franqueadoInfo.nome)
+            .replace(new RegExp('{{unidade.codigo_unidade}}', 'g'), String(unidadeInfo.codigo_unidade))
+            .replace(new RegExp('{{cobranca.valor_atualizado}}', 'g'), cobranca.valor_atualizado.toFixed(2).replace('.', ','))
+            .replace(new RegExp('{{cobranca.vencimento}}', 'g'), formatDate(cobranca.vencimento))
+            .replace(new RegExp('{{cobranca.link_pagamento}}', 'g'), cobranca.link_pagamento || 'Link não disponível');
 
-          // **NOVO: Preparar dados para log**
           const logData = {
             cobranca_id: cobranca.id,
             unidade_codigo_unidade: unidadeInfo.codigo_unidade,
             unidade_nome_padrao: unidadeInfo.nome_padrao,
             franqueado_id: franqueadoInfo.id,
             franqueado_nome: franqueadoInfo.nome,
-            template_id: template.id, // Assumindo que o ID do template está disponível
+            template_id: templateData.id,
             tipo_mensagem: 'automatica',
             enviado_por: 'ia_agente_financeiro',
             enviado_por_ia: true,
           };
 
           const { data: zapiData, error: zapiError } = await supabaseAdmin.functions.invoke('zapi-send-text', {
-            body: { phone, message, logData }, // **NOVO: Passar logData**
+            body: { phone, message, logData },
           });
           if (zapiError) throw new Error(`Erro na Z-API: ${zapiError.message}`);
           actionResult = { zapiResponse: zapiData };

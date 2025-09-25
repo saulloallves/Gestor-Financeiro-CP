@@ -21,29 +21,17 @@ serve(async (req) => {
   );
 
   try {
-    // 1. Segurança: Permitir acesso via CRON_SECRET ou para usuários autenticados
-    const cronSecret = Deno.env.get('CRON_SECRET');
+    // 1. Segurança: Apenas usuários autenticados podem testar
     const authHeader = req.headers.get('Authorization');
-    const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
-    
-    let user = null;
-    if (!isCron) {
-      const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(authHeader?.replace('Bearer ', ''));
-      if (userError) {
-        console.error("[Testar Template] ERRO de autenticação:", userError.message);
-        return new Response(JSON.stringify({ error: 'Token de autenticação inválido.' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-      user = userData.user;
-    }
-
-    if (!isCron && !user) {
-      console.error("[Testar Template] ERRO: Acesso não autorizado (sem CRON ou usuário válido).");
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(authHeader?.replace('Bearer ', ''));
+    if (userError || !user) {
+      console.error("[Testar Template] ERRO de autenticação:", userError?.message);
       return new Response(JSON.stringify({ error: 'Acesso não autorizado.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    console.log("[Testar Template] INFO: Autorização OK.");
+    console.log(`[Testar Template] INFO: Autorização OK para usuário ${user.email}.`);
 
     // 2. Obter parâmetros do corpo da requisição
     const { cobranca_id, template_name, phone_number } = await req.json();
@@ -51,10 +39,10 @@ serve(async (req) => {
       throw new Error('`cobranca_id` e `template_name` são obrigatórios.');
     }
     
-    const targetPhone = phone_number || '5511981996294';
+    const targetPhone = phone_number || '5511981996294'; // Fallback seguro
     console.log(`[Testar Template] INFO: Parâmetros: cobranca_id=${cobranca_id}, template_name=${template_name}, phone=${targetPhone}`);
 
-    // 3. Buscar dados necessários
+    // 3. Buscar dados reais
     const { data: cobranca, error: cobrancaError } = await supabaseAdmin
       .from('cobrancas')
       .select('*')
@@ -69,13 +57,22 @@ serve(async (req) => {
       .single();
     if (templateError) throw new Error(`Template '${template_name}' não encontrado: ${templateError.message}`);
     
-    // 4. Simular dados do franqueado e unidade
+    const { data: franqueadoData, error: rpcError } = await supabaseAdmin.rpc('get_franchisee_by_unit_code', {
+      codigo_param: String(cobranca.codigo_unidade),
+    });
+    if (rpcError) throw new Error(`Erro ao buscar franqueado/unidade: ${rpcError.message}`);
+    if (!franqueadoData || franqueadoData.length === 0) {
+      throw new Error(`Nenhum franqueado principal encontrado para a unidade ${cobranca.codigo_unidade}`);
+    }
+    const franqueadoUnidadeInfo = franqueadoData[0];
+
+    // 4. Mapear dados
     const unidadeInfo = {
-        codigo_unidade: cobranca.codigo_unidade,
-        nome_padrao: `Unidade ${cobranca.codigo_unidade}`
+        codigo_unidade: franqueadoUnidadeInfo.codigo_unidade,
+        nome_padrao: franqueadoUnidadeInfo.nome_unidade
     };
     const franqueadoInfo = {
-        nome: `Franqueado Teste (Unidade ${cobranca.codigo_unidade})`,
+        nome: franqueadoUnidadeInfo.nome,
     };
 
     // 5. Preencher o template
