@@ -6,7 +6,7 @@ import type { Cobranca } from '../types/cobrancas';
 import type { Franqueado } from '../types/franqueados';
 import type { Unidade } from '../types/unidades';
 import type { UsuarioInterno } from '../types/auth';
-import type { Comunicacao } from '../types/comunicacao'; // Importar tipo
+import type { Comunicacao } from '../types/comunicacao';
 import type { SyncData } from '../services/syncService';
 
 export interface SyncStatus {
@@ -26,7 +26,7 @@ export interface DataCache {
   cobrancas: Cobranca[];
   unidades: Unidade[];
   usuariosInternos: UsuarioInterno[];
-  comunicacoes: Comunicacao[]; // Adicionar comunicacoes ao cache
+  comunicacoes: Comunicacao[];
 }
 
 export interface DataStoreState extends DataCache {
@@ -55,28 +55,6 @@ export interface DataStoreState extends DataCache {
   getFranqueadoById: (id: string) => Franqueado | undefined;
   getFranqueadoByCpf: (cpf: string) => Franqueado | undefined;
   getFranqueadosAtivos: () => Franqueado[];
-  
-  // Estatísticas calculadas localmente
-  getEstatisticasCobrancas: () => {
-    totalCobrancas: number;
-    valorTotalEmAberto: number;
-    valorTotalVencido: number;
-    cobrancasVencidas: number;
-    cobrancasPagas: number;
-  };
-  getEstatisticasUnidades: () => {
-    total: number;
-    operacao: number;
-    implantacao: number;
-    suspenso: number;
-    cancelado: number;
-  };
-  getEstatisticasFranqueados: () => {
-    total: number;
-    ativos: number;
-    inativos: number;
-    principais: number;
-  };
 }
 
 const initialState: DataCache & { sync: SyncStatus } = {
@@ -84,7 +62,7 @@ const initialState: DataCache & { sync: SyncStatus } = {
   cobrancas: [],
   unidades: [],
   usuariosInternos: [],
-  comunicacoes: [], // Inicializar comunicacoes
+  comunicacoes: [],
   sync: {
     isLoading: false,
     lastSyncAt: null,
@@ -125,7 +103,7 @@ export const useDataStore = create<DataStoreState>()(
         set((state) => {
           state.sync.isLoading = true;
           state.sync.error = null;
-          state.sync.progress = { current: 0, total: 5, stage: 'Iniciando...' }; // Aumentar total para 5
+          state.sync.progress = { current: 0, total: 5, stage: 'Iniciando...' };
         });
 
         try {
@@ -137,7 +115,7 @@ export const useDataStore = create<DataStoreState>()(
               state.cobrancas = result.data!.cobrancas;
               state.unidades = result.data!.unidades;
               state.usuariosInternos = result.data!.usuariosInternos;
-              state.comunicacoes = result.data!.comunicacoes; // Salvar comunicacoes
+              state.comunicacoes = result.data!.comunicacoes;
               
               state.sync.isLoading = false;
               state.sync.hasInitialLoad = true;
@@ -187,7 +165,7 @@ export const useDataStore = create<DataStoreState>()(
           state.cobrancas = [];
           state.unidades = [];
           state.usuariosInternos = [];
-          state.comunicacoes = []; // Limpar comunicacoes
+          state.comunicacoes = [];
           state.sync.hasInitialLoad = false;
           state.sync.lastSyncAt = null;
           state.sync.error = null;
@@ -199,7 +177,7 @@ export const useDataStore = create<DataStoreState>()(
       mergeUpdates: (updates) => {
         set(state => {
           const merge = <T extends { id: string }>(current: T[], updated: T[] | undefined) => {
-            if (!updated || updated.length === 0) return current; // Retorna o array atual se não houver updates
+            if (!updated || updated.length === 0) return current;
             const map = new Map(current.map(item => [item.id, item]));
             updated.forEach(item => map.set(item.id, item));
             return Array.from(map.values());
@@ -209,7 +187,7 @@ export const useDataStore = create<DataStoreState>()(
           state.unidades = merge(state.unidades, updates.unidades);
           state.cobrancas = merge(state.cobrancas, updates.cobrancas);
           state.usuariosInternos = merge(state.usuariosInternos, updates.usuariosInternos);
-          state.comunicacoes = merge(state.comunicacoes, updates.comunicacoes); // Merge comunicacoes
+          state.comunicacoes = merge(state.comunicacoes, updates.comunicacoes);
         });
       },
 
@@ -240,9 +218,9 @@ export const useDataStore = create<DataStoreState>()(
         set(state => {
           const index = state.unidades.findIndex(u => u.id === unidade.id);
           if (index !== -1) {
-            state.unidades[index] = unidade; // Atualiza
+            state.unidades[index] = unidade;
           } else {
-            state.unidades.push(unidade); // Adiciona
+            state.unidades.push(unidade);
           }
         });
       },
@@ -251,9 +229,9 @@ export const useDataStore = create<DataStoreState>()(
         set(state => {
           const index = state.franqueados.findIndex(f => f.id === franqueado.id);
           if (index !== -1) {
-            state.franqueados[index] = franqueado; // Atualiza
+            state.franqueados[index] = franqueado;
           } else {
-            state.franqueados.push(franqueado); // Adiciona
+            state.franqueados.push(franqueado);
           }
         });
       },
@@ -264,9 +242,7 @@ export const useDataStore = create<DataStoreState>()(
       },
 
       getCobrancasByFranqueado: (_franqueadoId: string) => {
-        // TODO: Implementar quando tivermos a relação franqueado-unidade no banco matriz
         return get().cobrancas.filter((_c) => {
-          // Placeholder - será implementado quando integrarmos com banco matriz
           return false;
         });
       },
@@ -291,70 +267,18 @@ export const useDataStore = create<DataStoreState>()(
       getFranqueadosAtivos: () => {
         return get().franqueados.filter(f => f.status === 'ativo');
       },
-
-      // Estatísticas calculadas localmente
-      getEstatisticasCobrancas: () => {
-        const { cobrancas } = get();
-        const dataAtual = new Date();
-
-        const estatisticas = {
-          totalCobrancas: cobrancas.length,
-          valorTotalEmAberto: 0,
-          valorTotalVencido: 0,
-          cobrancasVencidas: 0,
-          cobrancasPagas: 0,
-        };
-
-        cobrancas.forEach(cobranca => {
-          const dataVencimento = new Date(cobranca.vencimento);
-          const isVencida = dataVencimento < dataAtual;
-
-          if (cobranca.status === 'pago') {
-            estatisticas.cobrancasPagas++;
-          } else {
-            estatisticas.valorTotalEmAberto += Number(cobranca.valor_atualizado || 0);
-            
-            if (isVencida) {
-              estatisticas.cobrancasVencidas++;
-              estatisticas.valorTotalVencido += Number(cobranca.valor_atualizado || 0);
-            }
-          }
-        });
-
-        return estatisticas;
-      },
-      getEstatisticasUnidades: () => {
-        const { unidades } = get();
-        return {
-          total: unidades.length,
-          operacao: unidades.filter(u => u.status === 'OPERAÇÃO').length,
-          implantacao: unidades.filter(u => u.status === 'IMPLANTAÇÃO').length,
-          suspenso: unidades.filter(u => u.status === 'SUSPENSO').length,
-          cancelado: unidades.filter(u => u.status === 'CANCELADO').length,
-        };
-      },
-      getEstatisticasFranqueados: () => {
-        const { franqueados } = get();
-        return {
-          total: franqueados.length,
-          ativos: franqueados.filter(f => f.status === 'ativo').length,
-          inativos: franqueados.filter(f => f.status === 'inativo').length,
-          principais: franqueados.filter(f => f.tipo === 'principal').length,
-        };
-      },
     })),
     {
       name: 'data-store',
       partialize: (state: DataStoreState) => ({
-        // Persistir apenas os dados, não os estados de sync
         franqueados: state.franqueados,
         cobrancas: state.cobrancas,
         unidades: state.unidades,
         usuariosInternos: state.usuariosInternos,
-        comunicacoes: state.comunicacoes, // Persistir comunicacoes
+        comunicacoes: state.comunicacoes,
         sync: {
           ...state.sync,
-          isLoading: false, // Sempre iniciar com loading false
+          isLoading: false,
           progress: null,
         }
       }),
