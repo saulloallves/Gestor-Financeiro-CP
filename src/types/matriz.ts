@@ -120,5 +120,4 @@ export interface UnidadeMapeada {
   endereco_cep?: string;
   created_at: string;
   updated_at: string;
-  multifranqueado: boolean;
 }

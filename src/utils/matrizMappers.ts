@@ -112,8 +112,6 @@ export function mapearUnidadeMatriz(unidade: UnidadeMatriz): UnidadeMapeada {
     endereco_cep: unidade.postal_code,
     created_at: unidade.created_at,
     updated_at: unidade.updated_at,
-    // Campos com valores default para garantir a integridade
-    multifranqueado: false, 
   };
 }
 
