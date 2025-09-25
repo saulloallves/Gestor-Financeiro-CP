@@ -57,8 +57,8 @@ serve(async (req) => {
     const franqueadoInfo = {
         id: '00000000-0000-0000-0000-000000000000',
         nome: `Franqueado da Unidade ${cobranca.codigo_unidade}`,
-        telefone: '5511999999999', // NÚMERO DE TESTE - SUBSTITUA SE NECESSÁRIO
-        whatsapp: '5511999999999' // NÚMERO DE TESTE - SUBSTITUA SE NECESSÁRIO
+        telefone: '11981996294', // NÚMERO DE TESTE
+        whatsapp: '11981996294' // NÚMERO DE TESTE
     };
     console.log("[Agente] DEBUG: Usando dados simulados para franqueado/unidade:", { unidadeInfo, franqueadoInfo });
 
