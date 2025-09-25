@@ -29,7 +29,7 @@ import {
   Database,
   TestTube,
   MessageSquare,
-  FileText, // Ícone para templates
+  FileText,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -95,6 +95,20 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    id: "comunicacoes",
+    title: "Comunicações",
+    icon: MessageSquare,
+    path: "/comunicacoes",
+    children: [
+      {
+        id: "templates",
+        title: "Templates de Mensagem",
+        icon: FileText,
+        path: "/templates",
+      },
+    ],
+  },
+  {
     id: "ia",
     title: "Inteligência Artificial",
     icon: BrainCircuit,
@@ -111,12 +125,6 @@ const menuItems: MenuItem[] = [
         title: "Base de Conhecimento",
         icon: Database,
         path: "/base-conhecimento",
-      },
-      {
-        id: "templates", // Novo item
-        title: "Templates de Mensagem",
-        icon: FileText,
-        path: "/templates",
       },
       {
         id: "configuracoes-ia",
