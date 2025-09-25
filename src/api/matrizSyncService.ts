@@ -8,6 +8,7 @@ const BATCH_SIZE = 500; // Processar em lotes para não sobrecarregar
 export interface SyncStats {
   unidades: { total: number; synced: number };
   franqueados: { total: number; synced: number };
+  franqueadosUnidades: { total: number; synced: number };
 }
 
 class MatrizSyncService {
@@ -42,6 +43,7 @@ class MatrizSyncService {
     const stats: SyncStats = {
       unidades: { total: 0, synced: 0 },
       franqueados: { total: 0, synced: 0 },
+      franqueadosUnidades: { total: 0, synced: 0 },
     };
 
     try {
@@ -77,6 +79,21 @@ class MatrizSyncService {
 
       if (franqueadosError) throw new Error(`Erro ao sincronizar franqueados: ${franqueadosError.message}`);
       stats.franqueados.synced = franqueadosMapeados.length;
+      onProgress(stats, 'Franqueados sincronizados com sucesso!');
+
+      // 3. Sincronizar Vínculos (Franqueados <-> Unidades)
+      onProgress(stats, 'Buscando vínculos da matriz...');
+      const vinculosMatriz = await this.fetchAllMatrizData('franqueados_unidades');
+      stats.franqueadosUnidades.total = vinculosMatriz.length;
+      onProgress(stats, `Encontrados ${stats.franqueadosUnidades.total} vínculos. Sincronizando...`);
+
+      // O upsert usa o par (franqueado_id, unidade_id) para evitar duplicatas
+      const { error: vinculosError } = await supabase
+        .from('franqueados_unidades')
+        .upsert(vinculosMatriz, { onConflict: 'franqueado_id,unidade_id' });
+
+      if (vinculosError) throw new Error(`Erro ao sincronizar vínculos: ${vinculosError.message}`);
+      stats.franqueadosUnidades.synced = vinculosMatriz.length;
       onProgress(stats, 'Sincronização concluída!');
 
       return stats;
