@@ -73,15 +73,6 @@ export function DashboardPage() {
     },
   ];
 
-  // Mapear ícones string para componentes
-  const iconMap = {
-    DollarSign,
-    TrendingUp,
-    Users,
-    Clock,
-    Building,
-  } as const;
-
   return (
     <Box sx={{ padding: theme.spacing(3) }}>
       {/* Header do Dashboard */}
@@ -134,7 +125,7 @@ export function DashboardPage() {
         }}
       >
         {cardData.map((card, index) => {
-          const IconComponent = iconMap[card.icon as keyof typeof iconMap];
+          const IconComponent = card.icon;
           return (
             <Card
               key={index}
