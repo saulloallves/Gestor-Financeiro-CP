@@ -30,6 +30,7 @@ import {
   TestTube,
   MessageSquare,
   FileText,
+  History, // Novo ícone
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -105,6 +106,12 @@ const menuItems: MenuItem[] = [
         title: "Templates de Mensagem",
         icon: FileText,
         path: "/templates",
+      },
+      {
+        id: "log",
+        title: "Histórico de Envios",
+        icon: History,
+        path: "/comunicacoes/log",
       },
     ],
   },

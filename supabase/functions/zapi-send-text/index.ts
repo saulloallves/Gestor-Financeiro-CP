@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 serve(async (req: Request): Promise<Response> => {
   const corsHeaders = {
@@ -13,22 +14,9 @@ serve(async (req: Request): Promise<Response> => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-      headers: corsHeaders,
-    });
-  }
-
   try {
-    const contentType = req.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      return new Response(JSON.stringify({ error: "Invalid content type" }), { status: 415, headers: corsHeaders });
-    }
-
     const body = await req.json();
-    const phone = String(body?.phone || "").trim();
-    const message = String(body?.message || "").trim();
+    const { phone, message, logData } = body;
 
     if (!phone || !message) {
       return new Response(JSON.stringify({ error: "Missing phone or message" }), { status: 400, headers: corsHeaders });
@@ -40,14 +28,7 @@ serve(async (req: Request): Promise<Response> => {
     const baseUrl = Deno.env.get("ZAPI_BASE_URL") || "https://api.z-api.io";
 
     if (!instanceId || !instanceToken || !clientToken) {
-      return new Response(
-        JSON.stringify({ error: "Z-API credentials not configured", missing: {
-          ZAPI_INSTANCE_ID: !instanceId,
-          ZAPI_INSTANCE_TOKEN: !instanceToken,
-          ZAPI_CLIENT_TOKEN: !clientToken,
-        }}),
-        { status: 500, headers: corsHeaders }
-      );
+      return new Response(JSON.stringify({ error: "Z-API credentials not configured" }), { status: 500, headers: corsHeaders });
     }
 
     const url = `${baseUrl}/instances/${encodeURIComponent(instanceId)}/token/${encodeURIComponent(instanceToken)}/send-text`;
@@ -62,6 +43,28 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!zapiRes.ok) {
       return new Response(JSON.stringify({ error: "Z-API error", status: zapiRes.status, data: zapiData }), { status: 502, headers: corsHeaders });
+    }
+
+    // **NOVO: Log de auditoria no sucesso**
+    if (logData) {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+
+      const logEntry = {
+        ...logData,
+        canal: 'whatsapp',
+        conteudo: message,
+        status: 'enviado',
+        external_id: zapiData?.id,
+      };
+
+      const { error: logError } = await supabaseAdmin.from('comunicacoes').insert(logEntry);
+      if (logError) {
+        console.error('Falha ao registrar log de comunicação:', logError);
+        // Não falha a requisição principal, apenas loga o erro
+      }
     }
 
     return new Response(JSON.stringify({ success: true, data: zapiData }), { status: 200, headers: corsHeaders });

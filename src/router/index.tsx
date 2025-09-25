@@ -11,7 +11,8 @@ import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
 import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
 import { TesteCacheFirstPage } from "../pages/TesteCacheFirstPage";
 import { ChatIAPage } from "../pages/ChatIAPage";
-import { TemplatesPage } from "../pages/TemplatesPage"; // Importa a nova página
+import { TemplatesPage } from "../pages/TemplatesPage";
+import { ComunicacoesLogPage } from "../pages/ComunicacoesLogPage"; // Importa a nova página
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -112,10 +113,18 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "templates", // Nova rota
+        path: "templates",
         element: (
           <ProtectedRoute requiredType="interno">
             <TemplatesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "comunicacoes/log", // Nova rota
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <ComunicacoesLogPage />
           </ProtectedRoute>
         ),
       },
