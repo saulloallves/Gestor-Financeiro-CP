@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Card, TextField, MenuItem, Chip } from '@mui/material';
+import { Box, Typography, Card, TextField, MenuItem, Chip, Paper } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { useComunicacoes } from '../hooks/useComunicacoes';
 import { format } from 'date-fns';
