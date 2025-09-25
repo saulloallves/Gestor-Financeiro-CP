@@ -28,7 +28,8 @@ import {
   Settings,
   Database,
   TestTube,
-  MessageSquare, // Ícone para o chat
+  MessageSquare,
+  FileText, // Ícone para templates
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -110,6 +111,12 @@ const menuItems: MenuItem[] = [
         title: "Base de Conhecimento",
         icon: Database,
         path: "/base-conhecimento",
+      },
+      {
+        id: "templates", // Novo item
+        title: "Templates de Mensagem",
+        icon: FileText,
+        path: "/templates",
       },
       {
         id: "configuracoes-ia",

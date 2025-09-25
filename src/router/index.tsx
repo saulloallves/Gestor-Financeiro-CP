@@ -10,7 +10,8 @@ import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
 import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
 import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
 import { TesteCacheFirstPage } from "../pages/TesteCacheFirstPage";
-import { ChatIAPage } from "../pages/ChatIAPage"; // Importa a nova página
+import { ChatIAPage } from "../pages/ChatIAPage";
+import { TemplatesPage } from "../pages/TemplatesPage"; // Importa a nova página
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -103,10 +104,18 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "chat-ia", // Nova rota
+        path: "chat-ia",
         element: (
           <ProtectedRoute requiredType="interno">
             <ChatIAPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "templates", // Nova rota
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <TemplatesPage />
           </ProtectedRoute>
         ),
       },
