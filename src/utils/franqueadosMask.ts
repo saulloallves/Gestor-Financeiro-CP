@@ -4,7 +4,6 @@
  */
 
 import type {
-  StatusFranqueado,
   TipoFranqueado,
   DisponibilidadeFranqueado,
 } from "../types/franqueados";
@@ -44,33 +43,17 @@ export function getTipoFranqueadoColor(tipo: TipoFranqueado) {
 }
 
 /**
- * Mapeia os status do franqueado para labels amigáveis
+ * Converte um status booleano do franqueado para o label amigável
  */
-export const STATUS_FRANQUEADO_LABELS: Record<StatusFranqueado, string> = {
-  ativo: "Ativo",
-  inativo: "Inativo",
-} as const;
-
-/**
- * Converte um status do franqueado para o label amigável
- */
-export function getStatusFranqueadoLabel(status: StatusFranqueado): string {
-  return STATUS_FRANQUEADO_LABELS[status] || status;
+export function getStatusFranqueadoLabel(isActive: boolean): string {
+  return isActive ? "Ativo" : "Inativo";
 }
-
-/**
- * Mapeia cores para cada status de franqueado
- */
-export const STATUS_FRANQUEADO_COLORS = {
-  ativo: "success",
-  inativo: "error",
-} as const;
 
 /**
  * Obtém a cor apropriada para um status de franqueado
  */
-export function getStatusFranqueadoColor(status: StatusFranqueado) {
-  return STATUS_FRANQUEADO_COLORS[status] || "default";
+export function getStatusFranqueadoColor(isActive: boolean) {
+  return isActive ? "success" : "error";
 }
 
 /**

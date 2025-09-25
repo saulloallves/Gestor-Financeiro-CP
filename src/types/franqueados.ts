@@ -6,7 +6,6 @@ export type TipoFranqueado =
   | "familiar"
   | "investidor"
   | "parceiro";
-export type StatusFranqueado = "ativo" | "inativo";
 export type DisponibilidadeFranqueado = "integral" | "parcial" | "eventos";
 
 export interface Franqueado {
@@ -47,7 +46,7 @@ export interface Franqueado {
   empreendedor_previo: boolean;
 
   // Status e Metadados
-  status: StatusFranqueado;
+  is_active_system: boolean; // Alterado de 'status' para 'is_active_system'
   user_id?: string; // Referência ao auth.users para login
   asaas_customer_id?: string; // ID do cliente no sistema ASAAS
   created_at: string;
@@ -101,7 +100,7 @@ export interface CreateFranqueadoData {
   empreendedor_previo?: boolean;
 
   // Status
-  status?: StatusFranqueado;
+  is_active_system?: boolean; // Alterado de 'status'
 
   // Vínculos com unidades
   unidades_vinculadas?: string[]; // Array de IDs de unidades
@@ -114,7 +113,7 @@ export interface UpdateFranqueadoData extends Partial<CreateFranqueadoData> {
 
 // Tipo para filtros na listagem
 export interface FranqueadoFilter {
-  status?: StatusFranqueado[];
+  is_active_system?: boolean; // Alterado de 'status'
   tipo?: TipoFranqueado[];
   cidade?: string;
   estado?: string;
@@ -197,7 +196,7 @@ export interface FranqueadoCardProps {
   onView?: (franqueado: Franqueado) => void;
   onStatusChange?: (
     franqueado: Franqueado,
-    newStatus: StatusFranqueado
+    newStatus: boolean
   ) => void;
   showActions?: boolean;
 }
@@ -216,7 +215,7 @@ export interface UnidadeParaVinculo {
 export interface FranqueadoRelatório {
   total_franqueados: number;
   por_tipo: Record<TipoFranqueado, number>;
-  por_status: Record<StatusFranqueado, number>;
+  por_status: Record<'ativo' | 'inativo', number>; // Mantido para compatibilidade de relatório
   por_estado: { estado: string; count: number }[];
   com_prolabore: number;
   empreendedores_previos: number;

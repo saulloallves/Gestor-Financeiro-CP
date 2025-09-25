@@ -28,8 +28,8 @@ class FranqueadosService {
       if (filters.nome) {
         query = query.or(`nome.ilike.%${filters.nome}%,cpf.ilike.%${filters.nome}%,email.ilike.%${filters.nome}%`);
       }
-      if (filters.status && filters.status.length > 0) {
-        query = query.in('status', filters.status);
+      if (typeof filters.is_active_system === 'boolean') {
+        query = query.eq('is_active_system', filters.is_active_system);
       }
       if (filters.tipo && filters.tipo.length > 0) {
         query = query.in('tipo', filters.tipo);
@@ -74,7 +74,7 @@ class FranqueadosService {
   }> {
     const { data, error } = await supabase
       .from('franqueados')
-      .select('status, tipo', { count: 'exact' });
+      .select('is_active_system, tipo', { count: 'exact' });
 
     if (error) {
       throw new Error(`Erro ao buscar estatísticas: ${error.message}`);
@@ -82,8 +82,8 @@ class FranqueadosService {
 
     const stats = {
       total: data.length,
-      ativos: data.filter(f => f.status === 'ativo').length,
-      inativos: data.filter(f => f.status === 'inativo').length,
+      ativos: data.filter(f => f.is_active_system).length,
+      inativos: data.filter(f => !f.is_active_system).length,
       principais: data.filter(f => f.tipo === 'principal').length,
     };
 

@@ -46,7 +46,6 @@ import {
   formatarUnidadesVinculadas,
 } from "../utils/franqueadosMask";
 import type {
-  StatusFranqueado,
   TipoFranqueado,
   FranqueadoFilter,
 } from "../types/franqueados";
@@ -61,7 +60,7 @@ export function FranqueadosPage() {
 
   // Local state for filter inputs
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFranqueado | "">("");
+  const [statusFilter, setStatusFilter] = useState<"" | "true" | "false">("");
   const [tipoFilter, setTipoFilter] = useState<TipoFranqueado | "">("");
 
   const {
@@ -84,7 +83,7 @@ export function FranqueadosPage() {
   const handleSearch = () => {
     setFilters({
       nome: searchTerm || undefined,
-      status: statusFilter ? [statusFilter] : undefined,
+      is_active_system: statusFilter ? statusFilter === 'true' : undefined,
       tipo: tipoFilter ? [tipoFilter] : undefined,
     });
   };
@@ -158,16 +157,16 @@ export function FranqueadosPage() {
       },
     },
     {
-      field: "status",
+      field: "is_active_system",
       headerName: "Status",
       flex: 0.8,
       minWidth: 100,
       renderCell: (params) => {
-        const status = params.value as StatusFranqueado;
+        const isActive = params.value as boolean;
         return (
           <Chip
-            label={getStatusFranqueadoLabel(status)}
-            color={getStatusFranqueadoColor(status)}
+            label={getStatusFranqueadoLabel(isActive)}
+            color={getStatusFranqueadoColor(isActive)}
             size="small"
             variant="outlined"
           />
@@ -431,7 +430,7 @@ export function FranqueadosPage() {
               label="Status"
               value={statusFilter}
               onChange={(e) =>
-                setStatusFilter(e.target.value as StatusFranqueado | "")
+                setStatusFilter(e.target.value as "" | "true" | "false")
               }
               size="small"
               sx={{
@@ -442,8 +441,8 @@ export function FranqueadosPage() {
               }}
             >
               <MenuItem value="">Todos os status</MenuItem>
-              <MenuItem value="ativo">Ativo</MenuItem>
-              <MenuItem value="inativo">Inativo</MenuItem>
+              <MenuItem value="true">Ativo</MenuItem>
+              <MenuItem value="false">Inativo</MenuItem>
             </TextField>
 
             <TextField
