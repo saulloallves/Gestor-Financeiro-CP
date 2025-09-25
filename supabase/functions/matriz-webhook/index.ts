@@ -2,10 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // =================================================================
-// TIPOS E FUNÇÕES DE MAPEAMENTO (COPIADOS DE src/utils/matrizMappers.ts)
+// TIPOS E FUNÇÕES DE MAPEAMENTO
 // =================================================================
 
-// --- Tipos ---
 interface UnidadeMatriz {
   id: string;
   group_name: string;
@@ -39,7 +38,14 @@ interface FranqueadoMatriz {
   updated_at: string;
 }
 
-// --- Funções de Mapeamento ---
+interface FranqueadoUnidadeMatriz {
+  franqueado_id: string;
+  unidade_id: string;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 function mapearStatusUnidade(storePhase: string): string {
   const phase = storePhase.toLowerCase();
   if (['operacao', 'operação', 'ativo'].includes(phase)) return 'OPERAÇÃO';
@@ -93,6 +99,7 @@ serve(async (req) => {
 
     let rpcName = '';
     let rpcParams = {};
+    let entityId = record.id;
 
     if (table === 'unidades') {
       const unidadeMatriz = record as UnidadeMatriz;
@@ -132,6 +139,18 @@ serve(async (req) => {
         p_updated_at: franqueadoMatriz.updated_at,
         p_raw_payload: record,
       };
+    } else if (table === 'franqueados_unidades') {
+      const vinculoMatriz = record as FranqueadoUnidadeMatriz;
+      rpcName = 'upsert_franqueado_unidade_from_matriz';
+      rpcParams = {
+        p_franqueado_id: vinculoMatriz.franqueado_id,
+        p_unidade_id: vinculoMatriz.unidade_id,
+        p_ativo: vinculoMatriz.ativo,
+        p_created_at: vinculoMatriz.created_at,
+        p_updated_at: vinculoMatriz.updated_at,
+        p_raw_payload: record,
+      };
+      entityId = `${vinculoMatriz.franqueado_id}_${vinculoMatriz.unidade_id}`;
     } else {
       throw new Error(`Tabela '${table}' não suportada para sincronização.`);
     }
@@ -150,12 +169,12 @@ serve(async (req) => {
       event: 'db-change',
       payload: {
         table: table,
-        id: record.id,
+        id: entityId,
         updated_at: record.updated_at,
       },
     });
 
-    return new Response(JSON.stringify({ success: true, message: `Registro ${record.id} da tabela ${table} sincronizado.` }), {
+    return new Response(JSON.stringify({ success: true, message: `Registro ${entityId} da tabela ${table} sincronizado.` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

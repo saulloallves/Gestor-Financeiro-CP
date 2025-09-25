@@ -3,12 +3,12 @@ import { cobrancasService } from '../api/cobrancasService';
 import { franqueadosService } from '../api/franqueadosService';
 import { unidadesService } from '../api/unidadesService';
 import { UsuariosInternosService } from '../api/usuariosInternosService';
-import { comunicacoesService } from '../api/comunicacoesService'; // Importar serviço
+import { comunicacoesService } from '../api/comunicacoesService';
 import type { Cobranca } from '../types/cobrancas';
-import type { Franqueado } from '../types/franqueados';
+import type { Franqueado, FranqueadoUnidade } from '../types/franqueados';
 import type { Unidade } from '../types/unidades';
 import type { UsuarioInterno } from '../types/auth';
-import type { Comunicacao } from '../types/comunicacao'; // Importar tipo
+import type { Comunicacao } from '../types/comunicacao';
 
 export interface SyncProgress {
   current: number;
@@ -21,7 +21,8 @@ export interface SyncData {
   cobrancas: Cobranca[];
   unidades: Unidade[];
   usuariosInternos: UsuarioInterno[];
-  comunicacoes: Comunicacao[]; // Adicionar comunicacoes
+  comunicacoes: Comunicacao[];
+  franqueadosUnidades: FranqueadoUnidade[];
 }
 
 export interface SyncResult {
@@ -33,7 +34,8 @@ export interface SyncResult {
     cobrancas: number;
     unidades: number;
     usuariosInternos: number;
-    comunicacoes: number; // Adicionar estatística
+    comunicacoes: number;
+    franqueadosUnidades: number;
     syncTime: number;
   };
 }
@@ -47,7 +49,8 @@ export interface IncrementalSyncResult {
     cobrancas: number;
     unidades: number;
     usuariosInternos: number;
-    comunicacoes: number; // Adicionar estatística
+    comunicacoes: number;
+    franqueadosUnidades: number;
     syncTime: number;
   };
 }
@@ -67,33 +70,31 @@ class SyncService {
 
   async syncAllData(): Promise<SyncResult> {
     const startTime = Date.now();
+    const totalSteps = 6;
     
     try {
-      this.updateProgress(0, 5, 'Preparando sincronização...');
+      this.updateProgress(0, totalSteps, 'Preparando sincronização...');
 
-      // Fase 1: Sincronizar dados do banco matriz (franqueados)
-      this.updateProgress(1, 5, 'Sincronizando franqueados...');
+      this.updateProgress(1, totalSteps, 'Sincronizando franqueados...');
       const franqueados = await this.syncFranqueados();
 
-      // Fase 2: Sincronizar dados do banco matriz (unidades)
-      this.updateProgress(2, 5, 'Sincronizando unidades...');
+      this.updateProgress(2, totalSteps, 'Sincronizando unidades...');
       const unidades = await this.syncUnidades();
 
-      // Fase 3: Sincronizar dados locais (cobranças)
-      this.updateProgress(3, 5, 'Sincronizando cobranças...');
+      this.updateProgress(3, totalSteps, 'Sincronizando vínculos...');
+      const franqueadosUnidades = await this.syncFranqueadosUnidades();
+
+      this.updateProgress(4, totalSteps, 'Sincronizando cobranças...');
       const cobrancas = await this.syncCobrancas();
 
-      // Fase 4: Sincronizar usuários internos
-      this.updateProgress(4, 5, 'Sincronizando usuários...');
+      this.updateProgress(5, totalSteps, 'Sincronizando usuários...');
       const usuariosInternos = await this.syncUsuariosInternos();
 
-      // Fase 5: Sincronizar logs de comunicação
-      this.updateProgress(5, 5, 'Sincronizando comunicações...');
+      this.updateProgress(6, totalSteps, 'Sincronizando comunicações...');
       const comunicacoes = await this.syncComunicacoes();
 
       const syncTime = Date.now() - startTime;
-
-      this.updateProgress(5, 5, 'Sincronização concluída!');
+      this.updateProgress(totalSteps, totalSteps, 'Sincronização concluída!');
 
       return {
         success: true,
@@ -103,6 +104,7 @@ class SyncService {
           unidades,
           usuariosInternos,
           comunicacoes,
+          franqueadosUnidades,
         },
         stats: {
           franqueados: franqueados.length,
@@ -110,12 +112,12 @@ class SyncService {
           unidades: unidades.length,
           usuariosInternos: usuariosInternos.length,
           comunicacoes: comunicacoes.length,
+          franqueadosUnidades: franqueadosUnidades.length,
           syncTime,
         },
       };
     } catch (error) {
       console.error('Erro na sincronização:', error);
-      
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido na sincronização',
@@ -125,53 +127,17 @@ class SyncService {
 
   private async syncFranqueados(): Promise<Franqueado[]> {
     try {
-      console.log('Sincronizando franqueados do banco matriz...');
-      
-      // Buscar todos os franqueados do banco matriz com limite alto para não paginar
-      const response = await franqueadosService.getFranqueados({}, 
-        { field: "nome", direction: "asc" },
-        { page: 1, limit: 1000 }
-      );
-      
-      console.log('📊 Resposta do franqueadosService:', {
-        dataLength: response.data?.length || 0,
-        hasData: !!response.data
-      });
-      
+      const response = await franqueadosService.getFranqueados({}, { field: "nome", direction: "asc" }, { page: 1, limit: 2000 });
       return response.data || [];
     } catch (error) {
       console.error('❌ Erro ao sincronizar franqueados:', error);
-      
-      // Em caso de erro, tentar buscar do banco local
-      try {
-        const { data: localFranqueados } = await supabase
-          .from('franqueados')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        return localFranqueados || [];
-      } catch (localError) {
-        console.error('Erro ao buscar franqueados locais:', localError);
-        return [];
-      }
+      return [];
     }
   }
 
   private async syncUnidades(): Promise<Unidade[]> {
     try {
-      console.log('Sincronizando unidades do banco matriz...');
-      
-      // Buscar todas as unidades do banco matriz com limite alto para não paginar
-      const response = await unidadesService.getUnidades({}, 
-        { field: "codigo_unidade", direction: "asc" },
-        { page: 1, limit: 1000 }
-      );
-      
-      console.log('📊 Resposta do unidadesService:', {
-        dataLength: response.data?.length || 0,
-        hasData: !!response.data
-      });
-      
+      const response = await unidadesService.getUnidades({}, { field: "codigo_unidade", direction: "asc" }, { page: 1, limit: 2000 });
       return response.data || [];
     } catch (error) {
       console.error('❌ Erro ao sincronizar unidades:', error);
@@ -179,10 +145,20 @@ class SyncService {
     }
   }
 
+  private async syncFranqueadosUnidades(): Promise<FranqueadoUnidade[]> {
+    try {
+      const { data, error } = await supabase.from('franqueados_unidades').select('*');
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar vínculos:', error);
+      return [];
+    }
+  }
+
   private async syncCobrancas(): Promise<Cobranca[]> {
     try {
-      const cobrancas = await cobrancasService.listarCobrancas();
-      return cobrancas || [];
+      return await cobrancasService.listarCobrancas() || [];
     } catch (error) {
       console.error('Erro ao sincronizar cobranças:', error);
       return [];
@@ -191,8 +167,7 @@ class SyncService {
 
   private async syncUsuariosInternos(): Promise<UsuarioInterno[]> {
     try {
-      const usuarios = await UsuariosInternosService.buscarUsuarios();
-      return usuarios || [];
+      return await UsuariosInternosService.buscarUsuarios() || [];
     } catch (error) {
       console.error('Erro ao sincronizar usuários internos:', error);
       return [];
@@ -201,8 +176,7 @@ class SyncService {
 
   private async syncComunicacoes(): Promise<Comunicacao[]> {
     try {
-      const comunicacoes = await comunicacoesService.getLogs();
-      return comunicacoes || [];
+      return await comunicacoesService.getLogs() || [];
     } catch (error) {
       console.error('Erro ao sincronizar comunicações:', error);
       return [];
@@ -211,20 +185,22 @@ class SyncService {
 
   async syncIncremental(lastSyncAt: Date): Promise<IncrementalSyncResult> {
     const startTime = Date.now();
+    const totalSteps = 6;
     
     try {
-      this.updateProgress(0, 5, 'Verificando atualizações...');
+      this.updateProgress(0, totalSteps, 'Verificando atualizações...');
       const lastSyncString = lastSyncAt.toISOString();
 
-      const [franqueados, unidades, cobrancas, usuariosInternos, comunicacoes] = await Promise.all([
+      const [franqueados, unidades, franqueadosUnidades, cobrancas, usuariosInternos, comunicacoes] = await Promise.all([
         franqueadosService.getFranqueados({ updated_at_gte: lastSyncString }, { field: 'updated_at', direction: 'asc' }, { page: 1, limit: 5000 }).then(r => r.data),
         unidadesService.getUnidades({ updated_at_gte: lastSyncString }, { field: 'updated_at', direction: 'asc' }, { page: 1, limit: 5000 }).then(r => r.data),
+        supabase.from('franqueados_unidades').select('*').gte('updated_at', lastSyncString).then(r => r.data),
         cobrancasService.listarCobrancas({ updated_at_gte: lastSyncString }),
         UsuariosInternosService.buscarUsuarios({ updated_at_gte: lastSyncString }),
         comunicacoesService.getLogs({ data_envio_gte: lastSyncString }),
       ]);
 
-      this.updateProgress(5, 5, 'Finalizado!');
+      this.updateProgress(totalSteps, totalSteps, 'Finalizado!');
       const syncTime = Date.now() - startTime;
 
       return {
@@ -232,6 +208,7 @@ class SyncService {
         updates: {
           franqueados,
           unidades,
+          franqueadosUnidades,
           cobrancas,
           usuariosInternos,
           comunicacoes,
@@ -239,6 +216,7 @@ class SyncService {
         stats: {
           franqueados: franqueados.length,
           unidades: unidades.length,
+          franqueadosUnidades: franqueadosUnidades.length,
           cobrancas: cobrancas.length,
           usuariosInternos: usuariosInternos.length,
           comunicacoes: comunicacoes.length,
@@ -250,19 +228,6 @@ class SyncService {
         success: false,
         error: error instanceof Error ? error.message : 'Erro na sincronização incremental',
       };
-    }
-  }
-
-  async testMatrizConnection(): Promise<boolean> {
-    try {
-      // TODO: Implementar teste de conexão com banco matriz
-      console.log('Testando conexão com banco matriz...');
-      
-      // Por enquanto, sempre retorna false pois não temos matriz implementado
-      return false;
-    } catch (error) {
-      console.error('Erro ao testar conexão matriz:', error);
-      return false;
     }
   }
 }
