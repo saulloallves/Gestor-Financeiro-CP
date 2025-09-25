@@ -6,6 +6,7 @@ import type { Cobranca } from '../types/cobrancas';
 import type { Franqueado } from '../types/franqueados';
 import type { Unidade } from '../types/unidades';
 import type { UsuarioInterno } from '../types/auth';
+import type { Comunicacao } from '../types/comunicacao'; // Importar tipo
 import type { SyncData } from '../services/syncService';
 
 export interface SyncStatus {
@@ -25,6 +26,7 @@ export interface DataCache {
   cobrancas: Cobranca[];
   unidades: Unidade[];
   usuariosInternos: UsuarioInterno[];
+  comunicacoes: Comunicacao[]; // Adicionar comunicacoes ao cache
 }
 
 export interface DataStoreState extends DataCache {
@@ -69,6 +71,7 @@ const initialState: DataCache & { sync: SyncStatus } = {
   cobrancas: [],
   unidades: [],
   usuariosInternos: [],
+  comunicacoes: [], // Inicializar comunicacoes
   sync: {
     isLoading: false,
     lastSyncAt: null,
@@ -109,7 +112,7 @@ export const useDataStore = create<DataStoreState>()(
         set((state) => {
           state.sync.isLoading = true;
           state.sync.error = null;
-          state.sync.progress = { current: 0, total: 4, stage: 'Iniciando...' };
+          state.sync.progress = { current: 0, total: 5, stage: 'Iniciando...' }; // Aumentar total para 5
         });
 
         try {
@@ -121,6 +124,7 @@ export const useDataStore = create<DataStoreState>()(
               state.cobrancas = result.data!.cobrancas;
               state.unidades = result.data!.unidades;
               state.usuariosInternos = result.data!.usuariosInternos;
+              state.comunicacoes = result.data!.comunicacoes; // Salvar comunicacoes
               
               state.sync.isLoading = false;
               state.sync.hasInitialLoad = true;
@@ -170,6 +174,7 @@ export const useDataStore = create<DataStoreState>()(
           state.cobrancas = [];
           state.unidades = [];
           state.usuariosInternos = [];
+          state.comunicacoes = []; // Limpar comunicacoes
           state.sync.hasInitialLoad = false;
           state.sync.lastSyncAt = null;
           state.sync.error = null;
@@ -191,6 +196,7 @@ export const useDataStore = create<DataStoreState>()(
           state.unidades = merge(state.unidades, updates.unidades);
           state.cobrancas = merge(state.cobrancas, updates.cobrancas);
           state.usuariosInternos = merge(state.usuariosInternos, updates.usuariosInternos);
+          state.comunicacoes = merge(state.comunicacoes, updates.comunicacoes); // Merge comunicacoes
         });
       },
 
@@ -313,6 +319,7 @@ export const useDataStore = create<DataStoreState>()(
         cobrancas: state.cobrancas,
         unidades: state.unidades,
         usuariosInternos: state.usuariosInternos,
+        comunicacoes: state.comunicacoes, // Persistir comunicacoes
         sync: {
           ...state.sync,
           isLoading: false, // Sempre iniciar com loading false
@@ -329,6 +336,7 @@ export const useDataStore = create<DataStoreState>()(
               franqueados: state?.franqueados?.length || 0,
               cobrancas: state?.cobrancas?.length || 0,
               unidades: state?.unidades?.length || 0,
+              comunicacoes: state?.comunicacoes?.length || 0,
               hasInitialLoad: state?.sync?.hasInitialLoad || false,
               lastSyncAt: state?.sync?.lastSyncAt ? 'Data válida' : 'Nenhuma'
             });
