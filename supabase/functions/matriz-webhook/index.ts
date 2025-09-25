@@ -65,6 +65,7 @@ function mapearTipoFranqueado(ownerType: string): string {
 }
 
 function extrairTelefoneDoContato(contact: string): string {
+  if (!contact) return '';
   const semEmail = contact.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/, '');
   const match = semEmail.match(/[\d()-\s+]+/);
   return match ? match[0].replace(/[^\d+]/g, '') : '';
@@ -126,13 +127,15 @@ serve(async (req) => {
       };
     } else if (table === 'franqueados') {
       const franqueadoMatriz = record as FranqueadoMatriz;
+      const telefone = extrairTelefoneDoContato(franqueadoMatriz.contact);
       rpcName = 'upsert_franqueado_from_matriz';
       rpcParams = {
         p_id: franqueadoMatriz.id,
         p_nome: franqueadoMatriz.full_name,
         p_cpf: franqueadoMatriz.cpf_rnm,
         p_email: franqueadoMatriz.email,
-        p_telefone: extrairTelefoneDoContato(franqueadoMatriz.contact),
+        p_telefone: telefone,
+        p_whatsapp: telefone, // Usando o mesmo número para ambos
         p_tipo: mapearTipoFranqueado(franqueadoMatriz.owner_type),
         p_status: franqueadoMatriz.is_active_system ? 'ativo' : 'inativo',
         p_created_at: franqueadoMatriz.created_at,
