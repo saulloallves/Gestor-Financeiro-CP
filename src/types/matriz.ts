@@ -82,24 +82,6 @@ export interface FranqueadoMapeado {
   status: 'ativo' | 'inativo';
   created_at?: string;
   updated_at?: string;
-  nome_completo?: string;
-  nacionalidade?: string;
-  data_nascimento?: string;
-  endereco_rua?: string;
-  endereco_numero?: string;
-  endereco_complemento?: string;
-  endereco_bairro?: string;
-  endereco_cidade?: string;
-  endereco_estado?: string;
-  endereco_uf?: string;
-  endereco_cep?: string;
-  whatsapp?: string;
-  email_pessoal?: string;
-  prolabore?: number | null;
-  contrato_social: boolean;
-  disponibilidade: 'integral' | 'parcial' | 'eventos';
-  profissao_anterior?: string;
-  empreendedor_previo: boolean;
 }
 
 export interface UnidadeMapeada {

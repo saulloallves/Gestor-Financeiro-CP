@@ -68,25 +68,6 @@ export function mapearFranqueadoMatriz(franqueado: FranqueadoMatriz | VFranquead
     status: franqueado.is_active_system ? 'ativo' : 'inativo',
     created_at: franqueado.created_at,
     updated_at: franqueado.updated_at,
-    // Campos adicionais para compatibilidade
-    nome_completo: franqueado.full_name,
-    nacionalidade: franqueado.nationality,
-    data_nascimento: franqueado.birth_date,
-    endereco_rua: franqueado.address,
-    endereco_numero: franqueado.number_address,
-    endereco_complemento: franqueado.address_complement,
-    endereco_bairro: franqueado.neighborhood,
-    endereco_cidade: franqueado.city,
-    endereco_estado: franqueado.state,
-    endereco_uf: franqueado.uf,
-    endereco_cep: franqueado.postal_code,
-    whatsapp: extrairTelefoneDoContato(franqueado.contact),
-    email_pessoal: franqueado.email || extrairEmailDoContato(franqueado.contact),
-    prolabore: franqueado.prolabore_value,
-    contrato_social: franqueado.is_in_contract || false,
-    disponibilidade: (franqueado.availability?.toLowerCase() as any) || 'integral',
-    profissao_anterior: franqueado.previous_profession,
-    empreendedor_previo: franqueado.was_entrepreneur || false,
   };
 }
 
