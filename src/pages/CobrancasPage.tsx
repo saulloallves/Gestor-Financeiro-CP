@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useCobrancasCacheFirst } from "../hooks/useCobrancasCacheFirst";
-import { useCobrancasEstatisticasCacheFirst } from "../hooks/useCobrancasEstatisticasCacheFirst";
+import { useCobrancasEstatisticas } from "../hooks/useCobrancasEstatisticas";
 import {
   useSyncAsaasPayments,
   useSyncAsaasStatuses,
@@ -122,7 +122,7 @@ export function CobrancasPage() {
   } = useCobrancasCacheFirst();
 
   const { data: estatisticas, isLoading: isLoadingStats } =
-    useCobrancasEstatisticasCacheFirst();
+    useCobrancasEstatisticas();
   const syncPaymentsMutation = useSyncAsaasPayments();
   const syncStatusesMutation = useSyncAsaasStatuses();
   const gerarBoletoMutation = useGerarBoleto();
@@ -325,19 +325,19 @@ export function CobrancasPage() {
     },
     {
       title: "Cobranças Pagas",
-      value: estatisticas?.pagas || 0,
+      value: estatisticas?.cobrancasPagas || 0,
       icon: CheckCircle,
       color: "#11998e",
     },
     {
       title: "Pendentes",
-      value: estatisticas?.emAberto || 0,
+      value: (estatisticas?.totalCobrancas || 0) - (estatisticas?.cobrancasPagas || 0) - (estatisticas?.cobrancasVencidas || 0),
       icon: Clock,
       color: "#ffa726",
     },
     {
       title: "Vencidas",
-      value: estatisticas?.vencidas || 0,
+      value: estatisticas?.cobrancasVencidas || 0,
       icon: AlertTriangle,
       color: "#f44336",
     },

@@ -18,20 +18,60 @@ import {
   AlertTriangle,
   Database,
   Cpu,
+  Building,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
-import { useDashboardCacheFirst } from "../hooks/useDashboardCacheFirst";
+import { useDashboardStats } from "../hooks/useDashboardStats";
 import { useProcessarCobrancas } from "../hooks/useCobrancas";
 
-export function DashboardPageCacheFirst() {
+export function DashboardPage() {
   const theme = useTheme();
   const { usuario } = useAuthStore();
-  const { cardData, alerts, isLoading, isLoadingCache, isLoadingCobrancas } = useDashboardCacheFirst();
+  const { cobrancasStats, franqueadosStats, unidadesStats, isLoading } = useDashboardStats();
   const processarCobrancasMutation = useProcessarCobrancas();
 
   const handleProcessarCobrancas = () => {
     processarCobrancasMutation.mutate();
   };
+
+  const cardData = [
+    {
+      title: "Valor em Aberto",
+      value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cobrancasStats?.valorTotalEmAberto || 0),
+      change: `+${(cobrancasStats?.valorTotalVencido || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} vencido`,
+      icon: DollarSign,
+      color: "primary.main",
+    },
+    {
+      title: "Cobranças Pagas",
+      value: cobrancasStats?.cobrancasPagas || 0,
+      change: `${((cobrancasStats?.cobrancasPagas || 0) / (cobrancasStats?.totalCobrancas || 1) * 100).toFixed(1)}%`,
+      icon: TrendingUp,
+      color: "success.main",
+    },
+    {
+      title: "Franqueados Ativos",
+      value: franqueadosStats?.ativos || 0,
+      change: `${franqueadosStats?.total || 0} total`,
+      icon: Users,
+      color: "secondary.main",
+    },
+    {
+      title: "Unidades em Operação",
+      value: unidadesStats?.operacao || 0,
+      change: `${unidadesStats?.total || 0} total`,
+      icon: Building,
+      color: "info.main",
+    },
+  ];
+
+  const alerts = [
+    {
+      title: `${cobrancasStats?.cobrancasVencidas || 0} Cobranças Vencidas`,
+      description: "Existem cobranças que passaram da data de vencimento e precisam de atenção.",
+      type: "warning",
+    },
+  ];
 
   // Mapear ícones string para componentes
   const iconMap = {
@@ -39,6 +79,7 @@ export function DashboardPageCacheFirst() {
     TrendingUp,
     Users,
     Clock,
+    Building,
   } as const;
 
   return (
@@ -70,7 +111,7 @@ export function DashboardPageCacheFirst() {
           >
             <Database size={16} />
             <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
-              CACHE
+              LIVE
             </Typography>
           </Box>
         </Box>
@@ -124,7 +165,7 @@ export function DashboardPageCacheFirst() {
                           ? "success.light"
                           : card.color === "secondary.main"
                           ? "secondary.light"
-                          : "warning.light",
+                          : "info.light",
                       borderRadius: "50%",
                       width: 48,
                       height: 48,
@@ -142,7 +183,7 @@ export function DashboardPageCacheFirst() {
                           ? theme.palette.success.main
                           : card.color === "secondary.main"
                           ? theme.palette.secondary.main
-                          : theme.palette.warning.main
+                          : theme.palette.info.main
                       }
                     />
                   </Box>
@@ -186,19 +227,14 @@ export function DashboardPageCacheFirst() {
       </Box>
 
       {/* Status de Carregamento */}
-      {(isLoadingCache || isLoadingCobrancas) && (
+      {isLoading && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <CircularProgress size={24} />
               <Box>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Carregando dados...
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {isLoadingCache && "Cache: Carregando unidades e franqueados"}
-                  {isLoadingCache && isLoadingCobrancas && " • "}
-                  {isLoadingCobrancas && "API: Carregando cobranças"}
+                  Carregando estatísticas...
                 </Typography>
               </Box>
             </Box>

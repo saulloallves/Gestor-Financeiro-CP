@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { LoginPage } from "../pages/LoginPage";
-import { DashboardPageCacheFirst } from "../pages/DashboardPageCacheFirst";
+import { DashboardPage } from "../pages/DashboardPage";
 import { UnidadesPage } from "../pages/UnidadesPage";
 import { FranqueadosPage } from "../pages/FranqueadosPage";
 import { EquipesPage } from "../pages/EquipesPage";
@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "dashboard",
-        element: <DashboardPageCacheFirst />,
+        element: <DashboardPage />,
       },
       {
         path: "cobrancas",

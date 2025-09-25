@@ -64,6 +64,19 @@ export interface DataStoreState extends DataCache {
     cobrancasVencidas: number;
     cobrancasPagas: number;
   };
+  getEstatisticasUnidades: () => {
+    total: number;
+    operacao: number;
+    implantacao: number;
+    suspenso: number;
+    cancelado: number;
+  };
+  getEstatisticasFranqueados: () => {
+    total: number;
+    ativos: number;
+    inativos: number;
+    principais: number;
+  };
 }
 
 const initialState: DataCache & { sync: SyncStatus } = {
@@ -309,6 +322,25 @@ export const useDataStore = create<DataStoreState>()(
         });
 
         return estatisticas;
+      },
+      getEstatisticasUnidades: () => {
+        const { unidades } = get();
+        return {
+          total: unidades.length,
+          operacao: unidades.filter(u => u.status === 'OPERAÇÃO').length,
+          implantacao: unidades.filter(u => u.status === 'IMPLANTAÇÃO').length,
+          suspenso: unidades.filter(u => u.status === 'SUSPENSO').length,
+          cancelado: unidades.filter(u => u.status === 'CANCELADO').length,
+        };
+      },
+      getEstatisticasFranqueados: () => {
+        const { franqueados } = get();
+        return {
+          total: franqueados.length,
+          ativos: franqueados.filter(f => f.status === 'ativo').length,
+          inativos: franqueados.filter(f => f.status === 'inativo').length,
+          principais: franqueados.filter(f => f.tipo === 'principal').length,
+        };
       },
     })),
     {
