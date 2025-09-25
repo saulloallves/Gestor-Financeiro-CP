@@ -828,6 +828,12 @@ class CobrancasService {
       throw new Error(`Erro ao cancelar cobrança no ASAAS: ${errorMessage}`);
     }
   }
+
+  async processarCobrancasPendentes() {
+    const { data, error } = await supabase.functions.invoke('agendador-financeiro');
+    if (error) throw new Error(error.message);
+    return data;
+  }
 }
 
 export const cobrancasService = new CobrancasService();

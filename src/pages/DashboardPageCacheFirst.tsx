@@ -17,14 +17,21 @@ import {
   ArrowRight,
   AlertTriangle,
   Database,
+  Cpu,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { useDashboardCacheFirst } from "../hooks/useDashboardCacheFirst";
+import { useProcessarCobrancas } from "../hooks/useCobrancas";
 
 export function DashboardPageCacheFirst() {
   const theme = useTheme();
   const { usuario } = useAuthStore();
   const { cardData, alerts, isLoading, isLoadingCache, isLoadingCobrancas } = useDashboardCacheFirst();
+  const processarCobrancasMutation = useProcessarCobrancas();
+
+  const handleProcessarCobrancas = () => {
+    processarCobrancasMutation.mutate();
+  };
 
   // Mapear ícones string para componentes
   const iconMap = {
@@ -240,17 +247,23 @@ export function DashboardPageCacheFirst() {
               </Box>
             ))}
 
-            <Box sx={{ marginTop: theme.spacing(2) }}>
+            <Box sx={{ marginTop: theme.spacing(2), display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <Button
                 variant="contained"
                 color="primary"
                 startIcon={<ArrowRight size={16} />}
-                sx={{ marginRight: theme.spacing(1) }}
+                href="/cobrancas"
               >
                 Ir para Cobranças
               </Button>
-              <Button variant="outlined" color="primary">
-                Gerar Relatório
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={processarCobrancasMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <Cpu size={16} />}
+                onClick={handleProcessarCobrancas}
+                disabled={processarCobrancasMutation.isPending}
+              >
+                {processarCobrancasMutation.isPending ? 'Processando...' : 'Processar Cobranças com IA'}
               </Button>
             </Box>
           </Box>

@@ -86,3 +86,25 @@ export function useSincronizarStatus() {
     },
   });
 }
+
+// Hook para processar cobranças pendentes com a IA
+export function useProcessarCobrancas() {
+  return useMutation({
+    mutationFn: () => cobrancasService.processarCobrancasPendentes(),
+    onSuccess: (data) => {
+      const { sucessos, falhas } = data;
+      if (falhas > 0) {
+        toast.error(`${falhas} cobranças falharam ao processar.`, { duration: 5000 });
+      }
+      if (sucessos > 0) {
+        toast.success(`${sucessos} cobranças processadas pela IA!`, { duration: 5000 });
+      }
+      if (sucessos === 0 && falhas === 0) {
+        toast.info('Nenhuma cobrança pendente para processar no momento.');
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao processar cobranças: ${error.message}`);
+    },
+  });
+}
