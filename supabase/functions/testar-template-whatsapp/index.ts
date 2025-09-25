@@ -15,12 +15,29 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
   try {
-    // 1. Segurança (reutilizando o CRON_SECRET para simplicidade)
+    // 1. Segurança: Permitir acesso via CRON_SECRET ou para usuários autenticados
     const cronSecret = Deno.env.get('CRON_SECRET');
     const authHeader = req.headers.get('Authorization');
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      console.error("[Testar Template] ERRO: Acesso não autorizado.");
+    const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    
+    let user = null;
+    if (!isCron) {
+      const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(authHeader?.replace('Bearer ', ''));
+      if (userError) {
+        console.error("[Testar Template] ERRO de autenticação:", userError.message);
+        return new Response(JSON.stringify({ error: 'Token de autenticação inválido.' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      user = userData.user;
+    }
+
+    if (!isCron && !user) {
+      console.error("[Testar Template] ERRO: Acesso não autorizado (sem CRON ou usuário válido).");
       return new Response(JSON.stringify({ error: 'Acesso não autorizado.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -34,18 +51,10 @@ serve(async (req) => {
       throw new Error('`cobranca_id` e `template_name` são obrigatórios.');
     }
     
-    const targetPhone = phone_number || '5511981996294'; // Usa o número fornecido ou o seu como padrão
-    console.log(`[Testar Template] INFO: Parâmetros recebidos: cobranca_id=${cobranca_id}, template_name=${template_name}, phone=${targetPhone}`);
+    const targetPhone = phone_number || '5511981996294';
+    console.log(`[Testar Template] INFO: Parâmetros: cobranca_id=${cobranca_id}, template_name=${template_name}, phone=${targetPhone}`);
 
-    // 3. Conexão com Supabase
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-    console.log("[Testar Template] INFO: Cliente Supabase Admin criado.");
-
-    // 4. Buscar dados necessários
-    console.log("[Testar Template] INFO: Buscando dados da cobrança e template...");
+    // 3. Buscar dados necessários
     const { data: cobranca, error: cobrancaError } = await supabaseAdmin
       .from('cobrancas')
       .select('*')
@@ -60,9 +69,7 @@ serve(async (req) => {
       .single();
     if (templateError) throw new Error(`Template '${template_name}' não encontrado: ${templateError.message}`);
     
-    console.log("[Testar Template] INFO: Dados da cobrança e template carregados com sucesso.");
-
-    // 5. Simular dados do franqueado e unidade (como no agente principal)
+    // 4. Simular dados do franqueado e unidade
     const unidadeInfo = {
         codigo_unidade: cobranca.codigo_unidade,
         nome_padrao: `Unidade ${cobranca.codigo_unidade}`
@@ -71,8 +78,7 @@ serve(async (req) => {
         nome: `Franqueado Teste (Unidade ${cobranca.codigo_unidade})`,
     };
 
-    // 6. Preencher o template com as variáveis
-    console.log("[Testar Template] INFO: Preenchendo template...");
+    // 5. Preencher o template
     const message = template.conteudo
       .replace(new RegExp('{{franqueado.nome}}', 'g'), franqueadoInfo.nome)
       .replace(new RegExp('{{unidade.codigo_unidade}}', 'g'), String(unidadeInfo.codigo_unidade))
@@ -80,22 +86,16 @@ serve(async (req) => {
       .replace(new RegExp('{{cobranca.vencimento}}', 'g'), formatDate(cobranca.vencimento))
       .replace(new RegExp('{{cobranca.link_pagamento}}', 'g'), cobranca.link_pagamento || 'https://crescieperdi.com.br');
     
-    console.log("[Testar Template] INFO: Mensagem final a ser enviada:", message);
-
-    // 7. Invocar a função de envio do Z-API
-    console.log(`[Testar Template] INFO: Invocando 'zapi-send-text' para o número ${targetPhone}...`);
+    // 6. Invocar a função de envio do Z-API
     const { data: zapiData, error: zapiError } = await supabaseAdmin.functions.invoke('zapi-send-text', {
       body: { phone: targetPhone, message },
     });
 
     if (zapiError) {
-      console.error("[Testar Template] ERRO ao invocar zapi-send-text:", zapiError);
       throw new Error(`Erro na Z-API: ${zapiError.message}`);
     }
     
-    console.log("[Testar Template] INFO: Resposta da Z-API:", zapiData);
-
-    // 8. Retornar sucesso
+    // 7. Retornar sucesso
     return new Response(JSON.stringify({ 
       success: true, 
       message: "Mensagem de teste enviada com sucesso.",

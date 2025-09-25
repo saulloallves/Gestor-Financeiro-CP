@@ -1,23 +1,35 @@
 import { useState } from 'react';
 import { Box, Typography, Button, Paper, CircularProgress, Chip } from '@mui/material';
-import { PlusCircle, Edit } from 'lucide-react';
+import { PlusCircle, Edit, TestTube } from 'lucide-react';
 import { DataGrid, GridActionsCellItem, type GridColDef } from '@mui/x-data-grid';
 import { useTemplates } from '../hooks/useTemplates';
 import { TemplateForm } from '../components/TemplateForm';
+import { TestTemplateModal } from '../components/TestTemplateModal';
 import type { Template, TemplateFormData } from '../types/comunicacao';
 
 export function TemplatesPage() {
-  const [modalOpen, setModalOpen] = useState(false);
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [testModalOpen, setTestModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const { templates, isLoading, createTemplate, updateTemplate, isCreating, isUpdating } = useTemplates();
 
-  const handleOpenModal = (template?: Template) => {
+  const handleOpenFormModal = (template?: Template) => {
     setSelectedTemplate(template || null);
-    setModalOpen(true);
+    setFormModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
+  const handleCloseFormModal = () => {
+    setFormModalOpen(false);
+    setSelectedTemplate(null);
+  };
+
+  const handleOpenTestModal = (template: Template) => {
+    setSelectedTemplate(template);
+    setTestModalOpen(true);
+  };
+
+  const handleCloseTestModal = () => {
+    setTestModalOpen(false);
     setSelectedTemplate(null);
   };
 
@@ -27,7 +39,7 @@ export function TemplatesPage() {
     } else {
       await createTemplate(data);
     }
-    handleCloseModal();
+    handleCloseFormModal();
   };
 
   const columns: GridColDef[] = [
@@ -38,13 +50,20 @@ export function TemplatesPage() {
       field: 'actions',
       type: 'actions',
       headerName: 'Ações',
-      width: 100,
+      width: 150,
       getActions: (params) => [
         <GridActionsCellItem
           key="edit"
           icon={<Edit size={16} />}
           label="Editar"
-          onClick={() => handleOpenModal(params.row)}
+          onClick={() => handleOpenFormModal(params.row)}
+        />,
+        <GridActionsCellItem
+          key="test"
+          icon={<TestTube size={16} />}
+          label="Testar"
+          onClick={() => handleOpenTestModal(params.row)}
+          disabled={params.row.canal !== 'whatsapp'}
         />,
       ],
     },
@@ -54,7 +73,7 @@ export function TemplatesPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4" component="h1">Gerenciador de Templates</Typography>
-        <Button variant="contained" startIcon={<PlusCircle />} onClick={() => handleOpenModal()}>
+        <Button variant="contained" startIcon={<PlusCircle />} onClick={() => handleOpenFormModal()}>
           Novo Template
         </Button>
       </Box>
@@ -72,11 +91,16 @@ export function TemplatesPage() {
         )}
       </Paper>
       <TemplateForm
-        open={modalOpen}
-        onClose={handleCloseModal}
+        open={formModalOpen}
+        onClose={handleCloseFormModal}
         onSubmit={handleFormSubmit}
         template={selectedTemplate}
         isLoading={isCreating || isUpdating}
+      />
+      <TestTemplateModal
+        open={testModalOpen}
+        onClose={handleCloseTestModal}
+        template={selectedTemplate}
       />
     </Box>
   );

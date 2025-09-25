@@ -43,3 +43,17 @@ export const useTemplates = () => {
     isUpdating: updateMutation.isPending,
   };
 };
+
+export const useTestTemplate = () => {
+  return useMutation({
+    mutationFn: (params: { cobranca_id: string; template_name: string; phone_number?: string }) =>
+      templatesService.testTemplate(params.cobranca_id, params.template_name, params.phone_number),
+    onSuccess: (data) => {
+      toast.success('Mensagem de teste enviada com sucesso!');
+      console.log('Resposta do teste:', data);
+    },
+    onError: (error) => {
+      toast.error(`Erro ao enviar teste: ${error.message}`);
+    },
+  });
+};
