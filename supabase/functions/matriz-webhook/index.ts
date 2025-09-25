@@ -64,10 +64,16 @@ function mapearTipoFranqueado(ownerType: string): string {
   return 'principal';
 }
 
+/**
+ * Extrai o número de telefone de uma string de contato que pode conter email.
+ */
 function extrairTelefoneDoContato(contact: string): string {
   if (!contact) return '';
+  // Remove qualquer parte que pareça um email
   const semEmail = contact.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/, '');
+  // Busca por uma sequência de dígitos, parênteses, hífens e espaços
   const match = semEmail.match(/[\d()-\s+]+/);
+  // Retorna apenas os dígitos
   return match ? match[0].replace(/[^\d+]/g, '') : '';
 }
 
@@ -135,7 +141,7 @@ serve(async (req) => {
         p_cpf: franqueadoMatriz.cpf_rnm,
         p_email: franqueadoMatriz.email,
         p_telefone: telefone,
-        p_whatsapp: telefone, // Usando o mesmo número para ambos
+        p_whatsapp: telefone, // Usando o mesmo número extraído para ambos
         p_tipo: mapearTipoFranqueado(franqueadoMatriz.owner_type),
         p_status: franqueadoMatriz.is_active_system ? 'ativo' : 'inativo',
         p_created_at: franqueadoMatriz.created_at,
