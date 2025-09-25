@@ -137,7 +137,6 @@ export function mapearUnidadeMatriz(unidade: UnidadeMatriz): UnidadeMapeada {
     endereco: unidade.address,
     numero: unidade.number_address,
     complemento: unidade.address_complement,
-    bairro: unidade.neighborhood,
     cidade: unidade.city,
     estado: unidade.state,
     uf: unidade.uf,
