@@ -188,14 +188,6 @@ export interface UnidadeMapeada {
   telefone?: string;
   email?: string;
   endereco_completo?: string;
-  endereco?: string;
-  numero?: string;
-  complemento?: string;
-  bairro?: string;
-  cidade?: string;
-  estado?: string;
-  uf?: string;
-  cep?: string;
   modelo_loja: string;
   fase_loja: string;
   fase_implantacao: string;
