@@ -65,7 +65,8 @@ export function mapearFranqueadoMatriz(franqueado: FranqueadoMatriz | VFranquead
     email: franqueado.email || extrairEmailDoContato(franqueado.contact),
     telefone: extrairTelefoneDoContato(franqueado.contact),
     tipo: mapearTipoProprietario(franqueado.owner_type),
-    is_active_system: franqueado.is_active_system, // Alterado de 'status' para 'is_active_system'
+    // CORREÇÃO: Garante que o valor nunca seja nulo, usando 'true' como padrão.
+    is_active_system: franqueado.is_active_system ?? true,
     created_at: franqueado.created_at,
     updated_at: franqueado.updated_at,
   };
