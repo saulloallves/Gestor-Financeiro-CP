@@ -13,7 +13,7 @@ export function useFranqueadosParaSelecao() {
 
   const data = useMemo(() => {
     return franqueados
-      .filter(f => f.status === 'ativo')
+      .filter(f => f.is_active_system === true) // CORREÇÃO: Usando a coluna booleana correta
       .map((franqueado): ClienteSelecionado => ({
         id: franqueado.id,
         nome: franqueado.nome,
