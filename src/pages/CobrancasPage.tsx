@@ -244,11 +244,33 @@ export function CobrancasPage() {
 
         if (isOverdue) {
           return (
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body1" sx={{ fontWeight: 600, color: 'error.main', lineHeight: 1.2 }}>
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: 0 
+              }}
+            >
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  fontWeight: 600, 
+                  color: 'error.main', 
+                  lineHeight: 1.1 
+                }}
+              >
                 {formatCurrency(cobranca.valor_atualizado)}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', textDecoration: 'line-through' }}>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: 'text.secondary', 
+                  textDecoration: 'line-through',
+                  lineHeight: 1
+                }}
+              >
                 {formatCurrency(cobranca.valor_original)}
               </Typography>
             </Box>
