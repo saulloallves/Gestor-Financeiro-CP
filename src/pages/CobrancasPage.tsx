@@ -711,16 +711,9 @@ export function CobrancasPage() {
             "& .MuiDataGrid-cell": {
               borderColor: "divider",
               padding: (theme) => theme.spacing(2, 1.5),
-              fontSize: "1rem",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              "& .MuiTypography-root": {
-                fontSize: "1rem !important",
-              },
-              "& .MuiChip-root": {
-                fontSize: "0.9rem",
-              },
             },
             "& .MuiDataGrid-columnHeaders": {
               backgroundColor: "#ffffff",
