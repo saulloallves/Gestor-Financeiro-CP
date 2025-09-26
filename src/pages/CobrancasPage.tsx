@@ -246,7 +246,7 @@ export function CobrancasPage() {
           return (
             <Tooltip title="Ver detalhes do juros e multa" arrow>
               <Box
-                onClick={() => toast.info("Funcionalidade em desenvolvimento!")}
+                onClick={() => toast("Funcionalidade em desenvolvimento!", { icon: "ℹ️" })}
                 sx={{
                   display: 'flex',
                   flexDirection: 'column',
