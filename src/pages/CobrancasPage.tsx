@@ -236,7 +236,6 @@ export function CobrancasPage() {
       field: "valor_atualizado",
       headerName: "Valor",
       headerAlign: "center",
-      flex: 1,
       minWidth: 150,
       renderCell: (params) => {
         const cobranca = params.row as Cobranca;
