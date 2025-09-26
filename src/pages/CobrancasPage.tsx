@@ -315,7 +315,7 @@ export function CobrancasPage() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 0.25,
+                gap: 0,
                 width: '100%',
                 height: '100%',
               }}
@@ -324,7 +324,7 @@ export function CobrancasPage() {
                 variant="body2"
                 sx={{
                   fontWeight: 500,
-                  lineHeight: 1.2,
+                  lineHeight: 1.1,
                 }}
               >
                 {format(new Date(params.value.replace(/-/g, '/')), "dd/MM/yyyy")}
@@ -335,7 +335,7 @@ export function CobrancasPage() {
                   color: 'error.main',
                   fontWeight: 600,
                   lineHeight: 1,
-                  fontSize: '0.75rem',
+                  fontSize: '0.7rem',
                 }}
               >
                 {diffDays} {diffDays === 1 ? 'dia atrasado' : 'dias atrasados'}
@@ -351,7 +351,7 @@ export function CobrancasPage() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 0.25,
+                gap: 0,
                 width: '100%',
                 height: '100%',
               }}
@@ -360,7 +360,7 @@ export function CobrancasPage() {
                 variant="body2"
                 sx={{
                   fontWeight: 500,
-                  lineHeight: 1.2,
+                  lineHeight: 1.1,
                 }}
               >
                 {format(new Date(params.value.replace(/-/g, '/')), "dd/MM/yyyy")}
@@ -371,7 +371,7 @@ export function CobrancasPage() {
                   color: 'warning.main',
                   fontWeight: 600,
                   lineHeight: 1,
-                  fontSize: '0.75rem',
+                  fontSize: '0.7rem',
                 }}
               >
                 Vencendo Hoje
