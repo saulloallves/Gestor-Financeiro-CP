@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR');
+const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -81,12 +81,13 @@ serve(async (req) => {
     console.log(`[Agente] ${cobranca_id}: Contexto RAG obtido.`);
 
     // 5. Montar e chamar a IA
-    const hoje = new Date();
-    const vencimento = new Date(cobranca.vencimento);
-    hoje.setHours(0, 0, 0, 0);
-    vencimento.setHours(0, 0, 0, 0);
-    const diffTime = hoje.getTime() - vencimento.getTime();
-    // CORREÇÃO: Usar Math.floor e remover Math.max(0, ...) para permitir dias negativos
+    // CORREÇÃO: Usar UTC para garantir consistência de fuso horário
+    const hojeUTC = new Date();
+    hojeUTC.setUTCHours(0, 0, 0, 0);
+    
+    const vencimentoUTC = new Date(cobranca.vencimento); // A data do Supabase já vem como YYYY-MM-DD, que o new Date() interpreta como UTC midnight.
+    
+    const diffTime = hojeUTC.getTime() - vencimentoUTC.getTime();
     const diasAtrasoReal = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     const prompt = (config.ia_prompt_base || '')
@@ -105,8 +106,7 @@ serve(async (req) => {
       .replace('{{unidade.nome_padrao}}', unidadeInfo.nome_padrao)
       .replace('{{config.dias_lembrete_previo}}', config.dias_lembrete_previo || 3);
 
-    console.log(`[Agente] ${cobranca_id}: Enviando prompt para a IA...`);
-    // console.log(`[Agente] ${cobranca_id}: --- PROMPT COMPLETO --- \n${prompt}\n --- FIM DO PROMPT ---`);
+    console.log(`[Agente] ${cobranca_id}: Enviando prompt para a IA... (dias_atraso=${diasAtrasoReal})`);
 
     const openai = new OpenAI({ apiKey: config.ia_api_key });
     const completion = await openai.chat.completions.create({
