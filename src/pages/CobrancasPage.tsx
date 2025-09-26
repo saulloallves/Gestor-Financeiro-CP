@@ -236,12 +236,31 @@ export function CobrancasPage() {
       field: "valor_atualizado",
       headerName: "Valor",
       headerAlign: "center",
-      flex: 0.1,
-      renderCell: (params) => (
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          {formatCurrency(params.value)}
-        </Typography>
-      ),
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => {
+        const cobranca = params.row as Cobranca;
+        const isOverdue = ['vencido', 'em_atraso', 'atrasado', 'juridico'].includes(cobranca.status);
+
+        if (isOverdue) {
+          return (
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body1" sx={{ fontWeight: 600, color: 'error.main', lineHeight: 1.2 }}>
+                {formatCurrency(cobranca.valor_atualizado)}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', textDecoration: 'line-through' }}>
+                {formatCurrency(cobranca.valor_original)}
+              </Typography>
+            </Box>
+          );
+        }
+
+        return (
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            {formatCurrency(cobranca.valor_atualizado)}
+          </Typography>
+        );
+      },
     },
     {
       field: "vencimento",
