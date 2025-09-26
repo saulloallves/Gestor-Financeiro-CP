@@ -795,7 +795,7 @@ class CobrancasService {
         .from('cobrancas')
         .select('*')
         .eq('id', cobrancaId)
-        .single.
+        .single();
       if (fetchError || !cobranca) {
         throw new Error('Cobrança não encontrada');
       }
