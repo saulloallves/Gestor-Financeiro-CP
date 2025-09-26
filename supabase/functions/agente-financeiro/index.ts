@@ -86,7 +86,8 @@ serve(async (req) => {
     hoje.setHours(0, 0, 0, 0);
     vencimento.setHours(0, 0, 0, 0);
     const diffTime = hoje.getTime() - vencimento.getTime();
-    const diasAtrasoReal = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    // CORREÇÃO: Usar Math.floor e remover Math.max(0, ...) para permitir dias negativos
+    const diasAtrasoReal = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     const prompt = (config.ia_prompt_base || '')
       .replace('{{contexto_rag}}', contextoFormatado)
@@ -101,7 +102,8 @@ serve(async (req) => {
       .replace(new RegExp('{{franqueado.nome}}', 'g'), franqueadoInfo.nome)
       .replace('{{franqueado.telefone}}', franqueadoInfo.telefone || franqueadoInfo.whatsapp || 'N/A')
       .replace('{{unidade.codigo_unidade}}', unidadeInfo.codigo_unidade)
-      .replace('{{unidade.nome_padrao}}', unidadeInfo.nome_padrao);
+      .replace('{{unidade.nome_padrao}}', unidadeInfo.nome_padrao)
+      .replace('{{config.dias_lembrete_previo}}', config.dias_lembrete_previo || 3);
 
     console.log(`[Agente] ${cobranca_id}: Enviando prompt para a IA...`);
     // console.log(`[Agente] ${cobranca_id}: --- PROMPT COMPLETO --- \n${prompt}\n --- FIM DO PROMPT ---`);
