@@ -188,7 +188,7 @@ export const useDataStore = create<DataStoreState>()(
 
       mergeUpdates: (updates) => {
         set(state => {
-          const merge = <T extends { id: string }>(current: T[], updated: T[] | undefined) => {
+          const merge = <T extends { id: string | number }>(current: T[], updated: T[] | undefined) => {
             if (!updated || updated.length === 0) return current;
             const map = new Map(current.map(item => [item.id, item]));
             updated.forEach(item => map.set(item.id, item));

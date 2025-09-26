@@ -7,7 +7,7 @@ export const templateSchema = z.object({
   nome: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
   canal: z.enum(['whatsapp', 'email']),
   conteudo: z.string().min(10, 'O conteúdo deve ter pelo menos 10 caracteres.'),
-  ativo: z.boolean().default(true),
+  ativo: z.boolean(),
 });
 
 export type TemplateFormData = z.infer<typeof templateSchema>;
