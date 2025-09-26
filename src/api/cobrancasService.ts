@@ -830,7 +830,7 @@ class CobrancasService {
   }
 
   async processarCobrancasPendentes() {
-    const { data, error } = await supabase.functions.invoke('agendador-financeiro');
+    const { data, error } = await supabase.functions.invoke('processar-cobrancas-manual');
     if (error) throw new Error(error.message);
     return data;
   }
