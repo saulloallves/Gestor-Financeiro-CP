@@ -296,10 +296,18 @@ export function CobrancasPage() {
       width: 150,
       headerAlign: "center",
       renderCell: (params) => {
-        const cobranca = params.row as Cobranca;
-        const isOverdue = cobranca.dias_atraso > 0;
+        const vencimento = new Date(params.value.replace(/-/g, '/'));
+        const today = new Date();
+        
+        // Zerar horas para comparar apenas as datas
+        vencimento.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
 
-        if (isOverdue) {
+        const diffTime = today.getTime() - vencimento.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 0) {
+          // Atrasado
           return (
             <Box
               sx={{
@@ -330,12 +338,49 @@ export function CobrancasPage() {
                   fontSize: '0.75rem',
                 }}
               >
-                {cobranca.dias_atraso} {cobranca.dias_atraso === 1 ? 'dia atrasado' : 'dias atrasados'}
+                {diffDays} {diffDays === 1 ? 'dia atrasado' : 'dias atrasados'}
+              </Typography>
+            </Box>
+          );
+        } else if (diffDays === 0) {
+          // Vence hoje
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.25,
+                width: '100%',
+                height: '100%',
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                }}
+              >
+                {format(new Date(params.value.replace(/-/g, '/')), "dd/MM/yyyy")}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'warning.main',
+                  fontWeight: 600,
+                  lineHeight: 1,
+                  fontSize: '0.75rem',
+                }}
+              >
+                Vencendo Hoje
               </Typography>
             </Box>
           );
         }
 
+        // Vencimento futuro
         return (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Calendar size={16} />
