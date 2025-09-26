@@ -9,6 +9,11 @@ import type {
   UploadFotoResult,
 } from '../types/perfil';
 
+// Tipo para lidar com a resposta ambígua da relação do Supabase
+type EquipeShape = { nome_equipe: string };
+type EquipesQueryResult = EquipeShape | EquipeShape[] | null;
+
+
 export class PerfilService {
   // Buscar dados do perfil do usuário atual
   static async getPerfilUsuario(): Promise<PerfilUsuario | null> {
@@ -68,6 +73,19 @@ export class PerfilService {
         };
       }
 
+      // O Supabase pode retornar um objeto ou um array para a relação.
+      // Esta lógica trata ambos os casos para evitar erros de runtime.
+      const equipesData = perfilData.equipes as EquipesQueryResult;
+      let nomeDaEquipe: string | undefined;
+
+      if (equipesData && !Array.isArray(equipesData)) {
+        // Caso seja um objeto (relação to-one)
+        nomeDaEquipe = equipesData.nome_equipe;
+      } else if (Array.isArray(equipesData) && equipesData.length > 0) {
+        // Caso seja um array (relação to-many, embora não esperado aqui)
+        nomeDaEquipe = equipesData[0]?.nome_equipe;
+      }
+
       return {
         id: perfilData.id,
         nome: perfilData.nome,
@@ -75,9 +93,7 @@ export class PerfilService {
         telefone: perfilData.telefone ? formatarTelefone(perfilData.telefone) : undefined,
         fotoPerfil: perfilData.foto_perfil,
         perfil: perfilData.perfil,
-        equipe_nome: Array.isArray(perfilData.equipes) && perfilData.equipes.length > 0 
-          ? perfilData.equipes[0].nome_equipe 
-          : undefined,
+        equipe_nome: nomeDaEquipe,
         dataCriacao: perfilData.created_at,
         ultimoLogin: perfilData.ultimo_login,
       };
