@@ -295,14 +295,55 @@ export function CobrancasPage() {
       headerName: "Vencimento",
       width: 150,
       headerAlign: "center",
-      renderCell: (params) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Calendar size={16} />
-          <Typography variant="body2">
-            {format(new Date(params.value.replace(/-/g, '/')), "dd/MM/yyyy")}
-          </Typography>
-        </Box>
-      ),
+      renderCell: (params) => {
+        const cobranca = params.row as Cobranca;
+        const isOverdue = cobranca.dias_atraso > 0;
+
+        if (isOverdue) {
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0,
+                width: '100%',
+                height: '100%',
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                }}
+              >
+                {format(new Date(params.value.replace(/-/g, '/')), "dd/MM/yyyy")}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'error.main',
+                  fontWeight: 600,
+                  lineHeight: 1.1,
+                }}
+              >
+                {cobranca.dias_atraso} {cobranca.dias_atraso === 1 ? 'dia atrasado' : 'dias atrasados'}
+              </Typography>
+            </Box>
+          );
+        }
+
+        return (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Calendar size={16} />
+            <Typography variant="body2">
+              {format(new Date(params.value.replace(/-/g, '/')), "dd/MM/yyyy")}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "status",
