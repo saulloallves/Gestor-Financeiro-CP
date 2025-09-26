@@ -465,7 +465,7 @@ export function CobrancasPage() {
     },
     {
       title: "Pendentes",
-      value: (estatisticas?.totalCobrancas || 0) - (estatisticas?.cobrancasPagas || 0) - (estatisticas?.cobrancasVencidas || 0),
+      value: estatisticas?.cobrancasPendentes || 0,
       icon: Clock,
       color: "#ffa726",
     },
@@ -714,6 +714,9 @@ export function CobrancasPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              "& .MuiChip-root": {
+                fontSize: "0.9rem",
+              },
             },
             "& .MuiDataGrid-columnHeaders": {
               backgroundColor: "#ffffff",

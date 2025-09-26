@@ -6,27 +6,31 @@ export function useCobrancasEstatisticas() {
   const isLoading = useDataStore((state) => !state.sync.hasInitialLoad || state.sync.isLoading);
 
   const data = useMemo(() => {
-    const dataAtual = new Date();
     const estatisticas = {
       totalCobrancas: cobrancas.length,
       valorTotalEmAberto: 0,
       valorTotalVencido: 0,
       cobrancasVencidas: 0,
       cobrancasPagas: 0,
+      cobrancasPendentes: 0,
     };
 
-    cobrancas.forEach(cobranca => {
-      const dataVencimento = new Date(cobranca.vencimento);
-      const isVencida = dataVencimento < dataAtual;
+    const statusVencido = ['vencido', 'em_atraso', 'atrasado', 'juridico'];
+    const statusPendente = ['pendente', 'em_aberto'];
 
+    cobrancas.forEach(cobranca => {
       if (cobranca.status === 'pago') {
         estatisticas.cobrancasPagas++;
-      } else {
+      } else if (statusVencido.includes(cobranca.status)) {
+        estatisticas.cobrancasVencidas++;
+        estatisticas.valorTotalVencido += Number(cobranca.valor_atualizado || 0);
         estatisticas.valorTotalEmAberto += Number(cobranca.valor_atualizado || 0);
-        if (isVencida) {
-          estatisticas.cobrancasVencidas++;
-          estatisticas.valorTotalVencido += Number(cobranca.valor_atualizado || 0);
-        }
+      } else if (statusPendente.includes(cobranca.status)) {
+        estatisticas.cobrancasPendentes++;
+        estatisticas.valorTotalEmAberto += Number(cobranca.valor_atualizado || 0);
+      } else if (cobranca.status !== 'cancelado' && cobranca.status !== 'negociado' && cobranca.status !== 'parcelado') {
+        // Outros status que contam como "em aberto"
+        estatisticas.valorTotalEmAberto += Number(cobranca.valor_atualizado || 0);
       }
     });
     return estatisticas;
