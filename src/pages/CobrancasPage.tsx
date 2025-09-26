@@ -307,7 +307,7 @@ export function CobrancasPage() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 0,
+                gap: 0.25,
                 width: '100%',
                 height: '100%',
               }}
@@ -326,7 +326,8 @@ export function CobrancasPage() {
                 sx={{
                   color: 'error.main',
                   fontWeight: 600,
-                  lineHeight: 1.1,
+                  lineHeight: 1,
+                  fontSize: '0.75rem',
                 }}
               >
                 {cobranca.dias_atraso} {cobranca.dias_atraso === 1 ? 'dia atrasado' : 'dias atrasados'}
