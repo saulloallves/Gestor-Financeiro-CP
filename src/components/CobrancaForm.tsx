@@ -34,6 +34,7 @@ import {
 import type { Cobranca, TipoCobranca, ClienteSelecionado, TipoCliente } from '../types/cobrancas';
 import { cobrancaFormSchema, type CobrancaFormData } from '../utils/cobrancaSchemas';
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { formatarCpf, formatarCnpj } from '../utils/validations';
 
 interface CobrancaFormProps {
@@ -59,7 +60,7 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   
   // Estados para controle da interface
   const [dataVencimento, setDataVencimento] = useState<Date | null>(
-    cobranca ? new Date(cobranca.vencimento) : null
+    cobranca ? new Date(cobranca.vencimento.replace(/-/g, '/')) : null
   );
   const [criarNoAsaas, setCriarNoAsaas] = useState(false);
   const [tipoCliente, setTipoCliente] = useState<TipoCliente | ''>('');
@@ -109,15 +110,16 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   // Resetar formulário quando a cobrança para edição mudar
   useEffect(() => {
     if (open && cobranca) {
+      const vencimentoDate = new Date(cobranca.vencimento.replace(/-/g, '/'));
       reset({
         codigo_unidade: cobranca.codigo_unidade,
         tipo_cobranca: cobranca.tipo_cobranca as TipoCobranca,
         valor_original: cobranca.valor_original,
-        vencimento: new Date(cobranca.vencimento),
+        vencimento: vencimentoDate,
         observacoes: cobranca.observacoes || '',
         criar_no_asaas: false,
       });
-      setDataVencimento(new Date(cobranca.vencimento));
+      setDataVencimento(vencimentoDate);
     } else if (open && !cobranca) {
       reset();
       setDataVencimento(null);
@@ -164,13 +166,14 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
 
   const onSubmit = async (data: CobrancaFormData) => {
     try {
+      const vencimentoString = format(data.vencimento, 'yyyy-MM-dd');
       if (isEdit) {
         await editarCobranca.mutateAsync({
           id: cobranca.id,
           dados: {
             tipo_cobranca: data.tipo_cobranca,
             valor_original: data.valor_original,
-            vencimento: data.vencimento.toISOString(),
+            vencimento: vencimentoString,
             observacoes: data.observacoes,
           },
         });
@@ -182,7 +185,7 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
             codigo_unidade: data.codigo_unidade,
             tipo_cobranca: data.tipo_cobranca,
             valor_original: data.valor_original,
-            vencimento: data.vencimento.toISOString(),
+            vencimento: vencimentoString,
             observacoes: data.observacoes,
           });
         }

@@ -252,7 +252,7 @@ export function CobrancasPage() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Calendar size={16} />
           <Typography variant="body2">
-            {format(new Date(params.value), "dd/MM/yyyy")}
+            {format(new Date(params.value.replace(/-/g, '/')), "dd/MM/yyyy")}
           </Typography>
         </Box>
       ),

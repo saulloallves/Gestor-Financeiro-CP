@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient';
 import { asaasService } from './asaasService';
 import { configuracoesService } from './configuracoesService';
 import { iaService } from './iaService'; // Importar o serviço da IA
+import { format } from 'date-fns';
 import type { 
   Cobranca, 
   CriarCobrancaData, 
@@ -113,7 +114,7 @@ class CobrancasService {
     console.log('🚀 [INTEGRAÇÃO] Iniciando criação de cobrança integrada...');
     console.log('📋 Dados recebidos:', dados);
 
-    // **CORREÇÃO:** Gerar a descrição padrão uma única vez
+    const vencimentoString = format(dados.vencimento, 'yyyy-MM-dd');
     const descricaoPadrao = `${dados.tipo_cobranca.toUpperCase()} - Unidade ${dados.codigo_unidade}`;
     const observacoesFinais = dados.observacoes || descricaoPadrao;
 
@@ -123,8 +124,8 @@ class CobrancasService {
       tipo_cobranca: dados.tipo_cobranca,
       valor_original: dados.valor_original,
       valor_atualizado: dados.valor_original,
-      vencimento: dados.vencimento.toISOString(),
-      observacoes: observacoesFinais, // **CORREÇÃO:** Usar a descrição final
+      vencimento: vencimentoString,
+      observacoes: observacoesFinais,
       status: 'pendente',
       juros_aplicado: 0,
       multa_aplicada: 0,
@@ -172,8 +173,8 @@ class CobrancasService {
         customer: customer.id!,
         billingType: 'BOLETO' as const,
         value: dados.valor_original,
-        dueDate: dados.vencimento.toISOString().split('T')[0], // YYYY-MM-DD
-        description: observacoesFinais, // **CORREÇÃO:** Usar a descrição final
+        dueDate: vencimentoString, // YYYY-MM-DD
+        description: observacoesFinais,
         externalReference: `unidade-${dados.codigo_unidade}-${Date.now()}`,
       };
 
@@ -794,8 +795,7 @@ class CobrancasService {
         .from('cobrancas')
         .select('*')
         .eq('id', cobrancaId)
-        .single();
-
+        .single.
       if (fetchError || !cobranca) {
         throw new Error('Cobrança não encontrada');
       }
