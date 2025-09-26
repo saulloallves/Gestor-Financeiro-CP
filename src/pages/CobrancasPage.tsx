@@ -244,36 +244,42 @@ export function CobrancasPage() {
 
         if (isOverdue) {
           return (
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                gap: 0 
-              }}
-            >
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  fontWeight: 600, 
-                  color: 'error.main', 
-                  lineHeight: 1.1 
+            <Tooltip title="Ver detalhes do juros e multa" arrow>
+              <Box
+                onClick={() => toast.info("Funcionalidade em desenvolvimento!")}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0,
+                  cursor: 'pointer',
+                  width: '100%',
+                  height: '100%',
                 }}
               >
-                {formatCurrency(cobranca.valor_atualizado)}
-              </Typography>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  color: 'text.secondary', 
-                  textDecoration: 'line-through',
-                  lineHeight: 1
-                }}
-              >
-                {formatCurrency(cobranca.valor_original)}
-              </Typography>
-            </Box>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: 600,
+                    color: 'error.main',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {formatCurrency(cobranca.valor_atualizado)}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    textDecoration: 'line-through',
+                    lineHeight: 1,
+                  }}
+                >
+                  {formatCurrency(cobranca.valor_original)}
+                </Typography>
+              </Box>
+            </Tooltip>
           );
         }
 
