@@ -16,7 +16,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider,
   FormControlLabel,
   Switch
 } from '@mui/material';

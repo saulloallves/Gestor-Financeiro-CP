@@ -3,7 +3,6 @@
 
 import { supabase } from "./supabaseClient";
 import type {
-  Franqueado,
   FranqueadoFilter,
   FranqueadoSort,
   FranqueadoPagination,

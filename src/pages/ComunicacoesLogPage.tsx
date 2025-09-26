@@ -5,10 +5,8 @@ import { useComunicacoesCacheFirst } from '../hooks/useComunicacoesCacheFirst';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Database, Filter, Search } from 'lucide-react';
-import { useTheme } from '@mui/material/styles';
 
 export function ComunicacoesLogPage() {
-  const theme = useTheme();
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [localCanalFilter, setLocalCanalFilter] = useState<'whatsapp' | 'email' | ''>('');
 

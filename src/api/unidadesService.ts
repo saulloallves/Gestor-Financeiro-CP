@@ -3,12 +3,10 @@
 
 import { supabase } from "./supabaseClient";
 import type {
-  Unidade,
   UnidadeFilter,
   UnidadeSort,
   UnidadePagination,
   UnidadeListResponse,
-  StatusUnidade,
 } from "../types/unidades";
 
 class UnidadesService {

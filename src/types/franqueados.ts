@@ -221,3 +221,12 @@ export interface FranqueadoRelatório {
   empreendedores_previos: number;
   multifranqueados: number;
 }
+
+export interface FranqueadoUnidade {
+  id: number;
+  franqueado_id: string;
+  unidade_id: string;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}

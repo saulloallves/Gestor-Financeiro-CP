@@ -30,6 +30,12 @@ export function TemplateForm({ open, onClose, onSubmit, template, isLoading }: T
   const { control, handleSubmit, formState: { errors, isValid }, reset } = useForm<TemplateFormData>({
     resolver: zodResolver(templateSchema),
     mode: 'onChange',
+    defaultValues: {
+      nome: '',
+      canal: 'whatsapp',
+      conteudo: '',
+      ativo: true,
+    },
   });
 
   useEffect(() => {

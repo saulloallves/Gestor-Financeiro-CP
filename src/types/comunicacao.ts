@@ -36,4 +36,7 @@ export interface Comunicacao {
   enviado_por?: string; // 'ia_agente_financeiro' ou nome do usuário
   enviado_por_usuario_id?: string;
   enviado_por_ia: boolean;
+  unidade_codigo_unidade?: string;
+  unidade_nome_padrao?: string;
+  franqueado_nome?: string;
 }

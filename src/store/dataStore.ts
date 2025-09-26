@@ -56,6 +56,14 @@ export interface DataStoreState extends DataCache {
   getFranqueadoById: (id: string) => Franqueado | undefined;
   getFranqueadoByCpf: (cpf: string) => Franqueado | undefined;
   getFranqueadosAtivos: () => Franqueado[];
+  getEstatisticasCobrancas: () => {
+    totalCobrancas: number;
+    valorTotalEmAberto: number;
+    valorTotalVencido: number;
+    cobrancasVencidas: number;
+    cobrancasPagas: number;
+    cobrancasPendentes: number;
+  };
 }
 
 const initialState: DataCache & { sync: SyncStatus } = {
@@ -271,6 +279,37 @@ export const useDataStore = create<DataStoreState>()(
 
       getFranqueadosAtivos: () => {
         return get().franqueados.filter(f => f.is_active_system);
+      },
+      getEstatisticasCobrancas: () => {
+        const cobrancas = get().cobrancas;
+        const estatisticas = {
+          totalCobrancas: cobrancas.length,
+          valorTotalEmAberto: 0,
+          valorTotalVencido: 0,
+          cobrancasVencidas: 0,
+          cobrancasPagas: 0,
+          cobrancasPendentes: 0,
+        };
+    
+        const statusVencido = ['vencido', 'em_atraso', 'atrasado', 'juridico'];
+        const statusPendente = ['pendente', 'em_aberto'];
+    
+        cobrancas.forEach(cobranca => {
+          if (cobranca.status === 'pago') {
+            estatisticas.cobrancasPagas++;
+          } else if (statusVencido.includes(cobranca.status)) {
+            estatisticas.cobrancasVencidas++;
+            estatisticas.valorTotalVencido += Number(cobranca.valor_atualizado || 0);
+            estatisticas.valorTotalEmAberto += Number(cobranca.valor_atualizado || 0);
+          } else if (statusPendente.includes(cobranca.status)) {
+            estatisticas.cobrancasPendentes++;
+            estatisticas.valorTotalEmAberto += Number(cobranca.valor_atualizado || 0);
+          } else if (cobranca.status !== 'cancelado' && cobranca.status !== 'negociado' && cobranca.status !== 'parcelado') {
+            // Outros status que contam como "em aberto"
+            estatisticas.valorTotalEmAberto += Number(cobranca.valor_atualizado || 0);
+          }
+        });
+        return estatisticas;
       },
     })),
     {

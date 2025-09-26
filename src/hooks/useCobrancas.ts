@@ -100,7 +100,7 @@ export function useProcessarCobrancas() {
         toast.success(`${sucessos} cobranças processadas pela IA!`, { duration: 5000 });
       }
       if (sucessos === 0 && falhas === 0) {
-        toast.info('Nenhuma cobrança pendente para processar no momento.');
+        toast('Nenhuma cobrança pendente para processar no momento.', { icon: 'ℹ️' });
       }
     },
     onError: (error: Error) => {

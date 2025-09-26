@@ -1,7 +1,12 @@
 import { supabase } from './supabaseClient';
 import { supabaseMatriz } from './supabaseMatrizClient';
 import { mapearFranqueadoMatriz, mapearUnidadeMatriz } from '../utils/matrizMappers';
-import type { FranqueadoMapeado, UnidadeMapeada } from '../types/matriz';
+import type { 
+  FranqueadoMapeado, 
+  UnidadeMapeada,
+  UnidadeMatriz,
+  VFranqueadosUnidadesDetalhes
+} from '../types/matriz';
 
 const BATCH_SIZE = 500; // Processar em lotes para não sobrecarregar
 
@@ -49,7 +54,7 @@ class MatrizSyncService {
     try {
       // 1. Sincronizar Unidades
       onProgress(stats, 'Buscando unidades da matriz...');
-      const unidadesMatriz = await this.fetchAllMatrizData('unidades');
+      const unidadesMatriz = await this.fetchAllMatrizData<UnidadeMatriz>('unidades');
       stats.unidades.total = unidadesMatriz.length;
       onProgress(stats, `Encontradas ${stats.unidades.total} unidades. Mapeando...`);
 
@@ -66,7 +71,7 @@ class MatrizSyncService {
 
       // 2. Sincronizar Franqueados
       onProgress(stats, 'Buscando franqueados da matriz...');
-      const franqueadosMatriz = await this.fetchAllMatrizData('v_franqueados_unidades_detalhes');
+      const franqueadosMatriz = await this.fetchAllMatrizData<VFranqueadosUnidadesDetalhes>('v_franqueados_unidades_detalhes');
       stats.franqueados.total = franqueadosMatriz.length;
       onProgress(stats, `Encontrados ${stats.franqueados.total} franqueados. Mapeando...`);
 

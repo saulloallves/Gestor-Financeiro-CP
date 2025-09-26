@@ -246,7 +246,7 @@ class CobrancasService {
         observacoes: `${cobrancaBase.observacoes}\n\n[ERRO ASAAS: ${asaasError}]`.trim(),
       };
 
-      const { data: cobranca, error } = await supabase
+      const { error } = await supabase
         .from('cobrancas')
         .insert(cobrancaFallbackData)
         .select('*')

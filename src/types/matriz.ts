@@ -61,6 +61,7 @@ export interface UnidadeMatriz {
   cnpj?: string;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
 }
 
 // Views do banco matriz
@@ -79,7 +80,7 @@ export interface FranqueadoMapeado {
   email?: string;
   telefone?: string;
   tipo: 'principal' | 'familiar' | 'investidor' | 'parceiro';
-  status: 'ativo' | 'inativo';
+  is_active_system: boolean;
   created_at?: string;
   updated_at?: string;
 }

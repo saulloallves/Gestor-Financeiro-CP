@@ -194,7 +194,7 @@ class SyncService {
       const [franqueados, unidades, franqueadosUnidades, cobrancas, usuariosInternos, comunicacoes] = await Promise.all([
         franqueadosService.getFranqueados({ updated_at_gte: lastSyncString }, { field: 'updated_at', direction: 'asc' }, { page: 1, limit: 5000 }).then(r => r.data),
         unidadesService.getUnidades({ updated_at_gte: lastSyncString }, { field: 'updated_at', direction: 'asc' }, { page: 1, limit: 5000 }).then(r => r.data),
-        supabase.from('franqueados_unidades').select('*').gte('updated_at', lastSyncString).then(r => r.data),
+        supabase.from('franqueados_unidades').select('*').gte('updated_at', lastSyncString).then(r => r.data || []),
         cobrancasService.listarCobrancas({ updated_at_gte: lastSyncString }),
         UsuariosInternosService.buscarUsuarios({ updated_at_gte: lastSyncString }),
         comunicacoesService.getLogs({ data_envio_gte: lastSyncString }),

@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useDataStore } from '../store/dataStore';
-import type { Comunicacao } from '../types/comunicacao';
 
 interface ComunicacoesFilters {
   searchTerm: string;
