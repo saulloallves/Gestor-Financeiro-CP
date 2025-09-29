@@ -168,17 +168,53 @@ class CobrancasService {
 
       console.log(`${isNew ? '✨ Novo' : '✅ Existente'} customer ASAAS: ${customer.id}`);
 
+      // 4.5. Buscar configurações de juros e multa
+      console.log('Buscando configurações de juros e multa...');
+      const configuracao = await configuracoesService.obterConfiguracao();
+      console.log('Configurações obtidas:', configuracao);
+
       // 5. Criar payment no ASAAS
-      const paymentData = {
+      const paymentData: any = {
         customer: customer.id!,
         billingType: 'BOLETO' as const,
         value: dados.valor_original,
-        dueDate: vencimentoString, // YYYY-MM-DD
+        dueDate: vencimentoString,
         description: observacoesFinais,
         externalReference: `unidade-${dados.codigo_unidade}-${Date.now()}`,
       };
 
-      console.log('💳 Criando payment no ASAAS...');
+      // Adicionar multa se configurada
+      if (configuracao.valor_multa_atraso > 0) {
+        paymentData.fine = {
+          value: configuracao.valor_multa_atraso,
+          type: 'PERCENTAGE' as const,
+        };
+      }
+
+      // Adicionar juros se configurado
+      if (configuracao.taxa_juros_diaria > 0) {
+        // ASAAS espera juros mensais em porcentagem. Nossa config é diária em decimal.
+        const jurosMensalPercentual = configuracao.taxa_juros_diaria * 30 * 100;
+        paymentData.interest = {
+          value: jurosMensalPercentual,
+        };
+      }
+
+      // Adicionar desconto se configurado
+      if (
+        configuracao.desconto_antecipado &&
+        configuracao.desconto_antecipado > 0 &&
+        configuracao.dias_desconto_antecipado &&
+        configuracao.dias_desconto_antecipado > 0
+      ) {
+        paymentData.discount = {
+          value: configuracao.desconto_antecipado,
+          type: 'PERCENTAGE' as const,
+          dueDateLimitDays: configuracao.dias_desconto_antecipado,
+        };
+      }
+
+      console.log('💳 Criando payment no ASAAS com dados de juros/multa...');
       const payment = await asaasService.createPayment(paymentData);
       console.log('✅ Payment criado:', payment.id);
 
