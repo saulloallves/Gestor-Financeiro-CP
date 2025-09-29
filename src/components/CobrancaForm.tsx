@@ -51,6 +51,17 @@ const tiposCobranca: { value: TipoCobranca; label: string }[] = [
   { value: 'taxa_franquia', label: 'Taxa de Franquia' },
 ];
 
+// Função para formatar o valor como moeda para exibição
+const formatCurrencyForDisplay = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return '';
+  }
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+
 export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   const theme = useTheme();
   const criarCobranca = useCriarCobranca();
@@ -276,23 +287,28 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
                     )}
                   />
 
-                  <TextField
-                    label="Valor da Cobrança"
-                    type="number"
-                    sx={{ flex: 1 }}
-                    inputProps={{ 
-                      min: 0.01,
-                      step: 0.01
-                    }}
-                    {...register('valor_original', { 
-                      valueAsNumber: true 
-                    })}
-                    error={!!errors.valor_original}
-                    helperText={errors.valor_original?.message}
-                    disabled={isLoading}
-                    InputProps={{
-                      startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography>,
-                    }}
+                  <Controller
+                    name="valor_original"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <TextField
+                        label="Valor da Cobrança"
+                        sx={{ flex: 1 }}
+                        value={formatCurrencyForDisplay(field.value)}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, '');
+                          const numericValue = digitsOnly ? Number(digitsOnly) / 100 : null;
+                          field.onChange(numericValue);
+                        }}
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                        disabled={isLoading}
+                        placeholder="0,00"
+                        InputProps={{
+                          startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography>,
+                        }}
+                      />
+                    )}
                   />
                 </Box>
 
