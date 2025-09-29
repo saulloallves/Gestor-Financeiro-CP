@@ -13,6 +13,29 @@ import type {
 } from '../types/cobrancas';
 
 class CobrancasService {
+
+  /**
+   * Helper privado para obter o ID do usuário interno logado.
+   */
+  private async _getCurrentUsuarioInternoId(): Promise<string> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    const { data: usuarioInterno, error: dbError } = await supabase
+      .from('usuarios_internos')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (dbError || !usuarioInterno) {
+      throw new Error('Perfil de usuário interno não encontrado para a sessão atual.');
+    }
+
+    return usuarioInterno.id;
+  }
+
   async listarCobrancas(filters?: CobrancasFilters): Promise<Cobranca[]> {
     let query = supabase
       .from('cobrancas')
@@ -74,6 +97,8 @@ class CobrancasService {
   }
 
   async criarCobranca(dados: CriarCobrancaData): Promise<Cobranca> {
+    const usuarioInternoId = await this._getCurrentUsuarioInternoId();
+
     const cobrancaData = {
       ...dados,
       valor_atualizado: dados.valor_original,
@@ -81,6 +106,7 @@ class CobrancasService {
       juros_aplicado: 0,
       multa_aplicada: 0,
       dias_atraso: 0,
+      created_by: usuarioInternoId, // Adicionado
     };
 
     // Criar cobrança no banco local primeiro
@@ -111,6 +137,8 @@ class CobrancasService {
    * Usa a nova lógica de buscar/criar customer automaticamente
    */
   async criarCobrancaIntegrada(dados: CobrancaFormData): Promise<Cobranca> {
+    const usuarioInternoId = await this._getCurrentUsuarioInternoId();
+    
     console.log('🚀 [INTEGRAÇÃO] Iniciando criação de cobrança integrada...');
     console.log('📋 Dados recebidos:', dados);
 
@@ -130,6 +158,7 @@ class CobrancasService {
       juros_aplicado: 0,
       multa_aplicada: 0,
       dias_atraso: 0,
+      created_by: usuarioInternoId, // Adicionado
     };
 
     // 2. Se não deve criar no ASAAS, usar método tradicional
@@ -298,6 +327,8 @@ class CobrancasService {
   }
 
   async editarCobranca(id: string, dados: EditarCobrancaData): Promise<Cobranca> {
+    const usuarioInternoId = await this._getCurrentUsuarioInternoId();
+
     // Obter cobrança atual para verificar se tem ID ASAAS
     const cobrancaAtual = await this.obterCobranca(id);
     if (!cobrancaAtual) {
@@ -307,7 +338,7 @@ class CobrancasService {
     // Atualizar no banco local
     const { data, error } = await supabase
       .from('cobrancas')
-      .update(dados)
+      .update({ ...dados, updated_by: usuarioInternoId }) // Adicionado
       .eq('id', id)
       .select('*')
       .single();
