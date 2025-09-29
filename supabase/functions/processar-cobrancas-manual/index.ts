@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log("--- [Processamento Manual] Função iniciada ---");
+  console.log("--- [Processamento Manual v2] Função iniciada ---");
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -28,14 +28,13 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !user) {
-      console.error("[Processamento Manual] ERRO: Token de usuário inválido.", userError?.message);
+      console.error("[Processamento Manual v2] ERRO: Token de usuário inválido.", userError?.message);
       return new Response(JSON.stringify({ error: 'Acesso não autorizado: token inválido.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Verificar se é um usuário interno
     const { data: internalUser, error: internalUserError } = await supabaseAdmin
       .from('usuarios_internos')
       .select('id')
@@ -43,16 +42,16 @@ serve(async (req) => {
       .single();
 
     if (internalUserError || !internalUser) {
-      console.error(`[Processamento Manual] ERRO: Usuário ${user.email} não é um usuário interno.`);
+      console.error(`[Processamento Manual v2] ERRO: Usuário ${user.email} não é um usuário interno.`);
       return new Response(JSON.stringify({ error: 'Acesso não autorizado: permissão negada.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    console.log(`[Processamento Manual] INFO: Autorização OK para ${user.email}.`);
+    console.log(`[Processamento Manual v2] INFO: Autorização OK para ${user.email}.`);
 
-    // 2. Buscar cobranças (mesma lógica do agendador)
-    console.log("[Processamento Manual] INFO: Buscando cobranças pendentes...");
+    // 2. Buscar cobranças
+    console.log("[Processamento Manual v2] INFO: Buscando cobranças pendentes...");
     const { data: cobrancas, error: cobrancasError } = await supabaseAdmin
       .from('cobrancas')
       .select('id')
@@ -69,11 +68,11 @@ serve(async (req) => {
         status: 200,
       });
     }
-    console.log(`[Processamento Manual] INFO: ${cobrancas.length} cobranças encontradas.`);
+    console.log(`[Processamento Manual v2] INFO: ${cobrancas.length} cobranças encontradas.`);
 
-    // 3. Invocar 'agente-financeiro'
+    // 3. Invocar 'agente-orquestrador' para cada cobrança
     const promises = cobrancas.map(cobranca => 
-      supabaseAdmin.functions.invoke('agente-financeiro', {
+      supabaseAdmin.functions.invoke('agente-orquestrador', {
         body: { cobranca_id: cobranca.id },
       })
     );
@@ -97,7 +96,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("[Processamento Manual] ERRO FATAL:", error);
+    console.error("[Processamento Manual v2] ERRO FATAL:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
