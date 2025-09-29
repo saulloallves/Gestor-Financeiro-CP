@@ -32,7 +32,12 @@ import {
   useUnidadesParaSelecao 
 } from '../hooks/useClienteSelecao';
 import type { Cobranca, TipoCobranca, ClienteSelecionado, TipoCliente } from '../types/cobrancas';
-import { cobrancaFormSchema, editarCobrancaFormSchema, type CobrancaFormData } from '../utils/cobrancaSchemas';
+import { 
+  cobrancaFormSchema, 
+  editarCobrancaFormSchema, 
+  type CobrancaFormData,
+  type EditarCobrancaFormData
+} from '../utils/cobrancaSchemas';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { formatarCpf, formatarCnpj } from '../utils/validations';
@@ -94,10 +99,11 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
     setValue,
     watch,
     control,
-  } = useForm<CobrancaFormData>({
-    resolver: zodResolver(formSchema),
+  } = useForm<CobrancaFormData | EditarCobrancaFormData>({
+    resolver: zodResolver(formSchema) as any, // Usar 'as any' para contornar a incompatibilidade de tipo do resolver
     mode: 'onChange',
     defaultValues: {
+      codigo_unidade: cobranca?.codigo_unidade || undefined,
       criar_no_asaas: false,
       tipo_cobranca: undefined,
     },
@@ -179,36 +185,46 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
     }
   };
 
-  const onSubmit = async (data: CobrancaFormData) => {
+  const onSubmit = async (data: CobrancaFormData | EditarCobrancaFormData) => {
     try {
-      const vencimentoString = format(data.vencimento, 'yyyy-MM-dd');
-      if (isEdit) {
+      if (isEdit && cobranca) {
+        // Lógica de edição
+        const dadosEdicao = data as EditarCobrancaFormData;
+        const dadosParaApi = {
+          codigo_unidade: dadosEdicao.codigo_unidade,
+          tipo_cobranca: dadosEdicao.tipo_cobranca,
+          valor_original: Number(dadosEdicao.valor_original),
+          vencimento: format(dadosEdicao.vencimento, 'yyyy-MM-dd'),
+          observacoes: dadosEdicao.observacoes,
+        };
         await editarCobranca.mutateAsync({
           id: cobranca.id,
-          dados: {
-            tipo_cobranca: data.tipo_cobranca,
-            valor_original: data.valor_original,
-            vencimento: vencimentoString,
-            observacoes: data.observacoes,
-          },
+          dados: dadosParaApi,
         });
       } else {
-        if (data.criar_no_asaas) {
-          await criarCobrancaIntegrada.mutateAsync(data);
+        // Lógica de criação
+        const dadosCriacao = data as CobrancaFormData;
+        if (dadosCriacao.criar_no_asaas) {
+          if (!dadosCriacao.cliente_selecionado) {
+            throw new Error("Cliente não selecionado para cobrança integrada.");
+          }
+          await criarCobrancaIntegrada.mutateAsync({
+            ...dadosCriacao,
+            valor_original: Number(dadosCriacao.valor_original),
+            vencimento: dadosCriacao.vencimento,
+            cliente_selecionado: dadosCriacao.cliente_selecionado,
+          });
         } else {
           await criarCobranca.mutateAsync({
-            codigo_unidade: data.codigo_unidade,
-            tipo_cobranca: data.tipo_cobranca,
-            valor_original: data.valor_original,
-            vencimento: vencimentoString,
-            observacoes: data.observacoes,
+            ...dadosCriacao,
+            valor_original: Number(dadosCriacao.valor_original),
+            vencimento: format(dadosCriacao.vencimento, 'yyyy-MM-dd'),
           });
         }
       }
-      
       handleClose();
     } catch (error) {
-      console.error('Erro ao salvar cobrança:', error);
+      console.error("Erro ao salvar cobrança:", error);
     }
   };
 

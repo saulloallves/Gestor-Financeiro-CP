@@ -93,6 +93,7 @@ export const cobrancaFormSchema = cobrancaBaseSchema.extend({
 
 // Tipos inferidos do schema
 export type CobrancaFormData = z.infer<typeof cobrancaFormSchema>;
+export type EditarCobrancaFormData = z.infer<typeof editarCobrancaFormSchema>;
 
 // Schema para edição (campos básicos, sem validações ASAAS e sem restrição de data)
 export const editarCobrancaFormSchema = cobrancaBaseSchema.extend({
@@ -109,8 +110,6 @@ export const editarCobrancaFormSchema = cobrancaBaseSchema.extend({
     tipo: z.enum(['cpf', 'cnpj']),
   }).optional(),
 });
-
-export type EditarCobrancaFormData = z.infer<typeof editarCobrancaFormSchema>;
 
 // Schema para edição da API (sem campos ASAAS)
 export const editarCobrancaSchema = cobrancaBaseSchema.partial().extend({
