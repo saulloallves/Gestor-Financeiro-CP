@@ -14,7 +14,7 @@ const cobrancaBaseSchema = z.object({
 // Schema estendido para criação de cobrança com integração ASAAS
 export const cobrancaFormSchema = cobrancaBaseSchema.extend({
   // Campos específicos para integração ASAAS
-  criar_no_asaas: z.boolean(),
+  criar_no_asaas: z.boolean().default(false),
   tipo_cliente: z.enum(['cpf', 'cnpj']).optional(),
   franqueado_id: z.string().optional(),
   unidade_id: z.number().optional(),
@@ -96,7 +96,7 @@ export type CobrancaFormData = z.infer<typeof cobrancaFormSchema>;
 
 // Schema para edição (campos básicos, sem validações ASAAS e sem restrição de data)
 export const editarCobrancaFormSchema = cobrancaBaseSchema.extend({
-  criar_no_asaas: z.boolean().optional(),
+  criar_no_asaas: z.boolean().default(false).optional(),
   tipo_cliente: z.enum(['cpf', 'cnpj']).optional(),
   franqueado_id: z.string().optional(),
   unidade_id: z.number().optional(),

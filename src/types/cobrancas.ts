@@ -58,6 +58,7 @@ export interface CriarCobrancaData {
   asaas_customer_id?: string;
   boleto_id?: string;
   link_boleto?: string;
+  created_by?: string;
   // Novos campos para integração ASAAS
   tipo_cliente?: TipoCliente;
   franqueado_id?: string;
