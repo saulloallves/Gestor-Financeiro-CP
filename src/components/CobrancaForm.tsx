@@ -32,7 +32,7 @@ import {
   useUnidadesParaSelecao 
 } from '../hooks/useClienteSelecao';
 import type { Cobranca, TipoCobranca, ClienteSelecionado, TipoCliente } from '../types/cobrancas';
-import { cobrancaFormSchema, type CobrancaFormData } from '../utils/cobrancaSchemas';
+import { cobrancaFormSchema, editarCobrancaFormSchema, type CobrancaFormData } from '../utils/cobrancaSchemas';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { formatarCpf, formatarCnpj } from '../utils/validations';
@@ -69,6 +69,8 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   const criarCobrancaIntegrada = useCriarCobrancaIntegrada();
   const atualizarUrls = useAtualizarUrls();
   
+  const isEdit = !!cobranca;
+
   // Estados para controle da interface
   const [dataVencimento, setDataVencimento] = useState<Date | null>(
     cobranca ? new Date(cobranca.vencimento.replace(/-/g, '/')) : null
@@ -81,6 +83,9 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   const franqueadosQuery = useFranqueadosParaSelecao();
   const unidadesQuery = useUnidadesParaSelecao();
 
+  // Usar schema diferente para criação e edição
+  const formSchema = isEdit ? editarCobrancaFormSchema : cobrancaFormSchema;
+
   const {
     register,
     handleSubmit,
@@ -90,7 +95,7 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
     watch,
     control,
   } = useForm<CobrancaFormData>({
-    resolver: zodResolver(cobrancaFormSchema),
+    resolver: zodResolver(formSchema),
     mode: 'onChange',
     defaultValues: {
       criar_no_asaas: false,
@@ -141,7 +146,6 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
   }, [open, cobranca, reset]);
 
   const isLoading = criarCobranca.isPending || editarCobranca.isPending || criarCobrancaIntegrada.isPending || atualizarUrls.isPending;
-  const isEdit = !!cobranca;
 
   // Opções para seleção de clientes baseado no tipo
   const opcoesClientes = tipoCliente === 'cpf' 
@@ -319,6 +323,7 @@ export function CobrancaForm({ open, onClose, cobranca }: CobrancaFormProps) {
                     onChange={handleDateChange}
                     disabled={isLoading}
                     sx={{ flex: 1 }}
+                    minDate={isEdit ? undefined : new Date()}
                     slotProps={{
                       textField: {
                         error: !!errors.vencimento,
