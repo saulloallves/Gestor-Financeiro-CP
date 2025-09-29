@@ -60,11 +60,12 @@ serve(async (req) => {
         let actionResult: any = { status: 'NO_ACTION' };
         switch (decision.action) {
           case 'SEND_WHATSAPP':
-            // Esta chamada será implementada no próximo passo. Por enquanto, simulamos.
-            console.log(`[Agendador v2] Ação para ${cobranca.id}: Enviar WhatsApp com template ${decision.template_name}`);
-            // A chamada real ao agente de notificação virá aqui.
-            // Ex: await supabaseAdmin.functions.invoke('agente-notificacao-whatsapp', { body: { cobranca_id: cobranca.id, template_name: decision.template_name } });
-            actionResult = { status: 'WHATSAPP_SCHEDULED', template: decision.template_name };
+            console.log(`[Agendador v2] Ação para ${cobranca.id}: Invocando agente de notificação com template ${decision.template_name}`);
+            const { data: notificacaoData, error: notificacaoError } = await supabaseAdmin.functions.invoke('agente-notificacao-whatsapp', {
+              body: { cobranca_id: cobranca.id, template_name: decision.template_name },
+            });
+            if (notificacaoError) throw new Error(`Erro no agente de notificação: ${notificacaoError.message}`);
+            actionResult = { status: 'WHATSAPP_SENT', result: notificacaoData };
             break;
           
           case 'ESCALAR_JURIDICO':
