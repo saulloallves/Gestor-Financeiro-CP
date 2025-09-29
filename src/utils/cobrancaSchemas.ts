@@ -30,7 +30,7 @@ export const cobrancaFormSchema = cobrancaBaseSchema.extend({
   vencimento: z.date().refine((date) => {
     return startOfDay(date) >= startOfDay(new Date());
   }, {
-    message: "A data de vencimento não pode ser no passado.",
+    message: "Não é possível criar cobranças vencidas.",
   }),
 }).superRefine((data, ctx) => {
   // Só aplicar validações ASAAS se criar_no_asaas for true
