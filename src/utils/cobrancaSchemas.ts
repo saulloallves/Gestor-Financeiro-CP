@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { startOfDay } from 'date-fns';
 import { validarCpf, validarCnpj } from './validations';
 
 // Schema base para cobrança
@@ -25,6 +26,12 @@ export const cobrancaFormSchema = cobrancaBaseSchema.extend({
     telefone: z.string().optional(),
     tipo: z.enum(['cpf', 'cnpj']),
   }).optional(),
+  // Sobrescreve a validação de vencimento para criação
+  vencimento: z.date().refine((date) => {
+    return startOfDay(date) >= startOfDay(new Date());
+  }, {
+    message: "A data de vencimento não pode ser no passado.",
+  }),
 }).superRefine((data, ctx) => {
   // Só aplicar validações ASAAS se criar_no_asaas for true
   if (data.criar_no_asaas) {
@@ -87,7 +94,7 @@ export const cobrancaFormSchema = cobrancaBaseSchema.extend({
 // Tipos inferidos do schema
 export type CobrancaFormData = z.infer<typeof cobrancaFormSchema>;
 
-// Schema para edição (campos básicos, sem validações ASAAS)
+// Schema para edição (campos básicos, sem validações ASAAS e sem restrição de data)
 export const editarCobrancaFormSchema = cobrancaBaseSchema.extend({
   criar_no_asaas: z.boolean().optional(),
   tipo_cliente: z.enum(['cpf', 'cnpj']).optional(),
