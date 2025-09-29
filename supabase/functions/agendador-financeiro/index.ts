@@ -7,88 +7,100 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log("--- [Agendador] Função iniciada ---");
+  console.log("--- [Agendador v2] Função iniciada ---");
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // 1. Segurança
     const cronSecret = Deno.env.get('CRON_SECRET');
     const authHeader = req.headers.get('Authorization');
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      console.error("[Agendador] ERRO: Acesso não autorizado.");
+      console.error("[Agendador v2] ERRO: Acesso não autorizado.");
       return new Response(JSON.stringify({ error: 'Acesso não autorizado.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    console.log("[Agendador] INFO: Autorização OK.");
 
-    // 2. Conexão com Supabase
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-    console.log("[Agendador] INFO: Cliente Supabase Admin criado.");
 
-    // 3. Buscar cobranças
-    console.log("[Agendador] INFO: Buscando cobranças pendentes...");
+    console.log("[Agendador v2] INFO: Buscando cobranças pendentes...");
     const { data: cobrancas, error: cobrancasError } = await supabaseAdmin
       .from('cobrancas')
       .select('id')
       .in('status', ['pendente', 'em_aberto', 'em_atraso', 'vencido'])
       .limit(50);
 
-    if (cobrancasError) {
-      console.error("[Agendador] ERRO ao buscar cobranças:", cobrancasError);
-      throw new Error(`Erro ao buscar cobranças: ${cobrancasError.message}`);
-    }
-
+    if (cobrancasError) throw new Error(`Erro ao buscar cobranças: ${cobrancasError.message}`);
     if (!cobrancas || cobrancas.length === 0) {
-      console.log("[Agendador] INFO: Nenhuma cobrança para processar.");
       return new Response(JSON.stringify({ success: true, message: 'Nenhuma cobrança para processar.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
       });
     }
-    console.log(`[Agendador] INFO: ${cobrancas.length} cobranças encontradas para processar.`);
+    console.log(`[Agendador v2] INFO: ${cobrancas.length} cobranças encontradas.`);
 
-    // 4. Invocar 'agente-financeiro'
-    console.log("[Agendador] INFO: Invocando 'agente-financeiro' para cada cobrança...");
-    const promises = cobrancas.map(cobranca => {
-      console.log(`[Agendador] -> Invocando para cobrança ID: ${cobranca.id}`);
-      return supabaseAdmin.functions.invoke('agente-financeiro', {
-        body: { cobranca_id: cobranca.id },
-      });
-    });
+    const results = [];
+    for (const cobranca of cobrancas) {
+      try {
+        // 1. Chamar o Orquestrador para obter a decisão
+        console.log(`[Agendador v2] -> Invocando Orquestrador para cobrança ${cobranca.id}`);
+        const { data: orquestradorData, error: orquestradorError } = await supabaseAdmin.functions.invoke('agente-orquestrador', {
+          body: { cobranca_id: cobranca.id },
+        });
+        if (orquestradorError) throw new Error(`Erro no orquestrador: ${orquestradorError.message}`);
+        
+        const decision = orquestradorData.decision;
+        console.log(`[Agendador v2] Decisão para ${cobranca.id}: ${JSON.stringify(decision)}`);
 
-    const results = await Promise.allSettled(promises);
-    console.log("[Agendador] INFO: Todas as invocações foram concluídas. Processando resultados...");
-    console.log("[Agendador] DEBUG: Resultados brutos:", JSON.stringify(results, null, 2));
+        // 2. Executar a ação com base na decisão
+        let actionResult: any = { status: 'NO_ACTION' };
+        switch (decision.action) {
+          case 'SEND_WHATSAPP':
+            // Esta chamada será implementada no próximo passo. Por enquanto, simulamos.
+            console.log(`[Agendador v2] Ação para ${cobranca.id}: Enviar WhatsApp com template ${decision.template_name}`);
+            // A chamada real ao agente de notificação virá aqui.
+            // Ex: await supabaseAdmin.functions.invoke('agente-notificacao-whatsapp', { body: { cobranca_id: cobranca.id, template_name: decision.template_name } });
+            actionResult = { status: 'WHATSAPP_SCHEDULED', template: decision.template_name };
+            break;
+          
+          case 'ESCALAR_JURIDICO':
+            console.log(`[Agendador v2] Ação para ${cobranca.id}: Escalar para Jurídico`);
+            const { error: updateError } = await supabaseAdmin
+              .from('cobrancas')
+              .update({ status: 'juridico' })
+              .eq('id', cobranca.id);
+            if (updateError) throw new Error(`Falha ao escalar para jurídico: ${updateError.message}`);
+            actionResult = { status: 'ESCALATED_TO_LEGAL' };
+            break;
 
-    // 5. Processar resultados
-    const sucessos = results.filter(r => r.status === 'fulfilled' && !r.value.error).length;
-    const falhas = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.error));
+          case 'NO_ACTION':
+            console.log(`[Agendador v2] Ação para ${cobranca.id}: Nenhuma ação necessária.`);
+            break;
 
-    const detalhesFalhas = falhas.map((f, index) => {
-      const cobrancaId = cobrancas[index].id;
-      if (f.status === 'rejected') {
-        return `Cobrança ${cobrancaId}: ${f.reason.message || 'Rejeitada sem motivo'}`;
+          default:
+            console.warn(`[Agendador v2] Ação desconhecida para ${cobranca.id}: ${decision.action}`);
+            actionResult = { status: 'UNKNOWN_ACTION', action: decision.action };
+        }
+        results.push({ cobranca_id: cobranca.id, success: true, result: actionResult });
+      } catch (error) {
+        console.error(`[Agendador v2] ERRO ao processar cobrança ${cobranca.id}:`, error.message);
+        results.push({ cobranca_id: cobranca.id, success: false, error: error.message });
       }
-      // @ts-ignore
-      const errorBody = f.value.data?.error || f.value.error || 'Erro desconhecido na função agente';
-      return `Cobrança ${cobrancaId}: ${JSON.stringify(errorBody)}`;
-    });
+    }
 
+    const sucessos = results.filter(r => r.success).length;
+    const falhas = results.length - sucessos;
     const responsePayload = {
-      success: falhas.length === 0,
+      success: falhas === 0,
       total_processadas: cobrancas.length,
       sucessos,
-      falhas: falhas.length,
-      detalhes_falhas: detalhesFalhas,
+      falhas,
+      detalhes: results,
     };
-    console.log("[Agendador] INFO: Resumo do processamento:", responsePayload);
 
     return new Response(JSON.stringify(responsePayload), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -96,7 +108,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("[Agendador] ERRO FATAL:", error);
+    console.error("[Agendador v2] ERRO FATAL:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
