@@ -16,334 +16,256 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { 
-  RefreshCw, 
   Save, 
   BrainCircuit,
   TestTube,
+  Bot,
+  Key,
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useConfiguracoes } from '../hooks/useConfiguracoes';
 import { useAIModels } from '../hooks/useAIModels';
+import { useIaPrompts, useUpdateIaPrompt } from '../hooks/useIaPrompts';
 import type { AtualizarConfiguracaoData } from '../types/configuracoes';
-import type { IAProvider } from '../types/ia';
+import type { IAProvider, IaPrompt } from '../types/ia';
 
-// Schema para configurações de IA
-const configIASchema = z.object({
+// Schema para configurações globais do provedor
+const providerSchema = z.object({
   ia_provedor: z.enum(['openai', 'lambda'] as const),
-  ia_modelo: z.string().min(1, "Modelo é obrigatório"),
-  ia_api_key: z.string().min(1, "Chave de API é obrigatória"),
-  ia_prompt_base: z.string().min(50, "O prompt base deve ter no mínimo 50 caracteres."),
+  ia_api_key: z.string().min(10, "Chave de API parece curta demais").optional().or(z.literal('')),
 });
+type ProviderForm = z.infer<typeof providerSchema>;
 
-type ConfigIAForm = z.infer<typeof configIASchema>;
+// Schema para o formulário de edição de prompt
+const promptSchema = z.object({
+  modelo_ia: z.string().min(1, "Modelo é obrigatório"),
+  prompt_base: z.string().min(50, "O prompt base deve ter no mínimo 50 caracteres."),
+});
+type PromptForm = z.infer<typeof promptSchema>;
 
 export function ConfiguracoesIAPage() {
   const theme = useTheme();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('');
 
-  const { configuracao, isLoading, error, atualizar, isUpdating } = useConfiguracoes();
+  // Hooks para configurações globais
+  const { configuracao, isLoading: isLoadingConfig, error: errorConfig, atualizar, isUpdating: isUpdatingConfig } = useConfiguracoes();
+  
+  // Hooks para prompts
+  const { data: prompts, isLoading: isLoadingPrompts } = useIaPrompts();
+  const updatePromptMutation = useUpdateIaPrompt();
 
-  const iaForm = useForm<ConfigIAForm>({
-    resolver: zodResolver(configIASchema),
-    defaultValues: {
-      ia_provedor: 'openai',
-      ia_modelo: '',
-      ia_api_key: '',
-      ia_prompt_base: '',
-    },
-  });
-
-  // Hook para modelos de IA
-  const currentProvider = iaForm.watch('ia_provedor');
-  const currentApiKey = iaForm.watch('ia_api_key');
+  // Hooks para modelos de IA
   const { models, isLoading: isLoadingModels, testConnection, fetchModels } = useAIModels();
 
-  // Preencher formulário quando os dados carregarem
+  // Formulário para configurações do provedor
+  const providerForm = useForm<ProviderForm>({
+    resolver: zodResolver(providerSchema),
+  });
+
+  // Formulário para edição de prompts
+  const promptForm = useForm<PromptForm>({
+    resolver: zodResolver(promptSchema),
+  });
+
+  const currentApiKey = providerForm.watch('ia_api_key');
+  const currentProvider = providerForm.watch('ia_provedor');
+
+  // Preencher formulários quando os dados carregarem
   useEffect(() => {
     if (configuracao) {
-      iaForm.reset({
+      providerForm.reset({
         ia_provedor: (configuracao.ia_provedor as IAProvider) || 'openai',
-        ia_modelo: configuracao.ia_modelo || '',
         ia_api_key: configuracao.ia_api_key || '',
-        ia_prompt_base: configuracao.ia_prompt_base || '',
       });
     }
-  }, [configuracao, iaForm]);
+  }, [configuracao, providerForm]);
 
-  // Carregar modelos automaticamente quando houver provedor e API key salvos
   useEffect(() => {
-    if (configuracao?.ia_provedor && configuracao?.ia_api_key) {
-      fetchModels(configuracao.ia_provedor as IAProvider, configuracao.ia_api_key)
-        .catch((error) => {
-          console.log('Erro ao carregar modelos automaticamente:', error);
-          // Não mostrar erro para o usuário aqui, apenas log
-        });
+    if (prompts && prompts.length > 0 && !selectedAgentId) {
+      setSelectedAgentId(prompts[0].id);
     }
-  }, [configuracao?.ia_provedor, configuracao?.ia_api_key, fetchModels]);
+  }, [prompts, selectedAgentId]);
 
-  // Recarregar modelos quando o provedor ou API key mudarem no formulário
+  useEffect(() => {
+    const selectedPrompt = prompts?.find(p => p.id === selectedAgentId);
+    if (selectedPrompt) {
+      promptForm.reset({
+        modelo_ia: selectedPrompt.modelo_ia,
+        prompt_base: selectedPrompt.prompt_base,
+      });
+    }
+  }, [selectedAgentId, prompts, promptForm]);
+
+  // Carregar modelos quando a API key for válida
   useEffect(() => {
     if (currentProvider && currentApiKey && currentApiKey.length > 10) {
-      const debounceTimer = setTimeout(() => {
-        fetchModels(currentProvider, currentApiKey)
-          .catch((error) => {
-            console.log('Erro ao recarregar modelos:', error);
-          });
-      }, 1000); // Debounce de 1 segundo
-
-      return () => clearTimeout(debounceTimer);
+      fetchModels(currentProvider, currentApiKey).catch(console.error);
     }
   }, [currentProvider, currentApiKey, fetchModels]);
 
-  const salvarConfiguracoes = async (data: Partial<AtualizarConfiguracaoData>) => {
-    try {
-      await new Promise((resolve) => {
-        atualizar(data, {
-          onSuccess: () => {
-            setSnackbar({
-              open: true,
-              message: 'Configurações de IA salvas com sucesso!',
-              severity: 'success'
-            });
-            resolve(true);
-          },
-          onError: (error) => {
-            setSnackbar({
-              open: true,
-              message: `Erro ao salvar configurações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-              severity: 'error'
-            });
-            resolve(false);
-          }
-        });
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Erro ao salvar configurações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        severity: 'error'
-      });
-    }
+  const onProviderSubmit = async (data: ProviderForm) => {
+    const updateData: Partial<AtualizarConfiguracaoData> = {
+      ia_provedor: data.ia_provedor,
+      ia_api_key: data.ia_api_key,
+    };
+    
+    atualizar(updateData, {
+      onSuccess: () => setSnackbar({ open: true, message: 'Configurações do provedor salvas!', severity: 'success' }),
+      onError: (e) => setSnackbar({ open: true, message: `Erro: ${e.message}`, severity: 'error' }),
+    });
   };
 
-  const onSubmitIA = async (data: ConfigIAForm) => {
-    await salvarConfiguracoes(data);
+  const onPromptSubmit = async (data: PromptForm) => {
+    if (!selectedAgentId) return;
+    updatePromptMutation.mutate({ id: selectedAgentId, updates: data });
   };
 
   const handleTestConnection = async () => {
-    try {
-      await testConnection(currentProvider, currentApiKey);
-      setSnackbar({
-        open: true,
-        message: 'Conexão testada com sucesso!',
-        severity: 'success'
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Erro na conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        severity: 'error'
-      });
-    }
+    const success = await testConnection(currentProvider, currentApiKey || '');
+    setSnackbar({
+      open: true,
+      message: success ? 'Conexão bem-sucedida!' : 'Falha na conexão. Verifique a chave de API.',
+      severity: success ? 'success' : 'error',
+    });
   };
 
-  const handleFetchModels = async () => {
-    try {
-      await fetchModels(currentProvider, currentApiKey);
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Erro ao buscar modelos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        severity: 'error'
-      });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+  if (isLoadingConfig || isLoadingPrompts) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
   }
 
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          Erro ao carregar configurações: {error?.message}
-        </Alert>
-      </Box>
-    );
+  if (errorConfig) {
+    return <Alert severity="error">Erro ao carregar configurações: {errorConfig.message}</Alert>;
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ color: 'text.primary' }}>
+      <Typography variant="h4" component="h1" gutterBottom>
         <BrainCircuit size={32} style={{ marginRight: theme.spacing(1) }} />
         Configurações de Inteligência Artificial
       </Typography>
-
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Configure o provedor de IA, modelo e chaves de API para o agente inteligente do sistema.
+        Gerencie o provedor de IA e os prompts para cada agente do sistema.
       </Typography>
 
-      <Card sx={{ mt: 2 }}>
-        <Box sx={{ p: 3 }}>
-          <form onSubmit={iaForm.handleSubmit(onSubmitIA)}>
-            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', mb: 3 }}>
-              Configurações do Provedor de IA
+      {/* Card 1: Configurações do Provedor */}
+      <Card sx={{ mb: 4 }}>
+        <form onSubmit={providerForm.handleSubmit(onProviderSubmit)}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Key size={20} /> Provedor e Chave de API (Global)
             </Typography>
-            
-            <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: '1fr' }}>
+            <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr' } }}>
               <Controller
                 name="ia_provedor"
-                control={iaForm.control}
-                render={({ field, fieldState }) => (
-                  <FormControl error={!!fieldState.error}>
+                control={providerForm.control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
                     <InputLabel>Provedor de IA</InputLabel>
                     <Select {...field} label="Provedor de IA">
                       <MenuItem value="openai">OpenAI (GPT)</MenuItem>
-                      <MenuItem value="lambda">Anthropic Claude</MenuItem>
+                      <MenuItem value="lambda">Anthropic (Claude)</MenuItem>
                     </Select>
                   </FormControl>
                 )}
               />
-
               <Controller
                 name="ia_api_key"
-                control={iaForm.control}
+                control={providerForm.control}
                 render={({ field, fieldState }) => (
                   <TextField
                     {...field}
                     label="Chave de API"
                     type="password"
+                    fullWidth
                     error={!!fieldState.error}
-                    helperText={fieldState.error?.message || "Insira sua chave de API do provedor selecionado"}
-                    placeholder="Insira sua chave de API"
+                    helperText={fieldState.error?.message}
                   />
                 )}
               />
+            </Box>
+          </CardContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleTestConnection} variant="outlined" startIcon={<TestTube />} disabled={!currentApiKey}>
+              Testar Conexão
+            </Button>
+            <Button type="submit" variant="contained" startIcon={<Save />} disabled={isUpdatingConfig}>
+              {isUpdatingConfig ? 'Salvando...' : 'Salvar Provedor'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Card>
 
+      {/* Card 2: Gerenciamento de Prompts */}
+      <Card>
+        <form onSubmit={promptForm.handleSubmit(onPromptSubmit)}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Bot size={20} /> Gerenciamento de Prompts dos Agentes
+            </Typography>
+            <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
+              <FormControl fullWidth>
+                <InputLabel>Selecione o Agente</InputLabel>
+                <Select
+                  value={selectedAgentId}
+                  onChange={(e) => setSelectedAgentId(e.target.value)}
+                  label="Selecione o Agente"
+                >
+                  {prompts?.map((p: IaPrompt) => (
+                    <MenuItem key={p.id} value={p.id}>{p.nome_agente}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
               <Controller
-                name="ia_modelo"
-                control={iaForm.control}
-                render={({ field, fieldState }) => {
-                  // Criar lista de modelos que inclui o modelo salvo se não estiver na lista da API
-                  const currentModelValue = field.value;
-                  const modelExists = models.some(model => model.id === currentModelValue);
-                  const displayModels = [...models];
-                  
-                  // Se existe um modelo salvo mas não está na lista, adicionar como opção
-                  if (currentModelValue && !modelExists) {
-                    displayModels.unshift({
-                      id: currentModelValue,
-                      name: `${currentModelValue} (salvo)`
-                    });
-                  }
-
-                  return (
-                    <FormControl error={!!fieldState.error} disabled={isLoadingModels}>
-                      <InputLabel>Modelo de IA</InputLabel>
-                      <Select 
-                        {...field} 
-                        label="Modelo de IA"
-                        startAdornment={isLoadingModels && <CircularProgress size={20} />}
-                      >
-                        {displayModels.length === 0 && !isLoadingModels ? (
-                          <MenuItem disabled>
-                            Nenhum modelo disponível
-                          </MenuItem>
-                        ) : (
-                          displayModels.map((model) => (
-                            <MenuItem key={model.id} value={model.id}>
-                              {model.name}
-                            </MenuItem>
-                          ))
-                        )}
-                      </Select>
-                      {fieldState.error && (
-                        <Typography variant="caption" color="error" sx={{ ml: 1.5, mt: 0.5 }}>
-                          {fieldState.error.message}
-                        </Typography>
-                      )}
-                      {!isLoadingModels && models.length === 0 && currentApiKey && (
-                        <Typography variant="caption" color="text.secondary" sx={{ ml: 1.5, mt: 0.5 }}>
-                          Clique em "Recarregar Modelos" para buscar modelos disponíveis
-                        </Typography>
-                      )}
-                    </FormControl>
-                  );
-                }}
+                name="modelo_ia"
+                control={promptForm.control}
+                render={({ field, fieldState }) => (
+                  <FormControl fullWidth error={!!fieldState.error} disabled={isLoadingModels}>
+                    <InputLabel>Modelo de IA</InputLabel>
+                    <Select {...field} label="Modelo de IA">
+                      {models.map((model) => (
+                        <MenuItem key={model.id} value={model.id}>{model.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
               />
             </Box>
-
-            <Divider sx={{ my: 4 }} />
-
-            <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', mb: 3 }}>
-              Personalidade do Agente (Prompt Base)
-            </Typography>
-
+            <Divider sx={{ my: 3 }} />
             <Controller
-              name="ia_prompt_base"
-              control={iaForm.control}
+              name="prompt_base"
+              control={promptForm.control}
               render={({ field, fieldState }) => (
                 <TextField
                   {...field}
-                  label="Prompt Base da IA"
+                  label="Prompt Base do Agente"
                   multiline
                   rows={15}
                   fullWidth
                   error={!!fieldState.error}
-                  helperText={fieldState.error?.message || "Defina aqui o comportamento, tom e regras do agente de IA."}
+                  helperText={fieldState.error?.message}
                 />
               )}
             />
-
-            <Box sx={{ mt: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={<Save />}
-                disabled={isUpdating}
-              >
-                {isUpdating ? 'Salvando...' : 'Salvar Configurações'}
-              </Button>
-              
-              <Button
-                onClick={handleTestConnection}
-                variant="outlined"
-                startIcon={<TestTube />}
-                disabled={!currentApiKey || isLoadingModels}
-              >
-                Testar Conexão
-              </Button>
-
-              <Button
-                onClick={handleFetchModels}
-                variant="outlined"
-                startIcon={<RefreshCw />}
-                disabled={!currentApiKey || isLoadingModels}
-              >
-                {isLoadingModels ? 'Carregando...' : 'Recarregar Modelos'}
-              </Button>
-            </Box>
-          </form>
-        </Box>
+          </CardContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button type="submit" variant="contained" startIcon={<Save />} disabled={updatePromptMutation.isPending || !selectedAgentId}>
+              {updatePromptMutation.isPending ? 'Salvando...' : 'Salvar Prompt do Agente'}
+            </Button>
+          </DialogActions>
+        </form>
       </Card>
 
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

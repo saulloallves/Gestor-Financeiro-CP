@@ -22,3 +22,20 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+// Tipos para a tabela ia_prompts
+export interface IaPrompt {
+  id: string;
+  nome_agente: string;
+  prompt_base: string;
+  modelo_ia: string;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IaPromptUpdate {
+  prompt_base?: string;
+  modelo_ia?: string;
+  ativo?: boolean;
+}
