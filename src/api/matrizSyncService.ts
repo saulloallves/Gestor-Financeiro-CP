@@ -7,6 +7,7 @@ import type {
   UnidadeMatriz,
   VFranqueadosUnidadesDetalhes
 } from '../types/matriz';
+import { publishEvent } from './eventService'; // Importar o novo serviço
 
 const BATCH_SIZE = 500; // Processar em lotes para não sobrecarregar
 
@@ -101,9 +102,31 @@ class MatrizSyncService {
       stats.franqueadosUnidades.synced = vinculosMatriz.length;
       onProgress(stats, 'Sincronização concluída!');
 
+      // Após a conclusão bem-sucedida de toda a sincronização,
+      // publica um evento genérico para notificar outros sistemas.
+      await publishEvent({
+        topic: 'system.sync.completed',
+        payload: {
+          status: 'success',
+          synced_at: new Date().toISOString(),
+          stats: stats,
+        },
+      });
+
       return stats;
     } catch (error) {
       console.error('Erro na sincronização da matriz:', error);
+      
+      // Em caso de erro, publica um evento de falha.
+      await publishEvent({
+        topic: 'system.sync.failed',
+        payload: {
+          status: 'error',
+          failed_at: new Date().toISOString(),
+          error_message: error instanceof Error ? error.message : 'Erro desconhecido',
+        },
+      });
+
       throw error;
     }
   }
