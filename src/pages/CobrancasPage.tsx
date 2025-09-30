@@ -36,10 +36,6 @@ import {
 import { toast } from "react-hot-toast";
 import { useCobrancasCacheFirst } from "../hooks/useCobrancasCacheFirst";
 import { useCobrancasEstatisticas } from "../hooks/useCobrancasEstatisticas";
-import {
-  useSyncAsaasPayments,
-  useSyncAsaasStatuses,
-} from "../hooks/useAsaasSync";
 import { useGerarBoleto, useSincronizarStatus } from "../hooks/useCobrancas";
 import {
   type Cobranca,
@@ -123,8 +119,6 @@ export function CobrancasPage() {
 
   const { data: estatisticas, isLoading: isLoadingStats } =
     useCobrancasEstatisticas();
-  const syncPaymentsMutation = useSyncAsaasPayments();
-  const syncStatusesMutation = useSyncAsaasStatuses();
   const gerarBoletoMutation = useGerarBoleto();
   const sincronizarStatusMutation = useSincronizarStatus();
 
@@ -162,14 +156,6 @@ export function CobrancasPage() {
   const handleViewUnidadeDetails = (codigoUnidade: number) => {
     setSelectedUnidadeCodigo(codigoUnidade);
     setModalUnidadeOpen(true);
-  };
-
-  const handleSyncPayments = () => {
-    syncPaymentsMutation.mutate({});
-  };
-
-  const handleSyncStatuses = () => {
-    syncStatusesMutation.mutate();
   };
 
   const handleGerarBoleto = async (id: string) => {
@@ -488,37 +474,12 @@ export function CobrancasPage() {
       >
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
-            Cobranças
+            Gestão de Cobranças
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Gestão de cobranças com performance otimizada.
+            Cobranças em aberto de todas as unidades.
           </Typography>
         </Box>
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Tooltip title="Sincronizar novos pagamentos do ASAAS">
-            <Button
-              variant="outlined"
-              startIcon={<RefreshCw size={16} />}
-              onClick={handleSyncPayments}
-              disabled={syncPaymentsMutation.isPending}
-            >
-              {syncPaymentsMutation.isPending
-                ? "Sincronizando..."
-                : "Sincronizar Pagamentos"}
-            </Button>
-          </Tooltip>
-          <Tooltip title="Atualizar status de pagamentos existentes">
-            <Button
-              variant="outlined"
-              startIcon={<RefreshCw size={16} />}
-              onClick={handleSyncStatuses}
-              disabled={syncStatusesMutation.isPending}
-            >
-              {syncStatusesMutation.isPending
-                ? "Atualizando..."
-                : "Atualizar Status"}
-            </Button>
-          </Tooltip>
           <Button
             variant="contained"
             startIcon={<Plus size={20} />}
@@ -526,7 +487,6 @@ export function CobrancasPage() {
           >
             Nova Cobrança
           </Button>
-        </Box>
       </Box>
 
       {/* Filtros */}
