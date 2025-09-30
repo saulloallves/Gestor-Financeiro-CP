@@ -1,6 +1,8 @@
 import { supabase } from '../api/supabaseClient';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { QueryClient } from '@tanstack/react-query';
+import { useDataStore } from '../store/dataStore';
+import toast from 'react-hot-toast';
 
 class RealtimeService {
   private channel: RealtimeChannel | null = null;
@@ -22,15 +24,22 @@ class RealtimeService {
         
         if (payload.table === 'unidades') {
           this.queryClient?.invalidateQueries({ queryKey: ['unidades'] });
-          console.log('🔄 [Realtime] Unidades query cache invalidated.');
+          useDataStore.getState().refreshData();
+          toast.success(`Dados da unidade ${payload.id} atualizados em tempo real!`);
         } else if (payload.table === 'franqueados') {
           this.queryClient?.invalidateQueries({ queryKey: ['franqueados'] });
-          console.log('🔄 [Realtime] Franqueados query cache invalidated.');
+          useDataStore.getState().refreshData();
+          toast.success(`Dados do franqueado ${payload.id} atualizados em tempo real!`);
         }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cobrancas' }, (payload) => {
+        console.log('📡 [Realtime] Cobrança update received:', payload);
+        useDataStore.getState().refreshData();
+        toast.success(`Cobrança atualizada em tempo real!`);
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ [RealtimeService] Subscribed to matriz-updates channel!');
+          console.log('✅ [RealtimeService] Subscribed to matriz-updates and cobrancas channels!');
         }
       });
   }
