@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">gf-cp</string>
-    <string name="title_activity_main">gf-cp</string>
-    <string name="package_name">com.example.gfcp</string>
-    <string name="custom_url_scheme">com.example.gfcp</string>
-</resources>
