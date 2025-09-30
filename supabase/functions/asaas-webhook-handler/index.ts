@@ -81,7 +81,6 @@ serve(async (req) => {
       case 'PAYMENT_UPDATED':
         updateData.valor_atualizado = payment.value;
         updateData.vencimento = payment.dueDate;
-        // O status também pode mudar em uma atualização
         const updatedStatus = mapAsaasStatus(payment.status);
         if (updatedStatus) updateData.status = updatedStatus;
         actionTaken = true;
@@ -100,7 +99,6 @@ serve(async (req) => {
         }
         break;
       
-      // Para outros eventos, não fazemos nada na tabela de cobranças, apenas logamos.
       default:
         actionTaken = false;
         break;
@@ -121,13 +119,14 @@ serve(async (req) => {
         throw new Error(`Erro ao atualizar cobrança: ${updateError.message}`);
       }
 
-      // Notificar o frontend via Realtime
+      // Notificar o frontend via Realtime, agora incluindo o codigo_unidade
       const channel = supabaseAdmin.channel('cobrancas-updates');
       await channel.send({
         type: 'broadcast',
         event: 'cobranca-updated',
         payload: {
           id: updatedCobranca.id,
+          codigo_unidade: updatedCobranca.codigo_unidade, // <-- A CORREÇÃO ESTÁ AQUI
           ...updateData
         },
       });
@@ -137,7 +136,6 @@ serve(async (req) => {
         .update({ is_processed: true, processing_status: 'success' })
         .eq('id', logId);
     } else {
-      // Marcar o log como processado mas ignorado
       await supabaseAdmin
         .from('asaas_webhook_logs')
         .update({ is_processed: true, processing_status: 'processed_ignored' })
