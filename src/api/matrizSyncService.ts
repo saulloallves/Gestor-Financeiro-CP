@@ -43,6 +43,15 @@ class MatrizSyncService {
     return allData;
   }
 
+  // Nova função para buscar unidades via RPC, bypassando RLS
+  private async fetchAllUnidadesFromMatrizRpc(): Promise<UnidadeMatriz[]> {
+    const { data, error } = await supabaseMatriz.rpc('get_all_unidades_for_sync');
+    if (error) {
+      throw new Error(`Erro ao buscar unidades via RPC: ${error.message}`);
+    }
+    return data || [];
+  }
+
   async syncAllMatrizData(
     onProgress: (stats: SyncStats, message: string) => void
   ): Promise<SyncStats> {
@@ -56,7 +65,7 @@ class MatrizSyncService {
       // --- FASE 1: BUSCAR TODOS OS DADOS DA MATRIZ ---
       onProgress(stats, 'Buscando todos os dados da matriz...');
       const [unidadesMatriz, franqueadosMatriz, vinculosMatriz] = await Promise.all([
-        this.fetchAllMatrizData<UnidadeMatriz>('unidades'),
+        this.fetchAllUnidadesFromMatrizRpc(), // Usando a nova função RPC
         this.fetchAllMatrizData<VFranqueadosUnidadesDetalhes>('v_franqueados_unidades_detalhes'),
         this.fetchAllMatrizData('franqueados_unidades'),
       ]);
@@ -82,14 +91,18 @@ class MatrizSyncService {
       // --- FASE 3: INSERÇÃO DOS NOVOS DADOS (ORDEM DE DEPENDÊNCIA) ---
       onProgress(stats, `Sincronizando ${unidadesMatriz.length} unidades...`);
       const unidadesMapeadas: UnidadeMapeada[] = unidadesMatriz.map(mapearUnidadeMatriz);
-      const { error: unidadesError } = await supabase.from('unidades').upsert(unidadesMapeadas, { onConflict: 'id' });
-      if (unidadesError) throw new Error(`Erro ao sincronizar unidades: ${unidadesError.message}`);
+      if (unidadesMapeadas.length > 0) {
+        const { error: unidadesError } = await supabase.from('unidades').upsert(unidadesMapeadas, { onConflict: 'id' });
+        if (unidadesError) throw new Error(`Erro ao sincronizar unidades: ${unidadesError.message}`);
+      }
       stats.unidades.synced = unidadesMapeadas.length;
 
       onProgress(stats, `Sincronizando ${franqueadosMatriz.length} franqueados...`);
       const franqueadosMapeados: FranqueadoMapeado[] = franqueadosMatriz.map(mapearFranqueadoMatriz);
-      const { error: franqueadosError } = await supabase.from('franqueados').upsert(franqueadosMapeados, { onConflict: 'id' });
-      if (franqueadosError) throw new Error(`Erro ao sincronizar franqueados: ${franqueadosError.message}`);
+      if (franqueadosMapeados.length > 0) {
+        const { error: franqueadosError } = await supabase.from('franqueados').upsert(franqueadosMapeados, { onConflict: 'id' });
+        if (franqueadosError) throw new Error(`Erro ao sincronizar franqueados: ${franqueadosError.message}`);
+      }
       stats.franqueados.synced = franqueadosMapeados.length;
 
       onProgress(stats, `Sincronizando ${vinculosMatriz.length} vínculos...`);
