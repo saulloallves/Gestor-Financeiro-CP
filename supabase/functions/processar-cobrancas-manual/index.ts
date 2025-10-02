@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log("--- [Processamento Manual v2] Função iniciada ---");
+  console.log("--- [Processamento Manual v3] Função iniciada ---");
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -28,7 +28,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !user) {
-      console.error("[Processamento Manual v2] ERRO: Token de usuário inválido.", userError?.message);
+      console.error("[Processamento Manual v3] ERRO: Token de usuário inválido.", userError?.message);
       return new Response(JSON.stringify({ error: 'Acesso não autorizado: token inválido.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -42,16 +42,16 @@ serve(async (req) => {
       .single();
 
     if (internalUserError || !internalUser) {
-      console.error(`[Processamento Manual v2] ERRO: Usuário ${user.email} não é um usuário interno.`);
+      console.error(`[Processamento Manual v3] ERRO: Usuário ${user.email} não é um usuário interno.`);
       return new Response(JSON.stringify({ error: 'Acesso não autorizado: permissão negada.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    console.log(`[Processamento Manual v2] INFO: Autorização OK para ${user.email}.`);
+    console.log(`[Processamento Manual v3] INFO: Autorização OK para ${user.email}.`);
 
     // 2. Buscar cobranças
-    console.log("[Processamento Manual v2] INFO: Buscando cobranças pendentes...");
+    console.log("[Processamento Manual v3] INFO: Buscando cobranças pendentes...");
     const { data: cobrancas, error: cobrancasError } = await supabaseAdmin
       .from('cobrancas')
       .select('id')
@@ -68,26 +68,50 @@ serve(async (req) => {
         status: 200,
       });
     }
-    console.log(`[Processamento Manual v2] INFO: ${cobrancas.length} cobranças encontradas.`);
+    console.log(`[Processamento Manual v3] INFO: ${cobrancas.length} cobranças encontradas.`);
 
-    // 3. Invocar 'agente-orquestrador' para cada cobrança
-    const promises = cobrancas.map(cobranca => 
-      supabaseAdmin.functions.invoke('agente-orquestrador', {
-        body: { cobranca_id: cobranca.id },
-      })
-    );
+    // 3. Processar cada cobrança individualmente (lógica corrigida)
+    const results = [];
+    for (const cobranca of cobrancas) {
+      try {
+        // 3.1. Chamar o Orquestrador para obter a decisão
+        console.log(`[Processamento Manual v3] -> Invocando Orquestrador para cobrança ${cobranca.id}`);
+        const { data: orquestradorData, error: orquestradorError } = await supabaseAdmin.functions.invoke('agente-orquestrador', {
+          body: { cobranca_id: cobranca.id },
+        });
+        if (orquestradorError) throw new Error(`Erro no orquestrador: ${orquestradorError.message}`);
+        
+        const decision = orquestradorData.decision;
+        console.log(`[Processamento Manual v3] Decisão para ${cobranca.id}: ${JSON.stringify(decision)}`);
 
-    const results = await Promise.allSettled(promises);
-    
+        // 3.2. Executar a ação com base na decisão
+        let actionResult: any = { status: 'NO_ACTION' };
+        if (decision && decision.action && decision.action !== 'NO_ACTION') {
+            console.log(`[Processamento Manual v3] Ação para ${cobranca.id}: Invocando agente ${decision.action} com template ${decision.template_name}`);
+            const { data: actionData, error: actionError } = await supabaseAdmin.functions.invoke(decision.action, {
+              body: { cobranca_id: cobranca.id, template_name: decision.template_name },
+            });
+            if (actionError) throw new Error(`Erro no agente de ação: ${actionError.message}`);
+            actionResult = { status: 'ACTION_EXECUTED', action: decision.action, result: actionData };
+        } else {
+            console.log(`[Processamento Manual v3] Ação para ${cobranca.id}: Nenhuma ação necessária.`);
+        }
+        results.push({ cobranca_id: cobranca.id, success: true, result: actionResult });
+      } catch (error) {
+        console.error(`[Processamento Manual v3] ERRO ao processar cobrança ${cobranca.id}:`, error.message);
+        results.push({ cobranca_id: cobranca.id, success: false, error: error.message });
+      }
+    }
+
     // 4. Processar resultados
-    const sucessos = results.filter(r => r.status === 'fulfilled' && !r.value.error).length;
+    const sucessos = results.filter(r => r.success).length;
     const falhas = results.length - sucessos;
-
     const responsePayload = {
       success: falhas === 0,
       total_processadas: cobrancas.length,
       sucessos,
       falhas,
+      detalhes: results,
     };
 
     return new Response(JSON.stringify(responsePayload), {
@@ -96,7 +120,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("[Processamento Manual v2] ERRO FATAL:", error);
+    console.error("[Processamento Manual v3] ERRO FATAL:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
