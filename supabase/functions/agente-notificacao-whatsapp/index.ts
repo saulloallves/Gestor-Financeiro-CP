@@ -69,7 +69,8 @@ serve(async (req) => {
       .replace('{{unidade.codigo_unidade}}', franqueadoUnidadeInfo.codigo_unidade)
       .replace('{{cobranca.valor_atualizado}}', cobranca.valor_atualizado.toFixed(2).replace('.', ','))
       .replace('{{cobranca.vencimento}}', formatDate(cobranca.vencimento))
-      .replace('{{cobranca.link_pagamento}}', cobranca.link_pagamento || `https://crescieperdi.com.br/pagamento/${cobranca.id}`);
+      .replace('{{cobranca.link_pagamento}}', cobranca.link_pagamento || `https://crescieperdi.com.br/pagamento/${cobranca.id}`)
+      .replace('{{cobranca.tipo_cobranca}}', cobranca.tipo_cobranca);
 
     // 3. Chamar a IA para obter a mensagem final
     const openai = new OpenAI({ apiKey: config.ia_api_key });
