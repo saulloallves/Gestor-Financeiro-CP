@@ -101,14 +101,27 @@ class MatrizSyncService {
       onProgress(stats, 'Buscando vínculos da matriz...');
       const vinculosMatriz = await this.fetchAllMatrizData('franqueados_unidades');
       stats.franqueadosUnidades.total = vinculosMatriz.length;
+
+      // **CORREÇÃO:** Filtrar vínculos para garantir que tanto o franqueado quanto a unidade existem localmente
+      const vinculosValidos = vinculosMatriz.filter(vinculo => 
+        unidadesMatrizIds.has(vinculo.unidade_id) && franqueadosMatrizIds.has(vinculo.franqueado_id)
+      );
+      const vinculosIgnorados = vinculosMatriz.length - vinculosValidos.length;
+      if (vinculosIgnorados > 0) {
+        console.warn(`[Sync] Ignorando ${vinculosIgnorados} vínculos quebrados da matriz.`);
+      }
+
       onProgress(stats, `Limpando todos os vínculos locais...`);
       const { error: deleteVinculosError } = await supabase.from('franqueados_unidades').delete().neq('id', 0); // Deleta tudo
       if (deleteVinculosError) throw new Error(`Erro ao limpar vínculos: ${deleteVinculosError.message}`);
       stats.franqueadosUnidades.deleted = stats.franqueadosUnidades.total; // Assumindo que todos são substituídos
-      onProgress(stats, `Sincronizando ${stats.franqueadosUnidades.total} novos vínculos...`);
-      const { error: vinculosError } = await supabase.from('franqueados_unidades').upsert(vinculosMatriz, { onConflict: 'id' });
-      if (vinculosError) throw new Error(`Erro ao sincronizar vínculos: ${vinculosError.message}`);
-      stats.franqueadosUnidades.synced = vinculosMatriz.length;
+      
+      onProgress(stats, `Sincronizando ${vinculosValidos.length} vínculos válidos...`);
+      if (vinculosValidos.length > 0) {
+        const { error: vinculosError } = await supabase.from('franqueados_unidades').upsert(vinculosValidos, { onConflict: 'id' });
+        if (vinculosError) throw new Error(`Erro ao sincronizar vínculos: ${vinculosError.message}`);
+      }
+      stats.franqueadosUnidades.synced = vinculosValidos.length;
       onProgress(stats, 'Sincronização concluída!');
 
       await publishEvent({
