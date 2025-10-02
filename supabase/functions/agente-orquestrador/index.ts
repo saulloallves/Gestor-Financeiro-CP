@@ -9,6 +9,31 @@ const corsHeaders = {
 
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
+/**
+ * Retorna as strings para "hoje", "amanhã" e "ontem" no fuso horário de Brasília (UTC-3).
+ */
+function getBrasiliaDateStrings(refDate: Date = new Date()): { hoje: string; amanha: string; ontem: string } {
+  function fmt(d: Date): string {
+    const semana = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+    // Usar métodos UTC porque já ajustamos o timestamp
+    const dia = String(d.getUTCDate()).padStart(2, '0');
+    const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const ano = d.getUTCFullYear();
+    return `${semana[d.getUTCDay()]}, ${dia}/${mes}/${ano}`;
+  }
+
+  const msUTCMinus3 = refDate.getTime() - (3 * 60 * 60 * 1000);
+  const dataHoje = new Date(msUTCMinus3);
+  const dataAmanha = new Date(msUTCMinus3 + (24 * 60 * 60 * 1000));
+  const dataOntem = new Date(msUTCMinus3 - (24 * 60 * 60 * 1000));
+
+  return {
+    hoje: fmt(dataHoje),
+    amanha: fmt(dataAmanha),
+    ontem: fmt(dataOntem),
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -61,6 +86,7 @@ serve(async (req) => {
     const vencimentoUTC = new Date(cobranca.vencimento);
     const diffTime = hojeUTC.getTime() - vencimentoUTC.getTime();
     const diasAtrasoReal = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const datasBrasilia = getBrasiliaDateStrings(); // Obter as datas de Brasília
 
     const promptFinal = (promptData.prompt_base || '')
       .replace('{{contexto_rag}}', contextoFormatado)
@@ -74,7 +100,10 @@ serve(async (req) => {
       .replace(new RegExp('{{franqueado.nome}}', 'g'), franqueadoUnidadeInfo.nome)
       .replace('{{unidade.codigo_unidade}}', franqueadoUnidadeInfo.codigo_unidade)
       .replace('{{unidade.nome_padrao}}', franqueadoUnidadeInfo.nome_unidade)
-      .replace('{{config.dias_lembrete_previo}}', String(config.dias_lembrete_previo || 3));
+      .replace('{{config.dias_lembrete_previo}}', String(config.dias_lembrete_previo || 3))
+      .replace('{{data_hoje}}', datasBrasilia.hoje)
+      .replace('{{data_amanha}}', datasBrasilia.amanha)
+      .replace('{{data_ontem}}', datasBrasilia.ontem);
 
     // 5. Chamar a IA para obter a decisão
     const openai = new OpenAI({ apiKey: config.ia_api_key });
