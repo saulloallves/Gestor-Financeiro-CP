@@ -105,18 +105,26 @@ class MatrizSyncService {
       stats.franqueadosUnidades.synced = vinculosValidos.length;
       onProgress(stats, 'Sincronização concluída!');
 
-      await publishEvent({
-        topic: 'system.sync.completed',
-        payload: { status: 'success', synced_at: new Date().toISOString(), stats },
-      });
+      try {
+        await publishEvent({
+          topic: 'system.sync.completed',
+          payload: { status: 'success', synced_at: new Date().toISOString(), stats },
+        });
+      } catch (eventError) {
+        console.warn('Falha ao publicar evento de sucesso da sincronização:', eventError);
+      }
 
       return stats;
     } catch (error) {
       console.error('Erro na sincronização da matriz:', error);
-      await publishEvent({
-        topic: 'system.sync.failed',
-        payload: { status: 'error', failed_at: new Date().toISOString(), error_message: error instanceof Error ? error.message : 'Erro desconhecido' },
-      });
+      try {
+        await publishEvent({
+          topic: 'system.sync.failed',
+          payload: { status: 'error', failed_at: new Date().toISOString(), error_message: error instanceof Error ? error.message : 'Erro desconhecido' },
+        });
+      } catch (eventError) {
+        console.warn('Falha ao publicar evento de erro da sincronização:', eventError);
+      }
       throw error;
     }
   }
