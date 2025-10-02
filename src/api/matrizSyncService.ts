@@ -67,15 +67,15 @@ class MatrizSyncService {
 
       // --- FASE 2: LIMPEZA COMPLETA DO BANCO LOCAL (ORDEM INVERSA DE DEPENDÊNCIA) ---
       onProgress(stats, 'Limpando vínculos antigos...');
-      const { error: deleteVinculosError } = await supabase.from('franqueados_unidades').delete().neq('id', 0);
+      const { error: deleteVinculosError } = await supabase.from('franqueados_unidades').delete().not('id', 'is', null);
       if (deleteVinculosError) throw new Error(`Erro ao limpar vínculos: ${deleteVinculosError.message}`);
 
       onProgress(stats, 'Limpando franqueados antigos...');
-      const { error: deleteFranqueadosError } = await supabase.from('franqueados').delete().neq('id', 0);
+      const { error: deleteFranqueadosError } = await supabase.from('franqueados').delete().not('id', 'is', null);
       if (deleteFranqueadosError) throw new Error(`Erro ao limpar franqueados: ${deleteFranqueadosError.message}`);
 
       onProgress(stats, 'Limpando unidades antigas...');
-      const { error: deleteUnidadesError } = await supabase.from('unidades').delete().neq('id', 0);
+      const { error: deleteUnidadesError } = await supabase.from('unidades').delete().not('id', 'is', null);
       if (deleteUnidadesError) throw new Error(`Erro ao limpar unidades: ${deleteUnidadesError.message}`);
       onProgress(stats, 'Limpeza local concluída. Iniciando inserção de dados...');
 
