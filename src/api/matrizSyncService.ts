@@ -7,18 +7,18 @@ import type {
   UnidadeMatriz,
   VFranqueadosUnidadesDetalhes
 } from '../types/matriz';
-import { publishEvent } from './eventService'; // Importar o novo serviço
+import { publishEvent } from './eventService';
 
-const BATCH_SIZE = 500; // Processar em lotes para não sobrecarregar
+const BATCH_SIZE = 500;
 
 export interface SyncStats {
-  unidades: { total: number; synced: number };
-  franqueados: { total: number; synced: number };
-  franqueadosUnidades: { total: number; synced: number };
+  unidades: { total: number; synced: number; deleted: number };
+  franqueados: { total: number; synced: number; deleted: number };
+  franqueadosUnidades: { total: number; synced: number; deleted: number };
 }
 
 class MatrizSyncService {
-  private async fetchAllMatrizData<T>(tableName: string): Promise<T[]> {
+  private async fetchAllMatrizData<T>(tableName: string, columns: string = '*'): Promise<T[]> {
     let allData: T[] = [];
     let offset = 0;
     let hasMore = true;
@@ -26,7 +26,7 @@ class MatrizSyncService {
     while (hasMore) {
       const { data, error } = await supabaseMatriz
         .from(tableName)
-        .select('*')
+        .select(columns)
         .range(offset, offset + BATCH_SIZE - 1);
 
       if (error) {
@@ -47,86 +47,82 @@ class MatrizSyncService {
     onProgress: (stats: SyncStats, message: string) => void
   ): Promise<SyncStats> {
     const stats: SyncStats = {
-      unidades: { total: 0, synced: 0 },
-      franqueados: { total: 0, synced: 0 },
-      franqueadosUnidades: { total: 0, synced: 0 },
+      unidades: { total: 0, synced: 0, deleted: 0 },
+      franqueados: { total: 0, synced: 0, deleted: 0 },
+      franqueadosUnidades: { total: 0, synced: 0, deleted: 0 },
     };
 
     try {
-      // 1. Sincronizar Unidades
+      // --- SINCRONIZAÇÃO DE UNIDADES ---
       onProgress(stats, 'Buscando unidades da matriz...');
       const unidadesMatriz = await this.fetchAllMatrizData<UnidadeMatriz>('unidades');
       stats.unidades.total = unidadesMatriz.length;
-      onProgress(stats, `Encontradas ${stats.unidades.total} unidades. Mapeando...`);
+      const unidadesMatrizIds = new Set(unidadesMatriz.map(u => u.id));
 
+      onProgress(stats, `Limpando unidades órfãs...`);
+      const { data: localUnidadesIds } = await supabase.from('unidades').select('id');
+      const unidadesIdsToDelete = localUnidadesIds?.filter(u => !unidadesMatrizIds.has(u.id)).map(u => u.id) || [];
+      if (unidadesIdsToDelete.length > 0) {
+        await supabase.from('franqueados_unidades').delete().in('unidade_id', unidadesIdsToDelete);
+        const { error: deleteError } = await supabase.from('unidades').delete().in('id', unidadesIdsToDelete);
+        if (deleteError) throw new Error(`Erro ao deletar unidades órfãs: ${deleteError.message}`);
+        stats.unidades.deleted = unidadesIdsToDelete.length;
+      }
+      onProgress(stats, `${stats.unidades.deleted} unidades órfãs removidas. Sincronizando...`);
       const unidadesMapeadas: UnidadeMapeada[] = unidadesMatriz.map(mapearUnidadeMatriz);
-      onProgress(stats, `Sincronizando ${stats.unidades.total} unidades com o banco local...`);
-
-      const { error: unidadesError } = await supabase
-        .from('unidades')
-        .upsert(unidadesMapeadas, { onConflict: 'id' });
-
+      const { error: unidadesError } = await supabase.from('unidades').upsert(unidadesMapeadas, { onConflict: 'id' });
       if (unidadesError) throw new Error(`Erro ao sincronizar unidades: ${unidadesError.message}`);
       stats.unidades.synced = unidadesMapeadas.length;
       onProgress(stats, 'Unidades sincronizadas com sucesso!');
 
-      // 2. Sincronizar Franqueados
+      // --- SINCRONIZAÇÃO DE FRANQUEADOS ---
       onProgress(stats, 'Buscando franqueados da matriz...');
       const franqueadosMatriz = await this.fetchAllMatrizData<VFranqueadosUnidadesDetalhes>('v_franqueados_unidades_detalhes');
       stats.franqueados.total = franqueadosMatriz.length;
-      onProgress(stats, `Encontrados ${stats.franqueados.total} franqueados. Mapeando...`);
+      const franqueadosMatrizIds = new Set(franqueadosMatriz.map(f => f.id));
 
+      onProgress(stats, `Limpando franqueados órfãos...`);
+      const { data: localFranqueadosIds } = await supabase.from('franqueados').select('id');
+      const franqueadosIdsToDelete = localFranqueadosIds?.filter(f => !franqueadosMatrizIds.has(f.id)).map(f => f.id) || [];
+      if (franqueadosIdsToDelete.length > 0) {
+        await supabase.from('franqueados_unidades').delete().in('franqueado_id', franqueadosIdsToDelete);
+        const { error: deleteError } = await supabase.from('franqueados').delete().in('id', franqueadosIdsToDelete);
+        if (deleteError) throw new Error(`Erro ao deletar franqueados órfãos: ${deleteError.message}`);
+        stats.franqueados.deleted = franqueadosIdsToDelete.length;
+      }
+      onProgress(stats, `${stats.franqueados.deleted} franqueados órfãos removidos. Sincronizando...`);
       const franqueadosMapeados: FranqueadoMapeado[] = franqueadosMatriz.map(mapearFranqueadoMatriz);
-      onProgress(stats, `Sincronizando ${stats.franqueados.total} franqueados com o banco local...`);
-
-      const { error: franqueadosError } = await supabase
-        .from('franqueados')
-        .upsert(franqueadosMapeados, { onConflict: 'id' });
-
+      const { error: franqueadosError } = await supabase.from('franqueados').upsert(franqueadosMapeados, { onConflict: 'id' });
       if (franqueadosError) throw new Error(`Erro ao sincronizar franqueados: ${franqueadosError.message}`);
       stats.franqueados.synced = franqueadosMapeados.length;
       onProgress(stats, 'Franqueados sincronizados com sucesso!');
 
-      // 3. Sincronizar Vínculos (Franqueados <-> Unidades)
+      // --- SINCRONIZAÇÃO DE VÍNCULOS ---
       onProgress(stats, 'Buscando vínculos da matriz...');
       const vinculosMatriz = await this.fetchAllMatrizData('franqueados_unidades');
       stats.franqueadosUnidades.total = vinculosMatriz.length;
-      onProgress(stats, `Encontrados ${stats.franqueadosUnidades.total} vínculos. Sincronizando...`);
-
-      // O upsert usa o par (franqueado_id, unidade_id) para evitar duplicatas
-      const { error: vinculosError } = await supabase
-        .from('franqueados_unidades')
-        .upsert(vinculosMatriz, { onConflict: 'franqueado_id,unidade_id' });
-
+      onProgress(stats, `Limpando todos os vínculos locais...`);
+      const { error: deleteVinculosError } = await supabase.from('franqueados_unidades').delete().neq('id', 0); // Deleta tudo
+      if (deleteVinculosError) throw new Error(`Erro ao limpar vínculos: ${deleteVinculosError.message}`);
+      stats.franqueadosUnidades.deleted = stats.franqueadosUnidades.total; // Assumindo que todos são substituídos
+      onProgress(stats, `Sincronizando ${stats.franqueadosUnidades.total} novos vínculos...`);
+      const { error: vinculosError } = await supabase.from('franqueados_unidades').upsert(vinculosMatriz, { onConflict: 'id' });
       if (vinculosError) throw new Error(`Erro ao sincronizar vínculos: ${vinculosError.message}`);
       stats.franqueadosUnidades.synced = vinculosMatriz.length;
       onProgress(stats, 'Sincronização concluída!');
 
-      // Após a conclusão bem-sucedida de toda a sincronização,
-      // publica um evento genérico para notificar outros sistemas.
       await publishEvent({
         topic: 'system.sync.completed',
-        payload: {
-          status: 'success',
-          synced_at: new Date().toISOString(),
-          stats: stats,
-        },
+        payload: { status: 'success', synced_at: new Date().toISOString(), stats },
       });
 
       return stats;
     } catch (error) {
       console.error('Erro na sincronização da matriz:', error);
-      
-      // Em caso de erro, publica um evento de falha.
       await publishEvent({
         topic: 'system.sync.failed',
-        payload: {
-          status: 'error',
-          failed_at: new Date().toISOString(),
-          error_message: error instanceof Error ? error.message : 'Erro desconhecido',
-        },
+        payload: { status: 'error', failed_at: new Date().toISOString(), error_message: error instanceof Error ? error.message : 'Erro desconhecido' },
       });
-
       throw error;
     }
   }
