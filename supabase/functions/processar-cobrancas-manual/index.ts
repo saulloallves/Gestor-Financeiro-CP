@@ -70,7 +70,7 @@ serve(async (req) => {
     }
     console.log(`[Processamento Manual v3] INFO: ${cobrancas.length} cobranças encontradas.`);
 
-    // 3. Processar cada cobrança individualmente (lógica corrigida)
+    // 3. Processar cada cobrança individualmente
     const results = [];
     for (const cobranca of cobrancas) {
       try {
@@ -87,8 +87,18 @@ serve(async (req) => {
         // 3.2. Executar a ação com base na decisão
         let actionResult: any = { status: 'NO_ACTION' };
         if (decision && decision.action && decision.action !== 'NO_ACTION') {
-            console.log(`[Processamento Manual v3] Ação para ${cobranca.id}: Invocando agente ${decision.action} com template ${decision.template_name}`);
-            const { data: actionData, error: actionError } = await supabaseAdmin.functions.invoke(decision.action, {
+            let functionToInvoke = '';
+            switch (decision.action) {
+              case 'SEND_WHATSAPP':
+                functionToInvoke = 'agente-notificacao-whatsapp';
+                break;
+              // Adicionar outros casos aqui no futuro (ex: SEND_EMAIL)
+              default:
+                throw new Error(`Ação desconhecida recebida do orquestrador: ${decision.action}`);
+            }
+
+            console.log(`[Processamento Manual v3] Ação para ${cobranca.id}: Invocando agente ${functionToInvoke} com template ${decision.template_name}`);
+            const { data: actionData, error: actionError } = await supabaseAdmin.functions.invoke(functionToInvoke, {
               body: { cobranca_id: cobranca.id, template_name: decision.template_name },
             });
             if (actionError) throw new Error(`Erro no agente de ação: ${actionError.message}`);
