@@ -28,6 +28,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // **CORREÇÃO:** Definir as opções de invocação com a chave de serviço
+    const invokeOptions = {
+      headers: {
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+      }
+    };
+
     console.log("[Agendador v3] INFO: Buscando cobranças pendentes...");
     const { data: cobrancas, error: cobrancasError } = await supabaseAdmin
       .from('cobrancas')
@@ -50,7 +57,7 @@ serve(async (req) => {
         console.log(`[Agendador v3] -> Invocando Orquestrador para cobrança ${cobranca.id}`);
         const { data: orquestradorData, error: orquestradorError } = await supabaseAdmin.functions.invoke('agente-orquestrador', {
           body: { cobranca_id: cobranca.id },
-        });
+        }, invokeOptions); // **<-- APLICAR OPÇÕES AQUI**
         if (orquestradorError) throw new Error(`Erro no orquestrador: ${orquestradorError.message}`);
         
         const decision = orquestradorData.decision;
@@ -59,10 +66,20 @@ serve(async (req) => {
         // 2. Executar a ação com base na decisão
         let actionResult: any = { status: 'NO_ACTION' };
         if (decision && decision.action && decision.action !== 'NO_ACTION') {
-            console.log(`[Agendador v3] Ação para ${cobranca.id}: Invocando agente ${decision.action} com template ${decision.template_name}`);
-            const { data: actionData, error: actionError } = await supabaseAdmin.functions.invoke(decision.action, {
+            let functionToInvoke = '';
+            switch (decision.action) {
+              case 'SEND_WHATSAPP':
+                functionToInvoke = 'agente-notificacao-whatsapp';
+                break;
+              // Adicionar outros casos aqui no futuro (ex: SEND_EMAIL)
+              default:
+                throw new Error(`Ação desconhecida recebida do orquestrador: ${decision.action}`);
+            }
+
+            console.log(`[Agendador v3] Ação para ${cobranca.id}: Invocando agente ${functionToInvoke} com template ${decision.template_name}`);
+            const { data: actionData, error: actionError } = await supabaseAdmin.functions.invoke(functionToInvoke, {
               body: { cobranca_id: cobranca.id, template_name: decision.template_name },
-            });
+            }, invokeOptions); // **<-- APLICAR OPÇÕES AQUI TAMBÉM**
             if (actionError) throw new Error(`Erro no agente de ação: ${actionError.message}`);
             actionResult = { status: 'ACTION_EXECUTED', action: decision.action, result: actionData };
         } else {
