@@ -33,7 +33,7 @@ import {
   SlidersHorizontal,
   Key, // Ícone para permissões
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@mui/material/styles";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Can } from '../auth'; // Importa o componente Can
@@ -196,6 +196,7 @@ export function Sidebar({
 
   // Estados para controle do sidebar
   const [isHovered, setIsHovered] = useState(false);
+  const hoverTimeoutRef = useRef<number | null>(null);
 
   // O sidebar está expandido quando está com hover OU fixo
   const isExpanded = isHovered || isPinned;
@@ -207,6 +208,15 @@ export function Sidebar({
   useEffect(() => {
     onExpandedChange?.(isExpanded);
   }, [isExpanded, onExpandedChange]);
+
+  // Limpa o temporizador se o componente for desmontado
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleItemClick = (item: MenuItem) => {
     if (item.children) {
@@ -230,15 +240,21 @@ export function Sidebar({
 
   const handleMouseEnter = () => {
     if (!isPinned) {
-      setIsHovered(true);
-      onExpandedChange?.(true);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      hoverTimeoutRef.current = window.setTimeout(() => {
+        setIsHovered(true);
+      }, 1500); // Atraso de 1.5 segundos
     }
   };
 
   const handleMouseLeave = () => {
     if (!isPinned) {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
       setIsHovered(false);
-      onExpandedChange?.(false);
     }
   };
 
