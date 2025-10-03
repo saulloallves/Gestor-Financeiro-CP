@@ -1,10 +1,12 @@
 import { supabase } from "./supabaseClient";
+import { PermissionsService } from "./permissionsService";
 import type {
   LoginInternoData,
   LoginFranqueadoData,
   Usuario,
   UnidadeVinculada,
 } from "../types/auth";
+import type { PerfilUsuario } from "../types/equipes";
 
 interface UsuarioInternoData {
   id: string;
@@ -13,6 +15,7 @@ interface UsuarioInternoData {
   email: string;
   telefone?: string;
   perfil: string;
+  equipe_id?: string;
   status: string;
   ultimo_login?: string;
   primeiro_acesso?: boolean;
@@ -86,18 +89,26 @@ export class AuthService {
         );
       }
 
+      // 4. Busca as permissões do usuário
+      const permissoes = await PermissionsService.getPermissionsForUser(
+        userData.perfil as PerfilUsuario,
+        userData.equipe_id
+      );
+
       return {
         id: userData.id,
         user_id: userData.user_id,
         nome: userData.nome,
         email: userData.email,
         perfil: userData.perfil as "operador" | "gestor" | "juridico" | "admin",
+        equipe_id: userData.equipe_id,
         status: (userData.status as "ativo" | "inativo") || "ativo",
         ultimo_login: userData.ultimo_login,
         primeiro_acesso: userData.primeiro_acesso,
         senha_temporaria: userData.senha_temporaria,
         data_criacao: userData.data_criacao,
         data_ultima_senha: userData.data_ultima_senha,
+        permissoes, // Adiciona as permissões ao objeto do usuário
       };
     } catch (error) {
       console.error("❌ Erro no login interno:", error);
@@ -229,22 +240,29 @@ export class AuthService {
       // Primeiro tenta buscar como usuário interno usando função que bypassa RLS
       const { data: userData, error: userError } = (await supabase.rpc(
         "get_internal_user_data",
-        { user_uuid: session.user.id }
+        { p_user_id: session.user.id }
       )) as {
-        data: UsuarioInternoData[] | null;
+        data: UsuarioInternoData | null;
         error: Error | null;
       };
 
-      if (!userError && userData && userData.length > 0) {
-        const user = userData[0];
+      if (!userError && userData) {
+        // Busca as permissões do usuário
+        const permissoes = await PermissionsService.getPermissionsForUser(
+          userData.perfil as PerfilUsuario,
+          userData.equipe_id
+        );
+
         return {
-          id: String(user.id),
-          user_id: user.user_id, // Agora vem diretamente da função
-          nome: user.nome,
-          email: user.email,
-          telefone: user.telefone,
-          perfil: user.perfil as "operador" | "gestor" | "juridico" | "admin",
-          status: "ativo" as const, // Padrão por enquanto
+          id: String(userData.id),
+          user_id: userData.user_id,
+          nome: userData.nome,
+          email: userData.email,
+          telefone: userData.telefone,
+          perfil: userData.perfil as "operador" | "gestor" | "juridico" | "admin",
+          equipe_id: userData.equipe_id,
+          status: "ativo" as const,
+          permissoes,
         };
       }
 

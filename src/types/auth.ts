@@ -37,6 +37,7 @@ export interface UsuarioInterno {
   equipe_id?: string;
   status: "ativo" | "inativo";
   ultimo_login?: string;
+  permissoes?: string[]; // Array com os recursos permitidos
   
   // Campos de controle de primeiro acesso
   primeiro_acesso?: boolean;
