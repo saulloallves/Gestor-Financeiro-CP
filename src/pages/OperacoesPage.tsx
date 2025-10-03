@@ -40,6 +40,9 @@ export function OperacoesPage() {
   const processarCobrancasMutation = useProcessarCobrancas();
   const [isCleaningOrphans, setIsCleaningOrphans] = useState(false);
 
+  // Unifica os estados de loading
+  const isAnySyncRunning = isSyncLoading || matrizSync.isLoading;
+
   const formatLastSync = () => {
     if (!lastSyncAt) return 'Nunca';
     try {
@@ -67,6 +70,16 @@ export function OperacoesPage() {
     }
   };
 
+  const getStatusMessage = () => {
+    if (matrizSync.isLoading) {
+      return matrizSync.progressMessage || 'Sincronizando com a Matriz...';
+    }
+    if (isSyncLoading) {
+      return 'Sincronizando cache local...';
+    }
+    return 'Ocioso';
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" component="h1" gutterBottom>Central de Operações e Sistema</Typography>
@@ -82,14 +95,20 @@ export function OperacoesPage() {
             <Typography variant="h6" gutterBottom>Status e Sincronização de Dados</Typography>
             <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}><Clock size={16} /><Typography variant="body2">Última Sincronização: {formatLastSync()}</Typography></Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Database size={16} /><Typography>Status: {isSyncLoading ? 'Sincronizando...' : 'Ocioso'}</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Database size={16} /><Typography>Status: {getStatusMessage()}</Typography></Box>
               {syncError && <Alert severity="error" sx={{ mt: 1 }}>{syncError}</Alert>}
-              {progress && <Box sx={{ mt: 1 }}><LinearProgress variant="determinate" value={(progress.current / progress.total) * 100} /><Typography variant="caption">{progress.stage}</Typography></Box>}
+              {progress && isSyncLoading && <Box sx={{ mt: 1 }}><LinearProgress variant="determinate" value={(progress.current / progress.total) * 100} /><Typography variant="caption">{progress.stage}</Typography></Box>}
+              {matrizSync.isLoading && matrizSync.stats && (
+                <Box sx={{ mt: 1 }}>
+                  <LinearProgress variant="determinate" value={((matrizSync.stats.unidades.synced + matrizSync.stats.franqueados.synced) / (matrizSync.stats.unidades.total + matrizSync.stats.franqueados.total)) * 100} />
+                  <Typography variant="caption">{matrizSync.progressMessage}</Typography>
+                </Box>
+              )}
             </Paper>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Button variant="outlined" startIcon={<RefreshCw />} onClick={() => refreshData(true)} disabled={isSyncLoading}>Sincronização Incremental</Button>
-              <Button variant="contained" color="secondary" startIcon={<GitMerge />} onClick={matrizSync.startSync} disabled={matrizSync.isLoading}>Sincronização Completa (Matriz)</Button>
-              <Button variant="outlined" color="error" startIcon={<Trash2 />} onClick={() => { if (window.confirm("Tem certeza que deseja limpar todo o cache local?")) clearCache(); }} disabled={isSyncLoading}>Limpar Cache Local</Button>
+              <Button variant="outlined" startIcon={<RefreshCw />} onClick={() => refreshData(true)} disabled={isAnySyncRunning}>Sincronização Incremental</Button>
+              <Button variant="contained" color="secondary" startIcon={<GitMerge />} onClick={matrizSync.startSync} disabled={isAnySyncRunning}>Sincronização Completa (Matriz)</Button>
+              <Button variant="outlined" color="error" startIcon={<Trash2 />} onClick={() => { if (window.confirm("Tem certeza que deseja limpar todo o cache local?")) clearCache(); }} disabled={isAnySyncRunning}>Limpar Cache Local</Button>
             </Box>
           </CardContent>
         </Card>
@@ -105,7 +124,7 @@ export function OperacoesPage() {
               variant="contained"
               startIcon={processarCobrancasMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <Cpu />}
               onClick={() => processarCobrancasMutation.mutate()}
-              disabled={processarCobrancasMutation.isPending}
+              disabled={processarCobrancasMutation.isPending || isAnySyncRunning}
             >
               {processarCobrancasMutation.isPending ? 'Processando...' : 'Processar Cobranças com IA'}
             </Button>
@@ -125,7 +144,7 @@ export function OperacoesPage() {
                 color="error"
                 startIcon={isCleaningOrphans ? <CircularProgress size={16} /> : <Trash2 />}
                 onClick={handleLimparOrfaos}
-                disabled={isCleaningOrphans}
+                disabled={isCleaningOrphans || isAnySyncRunning}
               >
                 {isCleaningOrphans ? 'Limpando...' : 'Limpar Usuários Órfãos'}
               </Button>
