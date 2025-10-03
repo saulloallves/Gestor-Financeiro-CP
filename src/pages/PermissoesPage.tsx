@@ -67,14 +67,14 @@ export function PermissoesPage() {
       field: 'perfil',
       headerName: 'Perfil',
       width: 150,
-      valueGetter: (value: any, row: Permissao) => row.perfil,
+      valueGetter: (_value: unknown, row: Permissao) => row.perfil,
       renderCell: (params) => params.value ? <Chip label={params.value} size="small" /> : 'N/A',
     },
     {
       field: 'equipe',
       headerName: 'Equipe',
       width: 200,
-      valueGetter: (value: any, row: Permissao) => row.equipes?.nome_equipe,
+      valueGetter: (_value: unknown, row: Permissao) => row.equipes?.nome_equipe,
       renderCell: (params) => params.value ? <Chip label={params.value} size="small" variant="outlined" /> : 'N/A',
     },
     {
@@ -144,7 +144,6 @@ export function PermissoesPage() {
         title="Confirmar Exclusão"
         message={`Tem certeza que deseja excluir a permissão para o recurso "${selectedPermissao?.recurso}"?`}
         confirmText="Excluir"
-        isLoading={deleteMutation.isPending}
       />
     </Box>
   );
