@@ -5,22 +5,17 @@ import {
   Card,
   CardContent,
   Button,
-  Chip,
   Paper,
   LinearProgress,
-  Divider,
   Alert,
   CircularProgress,
 } from '@mui/material';
 import {
   RefreshCw,
-  DownloadCloud,
   Trash2,
   Database,
   Clock,
-  AlertCircle,
   Cpu,
-  Wrench,
   GitMerge,
 } from 'lucide-react';
 import { useDataSync } from '../hooks/useDataSync';
@@ -65,7 +60,7 @@ export function OperacoesPage() {
       } else {
         toast.error(`Erro na limpeza: ${resultado.error || 'Erro desconhecido'}`);
       }
-    } catch (error) {
+    } catch {
       toast.error('Erro ao executar limpeza de usuários órfãos');
     } finally {
       setIsCleaningOrphans(false);
@@ -114,10 +109,6 @@ export function OperacoesPage() {
             >
               {processarCobrancasMutation.isPending ? 'Processando...' : 'Processar Cobranças com IA'}
             </Button>
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="body2" color="text.secondary">
-              O sistema também executa esta tarefa automaticamente a cada 30 minutos.
-            </Typography>
           </CardContent>
         </Card>
 
