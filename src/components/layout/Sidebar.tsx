@@ -30,7 +30,7 @@ import {
   MessageSquare,
   FileText,
   History,
-  SlidersHorizontal, // Novo ícone para Operações
+  SlidersHorizontal,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -161,8 +161,8 @@ const menuItems: MenuItem[] = [
       },
       {
         id: "configuracoes-cobrancas",
-        title: "Configurações Cobranças",
-        icon: CreditCard,
+        title: "Configurações",
+        icon: Settings,
         path: "/configuracoes",
       },
       {
