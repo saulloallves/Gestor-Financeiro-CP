@@ -28,7 +28,6 @@ import {
   Download,
   Filter,
   X,
-  Trash2,
 } from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
@@ -41,7 +40,6 @@ import {
 import { useEquipesAtivas } from "../hooks/useEquipes";
 import { UsuarioInternoForm } from "../components/UsuarioInternoForm";
 import { AvatarUsuario } from "../components/ui/AvatarUsuario";
-import { UsuariosInternosService } from "../api/usuariosInternosService";
 import { formatarTelefone } from "../utils/validations";
 import type { 
   UsuarioInterno, 
@@ -92,7 +90,6 @@ export function UsuariosInternosPage() {
   const [filtros, setFiltros] = React.useState<FiltrosUsuarios>({});
   const [usuarioSelecionado, setUsuarioSelecionado] = React.useState<UsuarioInterno | undefined>();
   const [formOpen, setFormOpen] = React.useState(false);
-  const [isLimpandoOrfaos, setIsLimpandoOrfaos] = React.useState(false);
   const [termoBusca, setTermoBusca] = React.useState("");
   const [equipeFilter, setEquipeFilter] = React.useState<string>("");
   const [perfilFilter, setPerfilFilter] = React.useState<PerfilUsuario | "">("");
@@ -100,7 +97,7 @@ export function UsuariosInternosPage() {
   const [isExporting] = React.useState(false); // Para futuro uso de exportação
 
   // Hooks
-  const { data: usuarios, isLoading, error, refetch } = useUsuariosInternos(filtros);
+  const { data: usuarios, isLoading, error } = useUsuariosInternos(filtros);
   const { data: equipesAtivas } = useEquipesAtivas();
   const inativarMutation = useInativarUsuario();
   const ativarMutation = useAtivarUsuario();
@@ -171,31 +168,6 @@ export function UsuariosInternosPage() {
       ...prev,
       status: (status as StatusUsuario) || undefined,
     }));
-  };
-
-  // Função temporária para limpeza de usuários órfãos
-  const handleLimparOrfaos = async () => {
-    if (!confirm("Tem certeza que deseja limpar usuários órfãos? Esta ação não pode ser desfeita.")) {
-      return;
-    }
-
-    setIsLimpandoOrfaos(true);
-    try {
-      const resultado = await UsuariosInternosService.limparUsuariosOrfaos();
-      
-      if (resultado.success) {
-        alert(`Limpeza concluída! ${resultado.deleted_count || 0} usuários órfãos removidos.`);
-        // Recarregar dados
-        refetch();
-      } else {
-        alert(`Erro na limpeza: ${resultado.error || 'Erro desconhecido'}`);
-      }
-    } catch (error) {
-      console.error('Erro ao limpar órfãos:', error);
-      alert('Erro ao executar limpeza de usuários órfãos');
-    } finally {
-      setIsLimpandoOrfaos(false);
-    }
   };
 
   // Colunas da DataGrid
@@ -447,16 +419,6 @@ export function UsuariosInternosPage() {
             sx={{ minWidth: 140 }}
           >
             {isExporting ? <CircularProgress size={20} /> : "Exportar"}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<Trash2 size={20} />}
-            onClick={handleLimparOrfaos}
-            disabled={isLimpandoOrfaos}
-            color="warning"
-            sx={{ minWidth: 160 }}
-          >
-            {isLimpandoOrfaos ? <CircularProgress size={20} /> : "Limpar Órfãos"}
           </Button>
           <Button
             variant="contained"

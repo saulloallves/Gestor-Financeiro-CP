@@ -27,10 +27,10 @@ import {
   UserSearch,
   Settings,
   Database,
-  TestTube,
   MessageSquare,
   FileText,
-  History, // Novo ícone
+  History,
+  SlidersHorizontal, // Novo ícone para Operações
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
@@ -166,10 +166,10 @@ const menuItems: MenuItem[] = [
         path: "/configuracoes",
       },
       {
-        id: "teste-cache",
-        title: "Painel de Controle",
-        icon: TestTube,
-        path: "/teste-cache",
+        id: "operacoes",
+        title: "Operações e Sistema",
+        icon: SlidersHorizontal,
+        path: "/operacoes",
       }
     ],
   },

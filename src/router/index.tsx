@@ -9,7 +9,7 @@ import { CobrancasPage } from "../pages/CobrancasPage";
 import { ConfiguracoesPage } from "../pages/ConfiguracoesPage";
 import { ConfiguracoesIAPage } from "../pages/ConfiguracoesIAPage";
 import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
-import { TesteCacheFirstPage } from "../pages/TesteCacheFirstPage";
+import { OperacoesPage } from "../pages/OperacoesPage";
 import { ChatIAPage } from "../pages/ChatIAPage";
 import { TemplatesPage } from "../pages/TemplatesPage";
 import { ComunicacoesLogPage } from "../pages/ComunicacoesLogPage"; // Importa a nova página
@@ -129,10 +129,10 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "teste-cache",
+        path: "operacoes",
         element: (
           <ProtectedRoute requiredType="interno">
-            <TesteCacheFirstPage />
+            <OperacoesPage />
           </ProtectedRoute>
         ),
       },

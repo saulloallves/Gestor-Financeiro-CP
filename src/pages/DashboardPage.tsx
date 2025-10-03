@@ -3,35 +3,25 @@ import {
   Card,
   CardContent,
   Typography,
-  Button,
   Chip,
   Skeleton,
-  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
   DollarSign,
   TrendingUp,
   Users,
-  ArrowRight,
   AlertTriangle,
   Database,
-  Cpu,
   Building,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { useDashboardStats } from "../hooks/useDashboardStats";
-import { useProcessarCobrancas } from "../hooks/useCobrancas";
 
 export function DashboardPage() {
   const theme = useTheme();
   const { usuario } = useAuthStore();
   const { cobrancasStats, franqueadosStats, unidadesStats, isLoading } = useDashboardStats();
-  const processarCobrancasMutation = useProcessarCobrancas();
-
-  const handleProcessarCobrancas = () => {
-    processarCobrancasMutation.mutate();
-  };
 
   const cardData = [
     {
@@ -216,22 +206,6 @@ export function DashboardPage() {
         })}
       </Box>
 
-      {/* Status de Carregamento */}
-      {isLoading && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <CircularProgress size={24} />
-              <Box>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Carregando estatísticas...
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Seção de Alertas */}
       <Card>
         <CardContent>
@@ -243,7 +217,7 @@ export function DashboardPage() {
               marginBottom: theme.spacing(3),
             }}
           >
-            Sistema Central Financeira Autônoma
+            Alertas e Ações Rápidas
           </Typography>
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -272,26 +246,6 @@ export function DashboardPage() {
                 </Box>
               </Box>
             ))}
-
-            <Box sx={{ marginTop: theme.spacing(2), display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<ArrowRight size={16} />}
-                href="/cobrancas"
-              >
-                Ir para Cobranças
-              </Button>
-              <Button
-                variant="contained"
-                color="secondary"
-                startIcon={processarCobrancasMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <Cpu size={16} />}
-                onClick={handleProcessarCobrancas}
-                disabled={processarCobrancasMutation.isPending}
-              >
-                {processarCobrancasMutation.isPending ? 'Processando...' : 'Processar Cobranças com IA'}
-              </Button>
-            </Box>
           </Box>
         </CardContent>
       </Card>
