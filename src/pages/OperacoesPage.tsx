@@ -72,12 +72,6 @@ export function OperacoesPage() {
     }
   };
 
-  const handleFormatarCnpjs = () => {
-    if (window.confirm("Esta é uma ferramenta de debug para formatar CNPJs. Deseja continuar?")) {
-      toast.success('Função de formatação de CNPJ executada (simulação).');
-    }
-  };
-
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" component="h1" gutterBottom>Central de Operações e Sistema</Typography>
@@ -135,14 +129,6 @@ export function OperacoesPage() {
               Use estas ferramentas com cautela. Elas realizam alterações diretas no banco de dados.
             </Alert>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                color="warning"
-                startIcon={<Wrench />}
-                onClick={handleFormatarCnpjs}
-              >
-                Formatar CNPJs (Debug)
-              </Button>
               <Button
                 variant="outlined"
                 color="error"
