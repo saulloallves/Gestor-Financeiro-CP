@@ -12,7 +12,8 @@ import BaseConhecimentoPage from "../pages/BaseConhecimentoPage";
 import { OperacoesPage } from "../pages/OperacoesPage";
 import { ChatIAPage } from "../pages/ChatIAPage";
 import { TemplatesPage } from "../pages/TemplatesPage";
-import { ComunicacoesLogPage } from "../pages/ComunicacoesLogPage"; // Importa a nova página
+import { ComunicacoesLogPage } from "../pages/ComunicacoesLogPage";
+import { PermissoesPage } from "../pages/PermissoesPage"; // Importa a nova página
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -121,7 +122,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "comunicacoes/log", // Nova rota
+        path: "comunicacoes/log",
         element: (
           <ProtectedRoute requiredType="interno">
             <ComunicacoesLogPage />
@@ -133,6 +134,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <OperacoesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "permissoes", // Nova rota
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <PermissoesPage />
           </ProtectedRoute>
         ),
       },

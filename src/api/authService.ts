@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseClient";
-import { PermissionsService } from "./permissionsService";
+import { PermissoesService } from "./permissoesService";
 import type {
   LoginInternoData,
   LoginFranqueadoData,
@@ -90,7 +90,7 @@ export class AuthService {
       }
 
       // 4. Busca as permissões do usuário
-      const permissoes = await PermissionsService.getPermissionsForUser(
+      const permissoes = await PermissoesService.getPermissionsForUser(
         userData.perfil as PerfilUsuario,
         userData.equipe_id
       );
@@ -248,7 +248,7 @@ export class AuthService {
 
       if (!userError && userData) {
         // Busca as permissões do usuário
-        const permissoes = await PermissionsService.getPermissionsForUser(
+        const permissoes = await PermissoesService.getPermissionsForUser(
           userData.perfil as PerfilUsuario,
           userData.equipe_id
         );
