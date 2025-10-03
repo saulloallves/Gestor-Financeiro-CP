@@ -68,7 +68,7 @@ export const router = createBrowserRouter([
       {
         path: "equipes",
         element: (
-          <ProtectedRoute requiredType="interno">
+          <ProtectedRoute requiredType="interno" requiredProfile="admin">
             <EquipesPage />
           </ProtectedRoute>
         ),
@@ -76,7 +76,7 @@ export const router = createBrowserRouter([
       {
         path: "usuarios-internos",
         element: (
-          <ProtectedRoute requiredType="interno">
+          <ProtectedRoute requiredType="interno" requiredProfile="admin">
             <UsuariosInternosPage />
           </ProtectedRoute>
         ),
@@ -84,7 +84,7 @@ export const router = createBrowserRouter([
       {
         path: "configuracoes",
         element: (
-          <ProtectedRoute requiredType="interno">
+          <ProtectedRoute requiredType="interno" requiredProfile="admin">
             <ConfiguracoesPage />
           </ProtectedRoute>
         ),
@@ -100,7 +100,7 @@ export const router = createBrowserRouter([
       {
         path: "configuracoes-ia",
         element: (
-          <ProtectedRoute requiredType="interno">
+          <ProtectedRoute requiredType="interno" requiredProfile="admin">
             <ConfiguracoesIAPage />
           </ProtectedRoute>
         ),
@@ -132,7 +132,7 @@ export const router = createBrowserRouter([
       {
         path: "operacoes",
         element: (
-          <ProtectedRoute requiredType="interno">
+          <ProtectedRoute requiredType="interno" requiredProfile="admin">
             <OperacoesPage />
           </ProtectedRoute>
         ),
@@ -140,7 +140,7 @@ export const router = createBrowserRouter([
       {
         path: "permissoes", // Nova rota
         element: (
-          <ProtectedRoute requiredType="interno">
+          <ProtectedRoute requiredType="interno" requiredProfile="admin">
             <PermissoesPage />
           </ProtectedRoute>
         ),

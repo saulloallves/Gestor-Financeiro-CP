@@ -5,15 +5,18 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { useAuthStore } from "../../store/authStore";
 import { useAuthState } from "../../hooks/useAuthState";
 import { PrimeiraSenhaModal } from "./PrimeiraSenhaModal.tsx";
+import type { PerfilUsuario } from "../../types/equipes";
 
 interface ProtectedRouteProps {
   children: ReactNode;
   requiredType?: "interno" | "franqueado";
+  requiredProfile?: PerfilUsuario;
 }
 
 export function ProtectedRoute({
   children,
   requiredType,
+  requiredProfile,
 }: ProtectedRouteProps) {
   const { usuario, tipoAcesso, initializeAuth } = useAuthStore();
   
@@ -64,6 +67,13 @@ export function ProtectedRoute({
 
   if (requiredType && tipoAcesso !== requiredType) {
     return <Navigate to="/unauthorized" replace />;
+  }
+
+  // Nova verificação de perfil
+  if (requiredProfile) {
+    if (tipoAcesso !== 'interno' || !('perfil' in usuario) || usuario.perfil !== requiredProfile) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   if (usuario && tipoAcesso === 'interno' && precisaTrocarSenha) {
