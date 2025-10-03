@@ -5,7 +5,8 @@ import type {
   FranqueadoMapeado, 
   UnidadeMapeada,
   UnidadeMatriz,
-  VFranqueadosUnidadesDetalhes
+  VFranqueadosUnidadesDetalhes,
+  FranqueadosUnidades
 } from '../types/matriz';
 import { publishEvent } from './eventService';
 
@@ -67,7 +68,7 @@ class MatrizSyncService {
       const [unidadesMatriz, franqueadosMatriz, vinculosMatriz] = await Promise.all([
         this.fetchAllUnidadesFromMatrizRpc(), // Usando a nova função RPC
         this.fetchAllMatrizData<VFranqueadosUnidadesDetalhes>('v_franqueados_unidades_detalhes'),
-        this.fetchAllMatrizData('franqueados_unidades'),
+        this.fetchAllMatrizData<FranqueadosUnidades>('franqueados_unidades'),
       ]);
       stats.unidades.total = unidadesMatriz.length;
       stats.franqueados.total = franqueadosMatriz.length;

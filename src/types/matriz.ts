@@ -64,6 +64,14 @@ export interface UnidadeMatriz {
   is_active: boolean;
 }
 
+export interface FranqueadosUnidades {
+  id: string;
+  unidade_id: string;
+  franqueado_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // Views do banco matriz
 export interface VFranqueadosUnidadesDetalhes extends FranqueadoMatriz {
   unidade_ids: string[];
