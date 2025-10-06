@@ -13,6 +13,15 @@ export function ChatWidgetModal() {
     sendMessage({ prompt, chatId });
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage({ prompt: suggestion, chatId });
+  };
+
+  const handleNewChat = () => {
+    clearConversation();
+    setInput('');
+  };
+
   return (
     <Box
       sx={{
@@ -43,7 +52,9 @@ export function ChatWidgetModal() {
           messages={messages}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
-          onNewChat={clearConversation}
+          onNewChat={handleNewChat}
+          showWelcomeScreen={!chatId && messages.length === 0}
+          onSuggestionClick={handleSuggestionClick}
           input={input}
           setInput={setInput}
         />

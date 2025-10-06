@@ -18,6 +18,7 @@ export function ChatIAPage() {
 
   const handleNewChat = () => {
     setActiveChatId(null);
+    setInput('');
   };
 
   const handleSuggestionClick = (suggestion: string) => {

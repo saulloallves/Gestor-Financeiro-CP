@@ -11,6 +11,8 @@ const suggestions = [
   "Quais os detalhes da unidade 1659?",
   "Liste as cobranças da unidade 2546.",
   "Quais são as estatísticas do sistema?",
+  "Envie um lembrete de vencimento para a cobrança ID 'uuid-da-cobranca-aqui'",
+  "Marque a cobrança ID 'uuid-da-cobranca-aqui' como 'negociado'",
 ];
 
 export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps) {
