@@ -1,32 +1,40 @@
+import { supabase } from './supabaseClient';
 import { configuracoesService } from './configuracoesService';
 import { iaService } from './iaService';
 import OpenAI from 'openai';
 
 class IaConnectorService {
   
-  async gerarResposta(prompt: string): Promise<string> {
+  async gerarResposta(prompt: string, agentName: string): Promise<string> {
     try {
+      // Passo 1: Obter configurações globais (API Key, Provedor)
       const config = await configuracoesService.obterConfiguracao();
-      
       if (!config.ia_api_key) {
         throw new Error('Chave de API da IA não configurada.');
       }
-      
-      if (!config.ia_prompt_base) {
-        throw new Error('Prompt base da IA não configurado.');
+
+      // Passo 2: Obter o prompt base específico do agente
+      const { data: promptData, error: promptError } = await supabase
+        .from('ia_prompts')
+        .select('prompt_base, modelo_ia')
+        .eq('nome_agente', agentName)
+        .single();
+
+      if (promptError || !promptData || !promptData.prompt_base) {
+        throw new Error(`Prompt para o agente '${agentName}' não foi encontrado ou está vazio.`);
       }
 
-      // Passo 1: Consultar a base de conhecimento (Retrieval)
+      // Passo 3: Consultar a base de conhecimento (Retrieval)
       const contexto = await iaService.consultarBase(prompt);
       
-      // Passo 2: Montar o prompt final combinando o prompt base, o contexto e a pergunta do usuário
+      // Passo 4: Montar o prompt final
       const contextoFormatado = contexto.length > 0
         ? contexto
             .map(c => `Título: ${c.titulo}\nConteúdo: ${c.conteudo}`)
             .join('\n\n---\n\n')
         : "Nenhuma informação encontrada na base de conhecimento para esta pergunta.";
 
-      const promptFinal = `${config.ia_prompt_base}
+      const promptFinal = `${promptData.prompt_base}
 
 # Contexto Relevante da Base de Conhecimento
 ---
@@ -37,16 +45,16 @@ ${contextoFormatado}
 Com base nas suas regras e no contexto acima, responda à seguinte pergunta:
 "${prompt}"`;
 
-      console.log("🤖 Prompt Final Enviado para a IA:", promptFinal);
+      console.log(`🤖 Prompt Final Enviado para a IA (Agente: ${agentName}):`, promptFinal);
 
-      // Passo 3: Chamar o provedor de IA com o prompt final (Generation)
+      // Passo 5: Chamar o provedor de IA com o prompt final
       switch (config.ia_provedor) {
         case 'openai':
-          return this.chamarOpenAI(promptFinal, config.ia_modelo, config.ia_api_key);
+          return this.chamarOpenAI(promptFinal, promptData.modelo_ia, config.ia_api_key);
         
         // Futuramente, outros provedores podem ser adicionados aqui
         // case 'lambda':
-        //   return this.chamarLambda(prompt, config.ia_modelo, config.ia_api_key);
+        //   return this.chamarLambda(prompt, promptData.modelo_ia, config.ia_api_key);
         
         default:
           throw new Error(`Provedor de IA '${config.ia_provedor}' não suportado.`);

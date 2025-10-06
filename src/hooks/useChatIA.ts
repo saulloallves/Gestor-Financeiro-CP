@@ -17,8 +17,8 @@ export function useChatIA() {
       };
       setMessages(prev => [...prev, userMessage]);
 
-      // Chamar o serviço da IA
-      return iaConnectorService.gerarResposta(prompt);
+      // Chamar o serviço da IA, especificando o agente de chat
+      return iaConnectorService.gerarResposta(prompt, 'agente_chat_interno');
     },
     onSuccess: (response) => {
       // Adicionar resposta da IA
