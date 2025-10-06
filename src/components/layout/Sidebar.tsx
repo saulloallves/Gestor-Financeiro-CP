@@ -124,12 +124,6 @@ const menuItems: MenuItem[] = [
     path: "/ia",
     children: [
       {
-        id: "chat-ia",
-        title: "Chat com Agente",
-        icon: MessageSquare,
-        path: "/chat-ia",
-      },
-      {
         id: "base-conhecimento",
         title: "Base de Conhecimento",
         icon: Database,

@@ -16,7 +16,7 @@ import {
   Bell,
   LogOut,
   User,
-  HelpCircle,
+  MessageSquare, // Ícone de chat
   CircleDollarSign,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -135,10 +135,11 @@ export function Header({ sidebarWidth }: HeaderProps) {
             </Badge>
           </IconButton>
 
-          {/* Help */}
+          {/* Chat Button */}
           <IconButton
             size="large"
             color="inherit"
+            onClick={() => navigate('/chat-ia')}
             sx={{
               color: 'text.secondary',
               '&:hover': {
@@ -147,7 +148,7 @@ export function Header({ sidebarWidth }: HeaderProps) {
               },
             }}
           >
-            <HelpCircle size={24} />
+            <MessageSquare size={24} />
           </IconButton>
 
           {/* User Profile */}

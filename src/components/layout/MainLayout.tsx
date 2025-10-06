@@ -6,6 +6,8 @@ import { SystemInitializer } from "../auth/SystemInitializer";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { realtimeService } from "../../services/realtimeService";
+import { FloatingChatButton } from "../chat/FloatingChatButton";
+import { ChatWidgetModal } from "../chat/ChatWidgetModal";
 
 const SIDEBAR_WIDTH_COLLAPSED = 72;
 const SIDEBAR_WIDTH_EXPANDED = 280;
@@ -82,6 +84,10 @@ export function MainLayout() {
             <Outlet />
           </Box>
         </Box>
+
+        {/* Componentes do Chat Flutuante */}
+        <FloatingChatButton />
+        <ChatWidgetModal />
       </Box>
     </SystemInitializer>
   );
