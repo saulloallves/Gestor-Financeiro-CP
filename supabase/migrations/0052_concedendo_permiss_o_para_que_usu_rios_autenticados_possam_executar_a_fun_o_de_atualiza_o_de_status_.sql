@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.atualizar_status_cobranca(uuid, text) TO authenticated;
