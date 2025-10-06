@@ -40,6 +40,25 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         required: ['cobranca_id', 'template_name']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'atualizar_status_cobranca',
+      description: "Atualiza o status de uma cobrança específica. Use quando o usuário pedir para alterar o estado de uma cobrança, como 'marcar como negociado' ou 'definir como pago'.",
+      parameters: {
+        type: 'object',
+        properties: {
+          p_cobranca_id: { type: 'string', description: 'O ID da cobrança a ser atualizada.' },
+          p_novo_status: { 
+            type: 'string', 
+            description: 'O novo status para a cobrança.',
+            enum: ['pendente', 'pago', 'vencido', 'cancelado', 'em_aberto', 'negociado', 'em_atraso', 'juridico', 'parcelado']
+          }
+        },
+        required: ['p_cobranca_id', 'p_novo_status']
+      }
+    }
   }
 ];
 
@@ -108,6 +127,7 @@ serve(async (req) => {
           if (zapiError) throw new Error(`Erro ao enviar mensagem: ${zapiError.message}`);
           functionResponse = "Mensagem enviada com sucesso.";
         } else {
+          // Lógica genérica para outras funções RPC
           const { data, error: rpcError } = await supabase.rpc(functionName, functionArgs);
           if (rpcError) throw new Error(`Erro na ferramenta '${functionName}': ${rpcError.message}`);
           functionResponse = data;
