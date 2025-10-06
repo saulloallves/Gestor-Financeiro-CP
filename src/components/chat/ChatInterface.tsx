@@ -114,7 +114,7 @@ export function ChatInterface({
         <div ref={messagesEndRef} />
       </Box>
       <Box sx={{ p: 2, pt: 0, borderTop: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.25 }}>
           <TextField
             fullWidth
             variant="outlined"
