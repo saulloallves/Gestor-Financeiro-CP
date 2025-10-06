@@ -34,7 +34,7 @@ export function ChatIAPage() {
 
   const handleSendMessage = () => {
     if (input.trim() && !isSendingMessage) {
-      sendMessage(input.trim());
+      sendMessage({ prompt: input.trim(), chatId: activeChatId });
       setInput('');
     }
   };
