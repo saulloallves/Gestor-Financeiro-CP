@@ -53,7 +53,7 @@ serve(async (req) => {
     const { data: franqueadoData, error: rpcError } = await supabaseAdmin.rpc('get_franchisee_by_unit_code', {
       codigo_param: String(cobranca.codigo_unidade),
     });
-    if (rpcError || !franqueadoData || !franqueadoData.length === 0) {
+    if (rpcError || !franqueadoData || franqueadoData.length === 0) {
       throw new Error(`Franqueado/Unidade não encontrado para unidade ${cobranca.codigo_unidade}: ${rpcError?.message || 'Sem dados'}`);
     }
     const franqueadoUnidadeInfo = franqueadoData[0];
