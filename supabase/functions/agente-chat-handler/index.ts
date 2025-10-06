@@ -26,6 +26,21 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       } 
     } 
   },
+  {
+    type: 'function',
+    function: {
+      name: 'enviar_mensagem_whatsapp',
+      description: 'Envia uma mensagem de WhatsApp para um franqueado com base em um template e uma cobrança específica.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cobranca_id: { type: 'string', description: 'O ID da cobrança a ser usada para preencher o template.' },
+          template_name: { type: 'string', description: 'O nome exato do template a ser enviado (ex: "lembrete_vencimento_1").' }
+        },
+        required: ['cobranca_id', 'template_name']
+      }
+    }
+  }
 ];
 
 serve(async (req) => {
@@ -60,7 +75,6 @@ serve(async (req) => {
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [{ role: 'system', content: prompt_base }];
     let chatId = existingChatId;
 
-    // Se for uma conversa existente, carregar histórico
     if (chatId) {
       const { data: history, error } = await supabase.from('chat_messages').select('role, content').eq('chat_id', chatId).order('created_at');
       if (error) throw new Error('Erro ao carregar histórico do chat.');
@@ -70,19 +84,35 @@ serve(async (req) => {
     }
     messages.push({ role: 'user', content: prompt });
 
-    // Primeira chamada para a IA
     const response = await openai.chat.completions.create({ model: modelo_ia, messages, tools, tool_choice: "auto" });
     const responseMessage = response.choices[0].message;
     const toolCalls = responseMessage.tool_calls;
 
-    // Lógica de Tool Calling
     if (toolCalls) {
       messages.push(responseMessage);
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
         const functionArgs = JSON.parse(toolCall.function.arguments);
-        const { data: functionResponse, error: rpcError } = await supabase.rpc(functionName, functionArgs);
-        if (rpcError) throw new Error(`Erro na ferramenta '${functionName}': ${rpcError.message}`);
+        let functionResponse;
+
+        if (functionName === 'enviar_mensagem_whatsapp') {
+          const { data: prepData, error: prepError } = await supabase.rpc('preparar_dados_para_mensagem', {
+            p_cobranca_id: functionArgs.cobranca_id,
+            p_template_name: functionArgs.template_name
+          });
+          if (prepError) throw new Error(`Erro ao preparar mensagem: ${prepError.message}`);
+          
+          const { error: zapiError } = await supabase.functions.invoke('zapi-send-text', {
+            body: { phone: prepData.telefone_destino, message: prepData.mensagem_final, logData: prepData.log_data },
+          });
+          if (zapiError) throw new Error(`Erro ao enviar mensagem: ${zapiError.message}`);
+          functionResponse = "Mensagem enviada com sucesso.";
+        } else {
+          const { data, error: rpcError } = await supabase.rpc(functionName, functionArgs);
+          if (rpcError) throw new Error(`Erro na ferramenta '${functionName}': ${rpcError.message}`);
+          functionResponse = data;
+        }
+        
         messages.push({ tool_call_id: toolCall.id, role: 'tool', content: JSON.stringify(functionResponse) });
       }
       const secondResponse = await openai.chat.completions.create({ model: modelo_ia, messages });
@@ -91,14 +121,11 @@ serve(async (req) => {
 
     const assistantResponse = responseMessage.content || "Desculpe, não consegui processar sua solicitação.";
 
-    // Salvar no banco de dados
     if (!chatId) {
-      // Criar novo chat
       const { data: newChat, error } = await supabase.from('chats').insert({ user_id: user.id }).select('id').single();
       if (error) throw new Error('Erro ao criar novo chat.');
       chatId = newChat.id;
 
-      // Gerar título para o novo chat
       const titlePrompt = `Gere um título curto e descritivo (máximo 5 palavras) para a seguinte conversa:\n\nUsuário: ${prompt}\nAssistente: ${assistantResponse}`;
       const titleCompletion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
@@ -108,7 +135,6 @@ serve(async (req) => {
       await supabase.from('chats').update({ title }).eq('id', chatId);
     }
 
-    // Salvar mensagens
     await supabase.from('chat_messages').insert([
       { chat_id: chatId, role: 'user', content: prompt },
       { chat_id: chatId, role: 'assistant', content: assistantResponse },
