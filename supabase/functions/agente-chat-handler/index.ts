@@ -7,6 +7,46 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Definição estruturada das ferramentas para a API da OpenAI
+const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_system_stats',
+      description: 'Retorna estatísticas gerais do sistema, como totais de unidades, franqueados e cobranças.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_unit_details_by_code',
+      description: 'Busca os detalhes completos de uma unidade específica pelo seu código de 4 dígitos.',
+      parameters: {
+        type: 'object',
+        properties: {
+          codigo_param: { type: 'string', description: 'O código de 4 dígitos da unidade. Ex: "1659"' },
+        },
+        required: ['codigo_param'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_franchisee_details_by_cpf',
+      description: 'Busca os detalhes de um franqueado pelo seu CPF.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cpf_param: { type: 'string', description: 'O CPF do franqueado, apenas números. Ex: "12345678900"' },
+        },
+        required: ['cpf_param'],
+      },
+    },
+  },
+];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -23,7 +63,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Obter configurações e prompt do agente
     const [configRes, promptRes] = await Promise.all([
       supabaseAdmin.from('configuracoes').select('ia_api_key, ia_provedor').single(),
       supabaseAdmin.from('ia_prompts').select('prompt_base, modelo_ia').eq('nome_agente', agentName).single()
@@ -43,55 +82,59 @@ serve(async (req) => {
       { role: 'user', content: prompt }
     ];
 
-    // 2. Primeira chamada para a IA
-    let response = await openai.chat.completions.create({
+    // Primeira chamada para a IA, agora com a lista de ferramentas
+    const response = await openai.chat.completions.create({
       model: modelo_ia,
       messages: messages,
+      tools: tools,
+      tool_choice: "auto",
     });
 
-    let responseMessage = response.choices[0].message;
-    let toolCall;
+    const responseMessage = response.choices[0].message;
+    const toolCalls = responseMessage.tool_calls;
 
-    try {
-      toolCall = JSON.parse(responseMessage.content || '{}');
-    } catch {
-      toolCall = null;
-    }
+    // Verificar se a IA solicitou uma ou mais ferramentas
+    if (toolCalls) {
+      messages.push(responseMessage); // Adicionar a resposta da IA ao histórico
 
-    // 3. Verificar se a IA solicitou uma ferramenta
-    if (toolCall && toolCall.tool_name) {
-      messages.push(responseMessage); // Adicionar a resposta da IA (a chamada da ferramenta) ao histórico
+      for (const toolCall of toolCalls) {
+        const functionName = toolCall.function.name;
+        const functionArgs = JSON.parse(toolCall.function.arguments);
 
-      console.log(`[Tool Calling] IA solicitou a ferramenta: ${toolCall.tool_name}`);
+        console.log(`[Tool Calling] IA solicitou: ${functionName} com args:`, functionArgs);
 
-      // 4. Executar a ferramenta (função RPC)
-      const { data: toolResult, error: rpcError } = await supabaseAdmin.rpc(toolCall.tool_name, toolCall.parameters || {});
+        // Executar a função RPC correspondente
+        const { data: functionResponse, error: rpcError } = await supabaseAdmin.rpc(functionName, functionArgs);
 
-      if (rpcError) {
-        throw new Error(`Erro ao executar a ferramenta '${toolCall.tool_name}': ${rpcError.message}`);
+        if (rpcError) {
+          throw new Error(`Erro ao executar a ferramenta '${functionName}': ${rpcError.message}`);
+        }
+
+        // Enviar o resultado da ferramenta de volta para a IA
+        messages.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          content: JSON.stringify(functionResponse),
+        });
       }
 
-      // 5. Enviar o resultado da ferramenta de volta para a IA
-      messages.push({
-        role: 'tool',
-        tool_call_id: 'not_used', // Placeholder, a API do Deno não usa isso ainda
-        content: JSON.stringify(toolResult),
-      });
-
-      console.log(`[Tool Calling] Resultado da ferramenta enviado para a IA.`);
-
+      // Segunda chamada para a IA com os resultados das ferramentas
       const secondResponse = await openai.chat.completions.create({
         model: modelo_ia,
         messages: messages,
       });
-      responseMessage = secondResponse.choices[0].message;
+      
+      return new Response(JSON.stringify({ response: secondResponse.choices[0].message.content }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    } else {
+      // Se nenhuma ferramenta foi chamada, retornar a resposta diretamente
+      return new Response(JSON.stringify({ response: responseMessage.content }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
-
-    // 6. Retornar a resposta final da IA
-    return new Response(JSON.stringify({ response: responseMessage.content }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
 
   } catch (error) {
     console.error('[agente-chat-handler] Erro:', error.message);
