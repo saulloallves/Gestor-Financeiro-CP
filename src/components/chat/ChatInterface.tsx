@@ -26,6 +26,7 @@ interface ChatInterfaceProps {
   onSuggestionClick?: (suggestion: string) => void;
   input: string;
   setInput: (value: string) => void;
+  welcomeScreenVariant?: 'page' | 'widget';
 }
 
 export function ChatInterface({
@@ -37,6 +38,7 @@ export function ChatInterface({
   onSuggestionClick = () => {},
   input,
   setInput,
+  welcomeScreenVariant = 'page',
 }: ChatInterfaceProps) {
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   const { usuario } = useAuthStore();
@@ -72,7 +74,7 @@ export function ChatInterface({
       )}
       <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
         {showWelcomeScreen ? (
-          <ChatWelcomeScreen onSuggestionClick={onSuggestionClick} />
+          <ChatWelcomeScreen onSuggestionClick={onSuggestionClick} variant={welcomeScreenVariant} />
         ) : (
           messages.map((message, index) => (
             <Box

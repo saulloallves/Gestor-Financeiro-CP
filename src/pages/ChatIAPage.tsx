@@ -41,6 +41,7 @@ export function ChatIAPage() {
           onSuggestionClick={handleSuggestionClick}
           input={input}
           setInput={setInput}
+          welcomeScreenVariant="page"
         />
       </Paper>
     </Box>

@@ -4,6 +4,7 @@ import logoPrincipal from '../assets/logo-principal.png';
 
 interface ChatWelcomeScreenProps {
   onSuggestionClick: (suggestion: string) => void;
+  variant?: 'page' | 'widget';
 }
 
 const suggestions = [
@@ -15,8 +16,9 @@ const suggestions = [
   "Marque a cobrança ID 'uuid-da-cobranca-aqui' como 'negociado'",
 ];
 
-export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps) {
+export function ChatWelcomeScreen({ onSuggestionClick, variant = 'page' }: ChatWelcomeScreenProps) {
   const theme = useTheme();
+  const isWidget = variant === 'widget';
 
   return (
     <Box
@@ -26,7 +28,7 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         alignItems: 'center',
         justifyContent: 'center',
         height: '100%',
-        p: { xs: 1.5, sm: 3 }, // Padding reduzido para telas pequenas
+        p: isWidget ? 1.5 : { xs: 2, sm: 3 },
         textAlign: 'center',
       }}
     >
@@ -35,10 +37,10 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         src={logoPrincipal}
         alt="Logo Cresci e Perdi"
         sx={{
-          maxWidth: { xs: '80px', sm: '120px' }, // Tamanho do logo significativamente reduzido
+          maxWidth: isWidget ? '80px' : '150px',
           height: 'auto',
           objectFit: 'contain',
-          mb: { xs: 1, sm: 2 }, // Margem inferior reduzida
+          mb: isWidget ? 1 : 2,
         }}
       />
       <Typography 
@@ -47,7 +49,7 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         sx={{ 
           mb: 1,
           fontWeight: 600,
-          fontSize: { xs: '1.1rem', sm: '1.5rem' } // Fonte responsiva
+          fontSize: isWidget ? '1.1rem' : '1.5rem',
         }}
       >
         Como posso ajudar?
@@ -56,8 +58,8 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         variant="body1" 
         color="text.secondary" 
         sx={{ 
-          mb: { xs: 2, sm: 3 }, // Margem responsiva reduzida
-          fontSize: { xs: '0.8rem', sm: '1rem' } // Fonte responsiva
+          mb: isWidget ? 2 : 3,
+          fontSize: isWidget ? '0.8rem' : '1rem',
         }}
       >
         Você pode me fazer perguntas sobre o sistema ou clicar em uma das sugestões abaixo.
@@ -67,8 +69,8 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          gap: { xs: 1, sm: 1.5 }, // Espaçamento responsivo
-          maxWidth: { xs: '100%', sm: '90%' }, // Largura máxima responsiva
+          gap: 1,
+          maxWidth: '100%',
         }}
       >
         {suggestions.map((text) => (

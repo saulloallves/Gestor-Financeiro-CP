@@ -57,6 +57,7 @@ export function ChatWidgetModal() {
           onSuggestionClick={handleSuggestionClick}
           input={input}
           setInput={setInput}
+          welcomeScreenVariant="widget"
         />
       </Paper>
     </Box>
