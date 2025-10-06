@@ -1,56 +1,42 @@
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { iaConnectorService } from '../api/iaConnectorService';
-import type { ChatMessage } from '../types/ia';
+import { chatKeys } from './useChatHistory';
 import toast from 'react-hot-toast';
 
-export function useChatIA() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function useChatIA(activeChatId: string | null, setActiveChatId: (id: string) => void) {
+  const queryClient = useQueryClient();
 
   const { mutate: sendMessage, isPending: isLoading } = useMutation({
     mutationFn: async (prompt: string) => {
-      // Adicionar mensagem do usuário imediatamente
-      const userMessage: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: prompt,
-      };
-      setMessages(prev => [...prev, userMessage]);
+      // Adicionar mensagem do usuário à UI imediatamente (otimismo)
+      queryClient.setQueryData(chatKeys.messages(activeChatId || 'new'), (oldData: any) => {
+        const newMessage = { id: `user-${Date.now()}`, role: 'user', content: prompt, created_at: new Date().toISOString() };
+        return oldData ? [...oldData, newMessage] : [newMessage];
+      });
 
-      // Chamar o serviço da IA, especificando o agente de chat
-      return iaConnectorService.gerarResposta(prompt, 'agente_chat_interno');
+      return iaConnectorService.gerarResposta(prompt, 'agente_chat_interno', activeChatId);
     },
-    onSuccess: (response) => {
-      // Adicionar resposta da IA
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: response,
-      };
-      setMessages(prev => [...prev, assistantMessage]);
+    onSuccess: (data) => {
+      const { chatId } = data;
+      // Se era um novo chat, o backend retorna o novo ID
+      if (!activeChatId && chatId) {
+        setActiveChatId(chatId);
+      }
+      // Invalida as queries para buscar a lista de chats (caso um novo tenha sido criado)
+      // e as mensagens do chat atual (para obter a resposta real da IA)
+      queryClient.invalidateQueries({ queryKey: chatKeys.list() });
+      queryClient.invalidateQueries({ queryKey: chatKeys.messages(chatId) });
     },
     onError: (error) => {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast.error(`Erro ao comunicar com a IA: ${errorMessage}`);
-      
-      // Adicionar mensagem de erro ao chat
-      const errorMessageObject: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: `Ocorreu um erro: ${errorMessage}`,
-      };
-      setMessages(prev => [...prev, errorMessageObject]);
+      // Reverter a atualização otimista em caso de erro
+      queryClient.invalidateQueries({ queryKey: chatKeys.messages(activeChatId || 'new') });
     },
   });
 
-  const clearChat = () => {
-    setMessages([]);
-  };
-
   return {
-    messages,
     sendMessage,
     isLoading,
-    clearChat,
   };
 }
