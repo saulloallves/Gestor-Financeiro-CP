@@ -63,10 +63,12 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
 ];
 
 serve(async (req) => {
+  console.log('[agente-chat-handler] INFO: Função invocada.');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const { prompt, agentName, chatId: existingChatId } = await req.json();
+    console.log(`[agente-chat-handler] INFO: Recebido prompt: "${prompt}" para o agente: ${agentName}`);
     if (!prompt || !agentName) throw new Error('`prompt` e `agentName` são obrigatórios.');
 
     const supabase = createClient(
@@ -77,6 +79,7 @@ serve(async (req) => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado.');
+    console.log(`[agente-chat-handler] INFO: Usuário autenticado: ${user.email}`);
 
     const [configRes, promptRes] = await Promise.all([
       supabase.from('configuracoes').select('ia_api_key, ia_provedor').single(),
@@ -85,6 +88,7 @@ serve(async (req) => {
 
     if (configRes.error || !configRes.data?.ia_api_key) throw new Error('Configurações de IA não encontradas.');
     if (promptRes.error || !promptRes.data) throw new Error(`Agente '${agentName}' não encontrado.`);
+    console.log('[agente-chat-handler] INFO: Configurações e prompt carregados.');
 
     const { ia_api_key, ia_provedor } = configRes.data;
     const { prompt_base, modelo_ia } = promptRes.data;
@@ -100,43 +104,61 @@ serve(async (req) => {
       if (history) {
         messages.push(...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })));
       }
+      console.log(`[agente-chat-handler] INFO: Histórico de ${history?.length || 0} mensagens carregado para o chat ${chatId}.`);
     }
     messages.push({ role: 'user', content: prompt });
 
+    console.log('[agente-chat-handler] INFO: Enviando requisição para OpenAI com `tool_choice: "auto"`...');
     const response = await openai.chat.completions.create({ model: modelo_ia, messages, tools, tool_choice: "auto" });
     const responseMessage = response.choices[0].message;
     const toolCalls = responseMessage.tool_calls;
 
     if (toolCalls) {
+      console.log('[agente-chat-handler] DEBUG: Decisão de `tool_calls` da IA:', JSON.stringify(toolCalls, null, 2));
       messages.push(responseMessage);
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
         const functionArgs = JSON.parse(toolCall.function.arguments);
         let functionResponse;
 
+        console.log(`[agente-chat-handler] INFO: Executando ferramenta '${functionName}' com argumentos:`, functionArgs);
+
         if (functionName === 'enviar_mensagem_whatsapp') {
           const { data: prepData, error: prepError } = await supabase.rpc('preparar_dados_para_mensagem', {
             p_cobranca_id: functionArgs.cobranca_id,
             p_template_name: functionArgs.template_name
           });
-          if (prepError) throw new Error(`Erro ao preparar mensagem: ${prepError.message}`);
+          if (prepError) {
+            console.error(`[agente-chat-handler] ERRO RPC (preparar_dados_para_mensagem):`, prepError);
+            throw new Error(`Erro ao preparar mensagem: ${prepError.message}`);
+          }
           
           const { error: zapiError } = await supabase.functions.invoke('zapi-send-text', {
             body: { phone: prepData.telefone_destino, message: prepData.mensagem_final, logData: prepData.log_data },
           });
-          if (zapiError) throw new Error(`Erro ao enviar mensagem: ${zapiError.message}`);
+          if (zapiError) {
+            console.error(`[agente-chat-handler] ERRO Edge Function (zapi-send-text):`, zapiError);
+            throw new Error(`Erro ao enviar mensagem: ${zapiError.message}`);
+          }
           functionResponse = "Mensagem enviada com sucesso.";
         } else {
           // Lógica genérica para outras funções RPC
           const { data, error: rpcError } = await supabase.rpc(functionName, functionArgs);
-          if (rpcError) throw new Error(`Erro na ferramenta '${functionName}': ${rpcError.message}`);
+          if (rpcError) {
+            console.error(`[agente-chat-handler] ERRO RPC (${functionName}):`, rpcError);
+            throw new Error(`Erro na ferramenta '${functionName}': ${rpcError.message}`);
+          }
           functionResponse = data;
         }
         
+        console.log(`[agente-chat-handler] INFO: Resposta da ferramenta '${functionName}':`, functionResponse);
         messages.push({ tool_call_id: toolCall.id, role: 'tool', content: JSON.stringify(functionResponse) });
       }
+      console.log('[agente-chat-handler] INFO: Enviando segunda requisição para OpenAI para obter resposta final...');
       const secondResponse = await openai.chat.completions.create({ model: modelo_ia, messages });
       responseMessage.content = secondResponse.choices[0].message.content;
+    } else {
+      console.log('[agente-chat-handler] INFO: Nenhuma ferramenta foi chamada pela IA.');
     }
 
     const assistantResponse = responseMessage.content || "Desculpe, não consegui processar sua solicitação.";
@@ -145,6 +167,7 @@ serve(async (req) => {
       const { data: newChat, error } = await supabase.from('chats').insert({ user_id: user.id }).select('id').single();
       if (error) throw new Error('Erro ao criar novo chat.');
       chatId = newChat.id;
+      console.log(`[agente-chat-handler] INFO: Novo chat criado com ID: ${chatId}`);
 
       const titlePrompt = `Gere um título curto e descritivo (máximo 5 palavras) para a seguinte conversa:\n\nUsuário: ${prompt}\nAssistente: ${assistantResponse}`;
       const titleCompletion = await openai.chat.completions.create({
@@ -159,13 +182,14 @@ serve(async (req) => {
       { chat_id: chatId, role: 'user', content: prompt },
       { chat_id: chatId, role: 'assistant', content: assistantResponse },
     ]);
+    console.log(`[agente-chat-handler] INFO: Mensagens salvas no chat ${chatId}.`);
 
     return new Response(JSON.stringify({ response: assistantResponse, chatId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
     });
 
   } catch (error) {
-    console.error('[agente-chat-handler] Erro:', error.message);
+    console.error('[agente-chat-handler] ERRO FATAL:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500,
     });
