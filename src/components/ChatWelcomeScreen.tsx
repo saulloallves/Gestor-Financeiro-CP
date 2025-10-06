@@ -1,5 +1,4 @@
 import { Box, Typography, Chip } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import logoPrincipal from '../assets/logo-principal.png';
 
 interface ChatWelcomeScreenProps {
@@ -17,7 +16,6 @@ const suggestions = [
 ];
 
 export function ChatWelcomeScreen({ onSuggestionClick, variant = 'page' }: ChatWelcomeScreenProps) {
-  const theme = useTheme();
   const isWidget = variant === 'widget';
 
   return (
@@ -28,8 +26,8 @@ export function ChatWelcomeScreen({ onSuggestionClick, variant = 'page' }: ChatW
         alignItems: 'center',
         justifyContent: isWidget ? 'flex-start' : 'center', // Centraliza na página, alinha no topo no widget
         height: '100%',
-        p: isWidget ? 1.5 : { xs: 2, sm: 3 },
-        pt: isWidget ? 1 : { xs: 2, sm: 3 },
+        p: isWidget ? 1 : { xs: 2, sm: 3 },
+        pt: isWidget ? 0 : { xs: 2, sm: 3 },
         textAlign: 'center',
       }}
     >
