@@ -16,7 +16,7 @@ import {
   Bell,
   LogOut,
   User,
-  MessageSquare, // Ícone de chat
+  BotMessageSquare, // Ícone de chat atualizado
   CircleDollarSign,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -148,7 +148,7 @@ export function Header({ sidebarWidth }: HeaderProps) {
               },
             }}
           >
-            <MessageSquare size={24} />
+            <BotMessageSquare size={24} />
           </IconButton>
 
           {/* User Profile */}

@@ -1,5 +1,5 @@
 import { Fab, Tooltip } from '@mui/material';
-import { MessageSquare } from 'lucide-react';
+import { BotMessageSquare } from 'lucide-react';
 import { useChatWidgetStore } from '../../store/chatWidgetStore';
 
 export function FloatingChatButton() {
@@ -18,7 +18,7 @@ export function FloatingChatButton() {
           zIndex: 1300,
         }}
       >
-        <MessageSquare />
+        <BotMessageSquare />
       </Fab>
     </Tooltip>
   );
