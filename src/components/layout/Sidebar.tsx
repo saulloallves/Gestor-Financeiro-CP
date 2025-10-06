@@ -245,7 +245,7 @@ export function Sidebar({
       }
       hoverTimeoutRef.current = window.setTimeout(() => {
         setIsHovered(true);
-      }, 500); // Atraso de 0.5 segundos
+      }, 300); // Atraso de 0.3 segundos
     }
   };
 
