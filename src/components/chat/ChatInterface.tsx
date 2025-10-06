@@ -72,7 +72,7 @@ export function ChatInterface({
           </Button>
         </Box>
       )}
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 2, pb: 3 }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
         {showWelcomeScreen ? (
           <ChatWelcomeScreen onSuggestionClick={onSuggestionClick} variant={welcomeScreenVariant} />
         ) : (
@@ -113,8 +113,8 @@ export function ChatInterface({
         )}
         <div ref={messagesEndRef} />
       </Box>
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ p: 2, pt: 0, borderTop: 1, borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
           <TextField
             fullWidth
             variant="outlined"
