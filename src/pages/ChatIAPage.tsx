@@ -14,6 +14,7 @@ import { usePerfil } from '../hooks/usePerfil';
 import { useChatIA } from '../hooks/useChatIA';
 import { useChatMessages } from '../hooks/useChatHistory';
 import { ChatHistorySidebar } from '../components/ChatHistorySidebar';
+import { ChatWelcomeScreen } from '../components/ChatWelcomeScreen';
 import cabecaIcon from '../assets/cabeca.png';
 
 export function ChatIAPage() {
@@ -43,6 +44,64 @@ export function ChatIAPage() {
     setActiveChatId(null);
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage({ prompt: suggestion, chatId: null });
+  };
+
+  const renderChatContent = () => {
+    if (isLoadingMessages) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+
+    if (!activeChatId && messages.length === 0) {
+      return <ChatWelcomeScreen onSuggestionClick={handleSuggestionClick} />;
+    }
+
+    return (
+      <>
+        {messages.map((message) => (
+          <Box
+            key={message.id}
+            sx={{
+              display: 'flex',
+              justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
+              mb: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, maxWidth: '80%' }}>
+              {message.role === 'assistant' && (
+                <Avatar src={cabecaIcon} sx={{ bgcolor: 'transparent' }}><BrainCircuit /></Avatar>
+              )}
+              <Paper
+                elevation={1}
+                sx={{
+                  p: 1.5,
+                  bgcolor: message.role === 'user' ? 'primary.main' : 'background.default',
+                  color: message.role === 'user' ? 'primary.contrastText' : 'text.primary',
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                  {message.content}
+                </Typography>
+              </Paper>
+              {message.role === 'user' && (
+                <Avatar src={perfilData?.fotoPerfil || undefined} sx={{ bgcolor: 'secondary.main' }}>
+                  {!perfilData?.fotoPerfil && (usuario?.nome?.charAt(0) || <User />)}
+                </Avatar>
+              )}
+            </Box>
+          </Box>
+        ))}
+        <div ref={messagesEndRef} />
+      </>
+    );
+  };
+
   return (
     <Box sx={{ display: 'flex', height: 'calc(100vh - 120px)', p: 2, gap: 2 }}>
       <Paper elevation={3} sx={{ display: 'flex', flex: 1, overflow: 'hidden', borderRadius: 2 }}>
@@ -53,47 +112,7 @@ export function ChatIAPage() {
         />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
-            {isLoadingMessages ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              messages.map((message) => (
-                <Box
-                  key={message.id}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-                    mb: 2,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, maxWidth: '80%' }}>
-                    {message.role === 'assistant' && (
-                      <Avatar src={cabecaIcon} sx={{ bgcolor: 'transparent' }}><BrainCircuit /></Avatar>
-                    )}
-                    <Paper
-                      elevation={1}
-                      sx={{
-                        p: 1.5,
-                        bgcolor: message.role === 'user' ? 'primary.main' : 'background.default',
-                        color: message.role === 'user' ? 'primary.contrastText' : 'text.primary',
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                        {message.content}
-                      </Typography>
-                    </Paper>
-                    {message.role === 'user' && (
-                      <Avatar src={perfilData?.fotoPerfil || undefined} sx={{ bgcolor: 'secondary.main' }}>
-                        {!perfilData?.fotoPerfil && (usuario?.nome?.charAt(0) || <User />)}
-                      </Avatar>
-                    )}
-                  </Box>
-                </Box>
-              ))
-            )}
-            <div ref={messagesEndRef} />
+            {renderChatContent()}
           </Box>
           <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
