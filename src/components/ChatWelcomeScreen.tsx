@@ -35,16 +35,17 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         src={logoPrincipal}
         alt="Logo Cresci e Perdi"
         sx={{
-          maxWidth: { xs: '120px', sm: '150px' }, // Tamanho do logo responsivo
+          maxWidth: { xs: '100px', sm: '150px' }, // Tamanho do logo reduzido para telas pequenas
           height: 'auto',
-          mb: { xs: 2, sm: 3 }, // Margem responsiva
+          objectFit: 'contain', // Garante que a imagem caiba sem distorção
+          mb: { xs: 1.5, sm: 3 }, // Margem responsiva reduzida
         }}
       />
       <Typography 
         variant="h5" 
         component="h2" 
         sx={{ 
-          mb: 1.5, 
+          mb: 1, // Margem reduzida
           fontWeight: 600,
           fontSize: { xs: '1.25rem', sm: '1.5rem' } // Fonte responsiva
         }}
@@ -55,7 +56,7 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         variant="body1" 
         color="text.secondary" 
         sx={{ 
-          mb: { xs: 3, sm: 4 }, // Margem responsiva
+          mb: { xs: 2.5, sm: 4 }, // Margem responsiva reduzida
           fontSize: { xs: '0.875rem', sm: '1rem' } // Fonte responsiva
         }}
       >
