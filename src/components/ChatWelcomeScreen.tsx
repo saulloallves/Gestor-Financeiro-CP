@@ -26,7 +26,7 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         alignItems: 'center',
         justifyContent: 'center',
         height: '100%',
-        p: { xs: 2, sm: 3 }, // Padding responsivo
+        p: { xs: 1.5, sm: 3 }, // Padding reduzido para telas pequenas
         textAlign: 'center',
       }}
     >
@@ -35,19 +35,19 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         src={logoPrincipal}
         alt="Logo Cresci e Perdi"
         sx={{
-          maxWidth: { xs: '100px', sm: '150px' }, // Tamanho do logo reduzido para telas pequenas
+          maxWidth: { xs: '80px', sm: '120px' }, // Tamanho do logo significativamente reduzido
           height: 'auto',
-          objectFit: 'contain', // Garante que a imagem caiba sem distorção
-          mb: { xs: 1.5, sm: 3 }, // Margem responsiva reduzida
+          objectFit: 'contain',
+          mb: { xs: 1, sm: 2 }, // Margem inferior reduzida
         }}
       />
       <Typography 
         variant="h5" 
         component="h2" 
         sx={{ 
-          mb: 1, // Margem reduzida
+          mb: 1,
           fontWeight: 600,
-          fontSize: { xs: '1.25rem', sm: '1.5rem' } // Fonte responsiva
+          fontSize: { xs: '1.1rem', sm: '1.5rem' } // Fonte responsiva
         }}
       >
         Como posso ajudar?
@@ -56,8 +56,8 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         variant="body1" 
         color="text.secondary" 
         sx={{ 
-          mb: { xs: 2.5, sm: 4 }, // Margem responsiva reduzida
-          fontSize: { xs: '0.875rem', sm: '1rem' } // Fonte responsiva
+          mb: { xs: 2, sm: 3 }, // Margem responsiva reduzida
+          fontSize: { xs: '0.8rem', sm: '1rem' } // Fonte responsiva
         }}
       >
         Você pode me fazer perguntas sobre o sistema ou clicar em uma das sugestões abaixo.
@@ -68,7 +68,7 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
           flexWrap: 'wrap',
           justifyContent: 'center',
           gap: { xs: 1, sm: 1.5 }, // Espaçamento responsivo
-          maxWidth: { xs: '100%', sm: '80%' }, // Largura máxima responsiva
+          maxWidth: { xs: '100%', sm: '90%' }, // Largura máxima responsiva
         }}
       >
         {suggestions.map((text) => (
