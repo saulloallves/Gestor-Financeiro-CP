@@ -26,11 +26,11 @@ export function ChatWelcomeScreen({ onSuggestionClick, variant = 'page' }: ChatW
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-start', // Alterado para 'flex-start' para permitir padding-top
+        justifyContent: 'flex-start',
         height: '100%',
-        pt: isWidget ? 3 : { xs: 2, sm: 3 }, // Padding-top adicionado para o widget
+        pt: isWidget ? 2 : { xs: 2, sm: 3 }, // Padding-top reduzido para o widget
         px: isWidget ? 1.5 : { xs: 2, sm: 3 },
-        pb: isWidget ? 2 : { xs: 2, sm: 3 }, // Padding-bottom aumentado para o widget
+        pb: isWidget ? 3 : { xs: 2, sm: 3 }, // Padding-bottom aumentado para o widget
         textAlign: 'center',
       }}
     >
