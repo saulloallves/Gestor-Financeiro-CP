@@ -26,23 +26,39 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
         alignItems: 'center',
         justifyContent: 'center',
         height: '100%',
-        p: 3,
+        p: { xs: 2, sm: 3 }, // Padding responsivo
         textAlign: 'center',
       }}
     >
-      <img
+      <Box
+        component="img"
         src={logoPrincipal}
         alt="Logo Cresci e Perdi"
-        style={{
-          maxWidth: '150px',
+        sx={{
+          maxWidth: { xs: '120px', sm: '150px' }, // Tamanho do logo responsivo
           height: 'auto',
-          marginBottom: theme.spacing(3),
+          mb: { xs: 2, sm: 3 }, // Margem responsiva
         }}
       />
-      <Typography variant="h5" component="h2" sx={{ mb: 2, fontWeight: 600 }}>
+      <Typography 
+        variant="h5" 
+        component="h2" 
+        sx={{ 
+          mb: 1.5, 
+          fontWeight: 600,
+          fontSize: { xs: '1.25rem', sm: '1.5rem' } // Fonte responsiva
+        }}
+      >
         Como posso ajudar?
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+      <Typography 
+        variant="body1" 
+        color="text.secondary" 
+        sx={{ 
+          mb: { xs: 3, sm: 4 }, // Margem responsiva
+          fontSize: { xs: '0.875rem', sm: '1rem' } // Fonte responsiva
+        }}
+      >
         Você pode me fazer perguntas sobre o sistema ou clicar em uma das sugestões abaixo.
       </Typography>
       <Box
@@ -50,8 +66,8 @@ export function ChatWelcomeScreen({ onSuggestionClick }: ChatWelcomeScreenProps)
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          gap: 1.5,
-          maxWidth: '80%',
+          gap: { xs: 1, sm: 1.5 }, // Espaçamento responsivo
+          maxWidth: { xs: '100%', sm: '80%' }, // Largura máxima responsiva
         }}
       >
         {suggestions.map((text) => (
