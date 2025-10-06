@@ -1,5 +1,5 @@
 import { Box, useTheme } from "@mui/material";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { SystemInitializer } from "../auth/SystemInitializer";
@@ -15,6 +15,7 @@ const SIDEBAR_WIDTH_EXPANDED = 280;
 export function MainLayout() {
   const theme = useTheme();
   const queryClient = useQueryClient();
+  const location = useLocation(); // Hook para obter a localização atual
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [sidebarPinned, setSidebarPinned] = useState(false);
 
@@ -22,6 +23,9 @@ export function MainLayout() {
     sidebarExpanded || sidebarPinned
       ? SIDEBAR_WIDTH_EXPANDED
       : SIDEBAR_WIDTH_COLLAPSED;
+
+  // Condição para mostrar o botão de chat
+  const showFloatingChat = location.pathname !== '/chat-ia';
 
   // Inicializa os serviços de Realtime quando o layout é montado
   useEffect(() => {
@@ -85,9 +89,13 @@ export function MainLayout() {
           </Box>
         </Box>
 
-        {/* Componentes do Chat Flutuante */}
-        <FloatingChatButton />
-        <ChatWidgetModal />
+        {/* Componentes do Chat Flutuante (renderização condicional) */}
+        {showFloatingChat && (
+          <>
+            <FloatingChatButton />
+            <ChatWidgetModal />
+          </>
+        )}
       </Box>
     </SystemInitializer>
   );
