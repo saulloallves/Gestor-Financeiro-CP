@@ -26,10 +26,10 @@ export function ChatWelcomeScreen({ onSuggestionClick, variant = 'page' }: ChatW
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'flex-start',
+        justifyContent: isWidget ? 'flex-start' : 'center', // Centraliza na página, alinha no topo no widget
         height: '100%',
         p: isWidget ? 1.5 : { xs: 2, sm: 3 },
-        pt: isWidget ? 1 : { xs: 2, sm: 3 }, // Padding-top reduzido para o widget
+        pt: isWidget ? 1 : { xs: 2, sm: 3 },
         textAlign: 'center',
       }}
     >
