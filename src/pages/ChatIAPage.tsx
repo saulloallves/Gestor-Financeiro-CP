@@ -15,6 +15,7 @@ import { useChatIA } from '../hooks/useChatIA';
 import { useChatMessages } from '../hooks/useChatHistory';
 import { ChatHistorySidebar } from '../components/ChatHistorySidebar';
 import { ChatWelcomeScreen } from '../components/ChatWelcomeScreen';
+import { LinkifiedText } from '../components/ui/LinkifiedText'; // Importando o novo componente
 import cabecaIcon from '../assets/cabeca.png';
 
 export function ChatIAPage() {
@@ -85,8 +86,8 @@ export function ChatIAPage() {
                   borderRadius: 2,
                 }}
               >
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {message.content}
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  <LinkifiedText text={message.content} />
                 </Typography>
               </Paper>
               {message.role === 'user' && (
