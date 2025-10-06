@@ -3,7 +3,7 @@ import { iaConnectorService } from '../api/iaConnectorService';
 import { chatKeys } from './useChatHistory';
 import toast from 'react-hot-toast';
 
-export function useChatIA(activeChatId: string | null, setActiveChatId: (id: string) => void) {
+export function useChatIA(setActiveChatId: (id: string) => void) {
   const queryClient = useQueryClient();
 
   const { mutate: sendMessage, isPending: isLoading } = useMutation({

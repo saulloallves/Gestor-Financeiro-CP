@@ -24,7 +24,7 @@ export function ChatIAPage() {
   const { usuario } = useAuthStore();
   const { data: perfilData } = usePerfil();
   const { data: messages = [], isLoading: isLoadingMessages } = useChatMessages(activeChatId);
-  const { sendMessage, isLoading: isSendingMessage } = useChatIA(activeChatId, setActiveChatId);
+  const { sendMessage, isLoading: isSendingMessage } = useChatIA(setActiveChatId);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
