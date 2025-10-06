@@ -7,11 +7,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Definição das ferramentas (mantida da versão anterior)
+// Definição das ferramentas (com a nova função adicionada)
 const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   { type: 'function', function: { name: 'get_system_stats', description: 'Retorna estatísticas gerais do sistema.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'get_unit_details_by_code', description: 'Busca detalhes de uma unidade pelo código.', parameters: { type: 'object', properties: { codigo_param: { type: 'string' } }, required: ['codigo_param'] } } },
   { type: 'function', function: { name: 'get_franchisee_details_by_cpf', description: 'Busca detalhes de um franqueado pelo CPF.', parameters: { type: 'object', properties: { cpf_param: { type: 'string' } }, required: ['cpf_param'] } } },
+  { 
+    type: 'function', 
+    function: { 
+      name: 'get_cobrancas_by_filter', 
+      description: 'Busca cobranças no sistema com base em filtros opcionais como código da unidade ou status.', 
+      parameters: { 
+        type: 'object', 
+        properties: { 
+          p_codigo_unidade: { type: 'integer', description: 'O código de 4 dígitos da unidade.' },
+          p_status: { type: 'string', description: 'O status da cobrança (ex: vencido, pago, pendente).', enum: ['pendente', 'pago', 'vencido', 'cancelado', 'em_aberto', 'negociado', 'em_atraso', 'juridico', 'parcelado'] }
+        } 
+      } 
+    } 
+  },
 ];
 
 serve(async (req) => {
