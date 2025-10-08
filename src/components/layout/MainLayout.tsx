@@ -60,12 +60,8 @@ export function MainLayout() {
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            marginLeft: `${currentSidebarWidth}px`,
-            transition: theme.transitions.create(["margin-left"], {
-              duration: theme.transitions.duration.standard,
-            }),
+            // REMOVIDO: marginLeft e maxWidth para deixar o Drawer controlar o layout
             minHeight: "100vh",
-            maxWidth: `calc(100vw - ${currentSidebarWidth}px)`,
             overflow: "hidden",
           }}
         >
