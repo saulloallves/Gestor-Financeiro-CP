@@ -1,7 +1,7 @@
 // Página de Listagem de Unidades - Módulo 2.1
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -33,42 +33,45 @@ import {
   XCircle,
   Database,
 } from "lucide-react";
-import { useUnidades, useUnidadesEstatisticas } from "../hooks/useUnidades";
+import { useUnidadesCacheFirst } from "../hooks/useUnidadesCacheFirst";
+import { useUnidadesEstatisticas } from "../hooks/useUnidadesEstatisticas";
 import { getStatusLabel, getStatusColor } from "../utils/statusMask";
-import type { StatusUnidade, UnidadeFilter } from "../types/unidades";
+import type { StatusUnidade } from "../types/unidades";
 
 export function UnidadesPage() {
   const theme = useTheme();
   
-  const [filters, setFilters] = useState<UnidadeFilter>({});
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 50,
-  });
-
   // Estado local para os inputs de filtro
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [localStatusFilter, setLocalStatusFilter] = useState<StatusUnidade | "">("");
 
   const {
-    data: unidadesData,
+    unidades,
+    total,
     isLoading,
-    isError,
-    refetch,
-  } = useUnidades(
-    filters,
-    { field: "codigo_unidade", direction: "asc" },
-    { page: paginationModel.page + 1, limit: paginationModel.pageSize }
-  );
-
-  const unidades = unidadesData?.data || [];
-  const total = unidadesData?.pagination.total || 0;
+    pagination,
+    handleFilterChange,
+    handlePageChange,
+    handlePageSizeChange,
+  } = useUnidadesCacheFirst();
 
   const { data: estatisticas, isLoading: isLoadingStats } =
     useUnidadesEstatisticas();
 
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 50,
+  });
+
+  useEffect(() => {
+    setPaginationModel({
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+    });
+  }, [pagination.page, pagination.pageSize]);
+
   const handleSearch = () => {
-    setFilters({
+    handleFilterChange({
       nome_padrao: localSearchTerm || undefined,
       status: localStatusFilter ? [localStatusFilter] : undefined,
     });
@@ -77,7 +80,7 @@ export function UnidadesPage() {
   const handleClearFilters = () => {
     setLocalSearchTerm("");
     setLocalStatusFilter("");
-    setFilters({});
+    handleFilterChange({});
   };
 
   const columns: GridColDef[] = [
@@ -210,19 +213,6 @@ export function UnidadesPage() {
       ),
     },
   ];
-
-  if (isError) {
-    return (
-      <Card sx={{ p: 3, textAlign: "center" }}>
-        <Typography color="error" variant="h6">
-          Erro ao carregar unidades
-        </Typography>
-        <Button onClick={() => refetch()} sx={{ mt: 2 }} variant="outlined">
-          Tentar novamente
-        </Button>
-      </Card>
-    );
-  }
 
   return (
     <Box
@@ -691,87 +681,32 @@ export function UnidadesPage() {
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
+          height: '75vh', // Altura fixa para ativar a virtualização
         }}
       >
-        <Box
+        <DataGrid
+          rows={unidades}
+          columns={columns}
+          loading={isLoading}
+          rowCount={total}
+          paginationModel={paginationModel}
+          onPaginationModelChange={(model) => {
+            handlePageChange(model.page);
+            handlePageSizeChange(model.pageSize);
+          }}
+          paginationMode="server"
+          pageSizeOptions={[20, 50, 100]}
+          localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
           sx={{
-            width: "100%",
-            flexGrow: 1,
-            "& .MuiDataGrid-root": {
-              width: "100%",
-              maxWidth: "100%",
+            border: "none",
+            "& .MuiDataGrid-columnHeaders": {
+              backgroundColor: "background.default",
             },
           }}
-        >
-          <DataGrid
-            rows={unidades}
-            columns={columns}
-            loading={isLoading}
-            rowCount={total}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            paginationMode="server"
-            pageSizeOptions={[10, 20, 50, 100]}
-            localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
-            sx={{
-              border: "none",
-              backgroundColor: "#FFFFFF",
-              width: "100%",
-              minWidth: 0,
-              "& .MuiDataGrid-main": {
-                backgroundColor: "#FFFFFF",
-                minWidth: 0,
-              },
-              "& .MuiDataGrid-cell": {
-                borderColor: "divider",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                minWidth: 0,
-                padding: theme.spacing(2, 1.5), // Aumenta o padding das células
-                fontSize: "1rem", // Aumenta ainda mais o tamanho da fonte das células
-                display: "flex",
-                alignItems: "center", // Centraliza verticalmente
-                justifyContent: "center", // Centraliza horizontalmente
-                "& .MuiTypography-root": {
-                  fontSize: "1rem !important", // Força o tamanho da fonte para todos os Typography
-                },
-                "& .MuiChip-root": {
-                  fontSize: "0.9rem", // Tamanho específico para chips
-                },
-              },
-              "& .MuiDataGrid-columnHeaders": {
-                borderColor: "divider",
-                "& .MuiDataGrid-columnHeader": {
-                  backgroundColor: "#FFFFFF",
-                  padding: theme.spacing(1.5, 1.5), // Padding para headers
-                  fontSize: "1rem", // Aumenta ainda mais o tamanho da fonte dos headers
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center", // Centraliza headers
-                  textAlign: "center",
-                },
-              },
-              "& .MuiDataGrid-virtualScroller": {
-                overflow: "auto",
-              },
-              "& .MuiDataGrid-row": {
-                minHeight: "65px !important", // Altura mínima das linhas
-                "&:hover": {
-                  backgroundColor: "action.hover",
-                },
-              },
-              "& .MuiDataGrid-columnHeader": {
-                minWidth: 0,
-              },
-            }}
-            disableRowSelectionOnClick
-            autoHeight
-            hideFooterSelectedRowCount
-            rowHeight={64} // Define altura fixa das linhas
-          />
-        </Box>
+          disableRowSelectionOnClick
+          hideFooterSelectedRowCount
+          rowHeight={64}
+        />
       </Card>
     </Box>
   );

@@ -1,7 +1,7 @@
 // Página de Listagem de Franqueados - Módulo 2.2
 // Seguindo as diretrizes de design e arquitetura do projeto
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -36,7 +36,8 @@ import {
   Handshake,
   Database,
 } from "lucide-react";
-import { useFranqueados, useFranqueadosEstatisticas } from "../hooks/useFranqueados";
+import { useFranqueadosCacheFirst } from "../hooks/useFranqueadosCacheFirst";
+import { useFranqueadosEstatisticas } from "../hooks/useFranqueadosEstatisticas";
 import {
   getTipoFranqueadoLabel,
   getTipoFranqueadoColor,
@@ -52,36 +53,39 @@ import type {
 
 export function FranqueadosPage() {
   const theme = useTheme();
-  const [filters, setFilters] = useState<FranqueadoFilter>({});
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 20,
-  });
-
+  
   // Local state for filter inputs
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "true" | "false">("");
   const [tipoFilter, setTipoFilter] = useState<TipoFranqueado | "">("");
 
   const {
-    data: franqueadosData,
+    franqueados,
+    total,
     isLoading,
-    isError,
-    refetch,
-  } = useFranqueados(
-    filters,
-    { field: "nome", direction: "asc" },
-    { page: paginationModel.page + 1, limit: paginationModel.pageSize }
-  );
-
-  const franqueados = franqueadosData?.data || [];
-  const total = franqueadosData?.pagination.total || 0;
+    pagination,
+    handleFilterChange,
+    handlePageChange,
+    handlePageSizeChange,
+  } = useFranqueadosCacheFirst();
 
   const { data: estatisticas, isLoading: isLoadingStats } =
     useFranqueadosEstatisticas();
 
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 50,
+  });
+
+  useEffect(() => {
+    setPaginationModel({
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+    });
+  }, [pagination.page, pagination.pageSize]);
+
   const handleSearch = () => {
-    setFilters({
+    handleFilterChange({
       nome: searchTerm || undefined,
       is_active_system: statusFilter ? statusFilter === 'true' : undefined,
       tipo: tipoFilter ? [tipoFilter] : undefined,
@@ -92,7 +96,7 @@ export function FranqueadosPage() {
     setSearchTerm("");
     setStatusFilter("");
     setTipoFilter("");
-    setFilters({});
+    handleFilterChange({});
   };
 
   const columns: GridColDef[] = [
@@ -252,19 +256,6 @@ export function FranqueadosPage() {
       ),
     },
   ];
-
-  if (isError) {
-    return (
-      <Card sx={{ p: 3, textAlign: "center" }}>
-        <Typography color="error" variant="h6">
-          Erro ao carregar franqueados
-        </Typography>
-        <Button onClick={() => refetch()} sx={{ mt: 2 }} variant="outlined">
-          Tentar novamente
-        </Button>
-      </Card>
-    );
-  }
 
   return (
     <Box
@@ -753,88 +744,32 @@ export function FranqueadosPage() {
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
+          height: '75vh', // Altura fixa para ativar a virtualização
         }}
       >
-        <Box
+        <DataGrid
+          rows={franqueados}
+          columns={columns}
+          loading={isLoading}
+          rowCount={total}
+          paginationModel={paginationModel}
+          onPaginationModelChange={(model) => {
+            handlePageChange(model.page);
+            handlePageSizeChange(model.pageSize);
+          }}
+          paginationMode="server"
+          pageSizeOptions={[20, 50, 100]}
+          localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
           sx={{
-            width: "100%",
-            flexGrow: 1,
-            "& .MuiDataGrid-root": {
-              width: "100%",
-              maxWidth: "100%",
+            border: "none",
+            "& .MuiDataGrid-columnHeaders": {
+              backgroundColor: "background.default",
             },
           }}
-        >
-          <DataGrid
-            rows={franqueados}
-            columns={columns}
-            loading={isLoading}
-            rowCount={total}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            paginationMode="server"
-            pageSizeOptions={[10, 20, 50, 100]}
-            localeText={ptBR.components.MuiDataGrid.defaultProps.localeText}
-            sx={{
-              border: "none",
-              width: "100%",
-              backgroundColor: "#FFFFFF",
-              minWidth: 0,
-              "& .MuiDataGrid-main": {
-                minWidth: 0,
-              },
-              "& .MuiDataGrid-cell": {
-                backgroundColor: "#FFFFFF",
-                borderColor: "divider",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                minWidth: 0,
-                padding: theme.spacing(2, 1.5),
-                fontSize: "1rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                "& .MuiTypography-root": {
-                  fontSize: "1rem !important",
-                },
-                "& .MuiChip-root": {
-                  fontSize: "0.9rem",
-                },
-              },
-              "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "background.default",
-                borderColor: "divider",
-                "& .MuiDataGrid-columnHeader": {
-                  backgroundColor: "#FFFFFF",
-                  padding: theme.spacing(1.5, 1.5),
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                },
-              },
-              "& .MuiDataGrid-virtualScroller": {
-                overflow: "auto",
-              },
-              "& .MuiDataGrid-row": {
-                minHeight: "64px !important",
-                "&:hover": {
-                  backgroundColor: "action.hover",
-                },
-              },
-              "& .MuiDataGrid-columnHeader": {
-                minWidth: 0,
-              },
-            }}
-            disableRowSelectionOnClick
-            autoHeight
-            hideFooterSelectedRowCount
-            rowHeight={64}
-          />
-        </Box>
+          disableRowSelectionOnClick
+          hideFooterSelectedRowCount
+          rowHeight={64}
+        />
       </Card>
     </Box>
   );
