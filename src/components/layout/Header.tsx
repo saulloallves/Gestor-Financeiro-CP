@@ -9,14 +9,12 @@ import {
   Divider,
   ListItemIcon,
   ListItemText,
-  Badge,
   IconButton,
 } from '@mui/material';
 import {
-  Bell,
   LogOut,
   User,
-  BotMessageSquare, // Ícone de chat atualizado
+  BotMessageSquare,
   CircleDollarSign,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -117,23 +115,6 @@ export function Header({ sidebarWidth }: HeaderProps) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Sync Button */}
           <RefreshButton variant="icon" showLastSync force={true} />
-
-          {/* Notifications */}
-          <IconButton
-            size="large"
-            color="inherit"
-            sx={{
-              color: 'text.secondary',
-              '&:hover': {
-                backgroundColor: 'action.hover',
-                color: 'primary.main',
-              },
-            }}
-          >
-            <Badge badgeContent={3} color="error">
-              <Bell size={24} />
-            </Badge>
-          </IconButton>
 
           {/* Chat Button */}
           <IconButton
