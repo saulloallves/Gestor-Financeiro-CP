@@ -62,7 +62,7 @@ export function MainLayout() {
             flexDirection: "column",
             minHeight: "100vh",
             overflow: "hidden",
-            // A largura e posição são gerenciadas pelo Header e pelo conteúdo principal
+            width: `calc(100% - ${currentSidebarWidth}px)`, // Garante que a área de conteúdo ocupe o espaço restante
           }}
         >
           {/* Header */}
@@ -79,12 +79,7 @@ export function MainLayout() {
               overflow: "auto",
               width: "100%",
               minHeight: "100vh",
-              marginLeft: `${currentSidebarWidth}px`,
-              transition: theme.transitions.create(["margin-left"], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-              }),
-              willChange: 'margin-left', // Otimização para a animação
+              // REMOVIDO o marginLeft que causava o espaçamento duplo
             }}
           >
             <Outlet />
