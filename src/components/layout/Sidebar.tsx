@@ -11,6 +11,7 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  Drawer,
 } from "@mui/material";
 import {
   LayoutDashboard,
@@ -463,5 +464,28 @@ export function Sidebar({
         </Box>
       )}
     </Box>
+  );
+
+  return (
+    <Drawer
+      variant="permanent"
+      open
+      sx={{
+        width: currentWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: currentWidth,
+          boxSizing: 'border-box',
+          overflowX: 'hidden',
+          borderRight: 'none',
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
+        },
+      }}
+    >
+      {drawerContent}
+    </Drawer>
   );
 }
