@@ -110,7 +110,7 @@ export function PermissoesPage() {
   ];
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4" component="h1">Gerenciamento de Permissões</Typography>
         <Button variant="contained" startIcon={<PlusCircle />} onClick={() => handleOpenForm()}>

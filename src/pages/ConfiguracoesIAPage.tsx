@@ -143,7 +143,7 @@ export function ConfiguracoesIAPage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       <Typography variant="h4" component="h1" gutterBottom>
         <BrainCircuit size={32} style={{ marginRight: theme.spacing(1) }} />
         Configurações de Inteligência Artificial

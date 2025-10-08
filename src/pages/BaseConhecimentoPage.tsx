@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { 
   Box, 
   Typography, 
-  Container, 
   Paper, 
   Button, 
   CircularProgress,
@@ -201,7 +200,7 @@ const BaseConhecimentoPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Base de Conhecimento da IA
@@ -253,7 +252,7 @@ const BaseConhecimentoPage = () => {
         onClose={() => setViewModalOpen(false)}
         conhecimento={selectedKnowledge}
       />
-    </Container>
+    </Box>
   );
 };
 

@@ -63,7 +63,7 @@ export function DashboardPage() {
   ];
 
   return (
-    <Box sx={{ padding: theme.spacing(3) }}>
+    <Box>
       {/* Header do Dashboard */}
       <Box sx={{ marginBottom: theme.spacing(4) }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>

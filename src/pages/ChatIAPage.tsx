@@ -26,7 +26,7 @@ export function ChatIAPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: 'calc(100vh - 120px)', p: 2, gap: 2 }}>
+    <Box sx={{ display: 'flex', height: '100%', gap: 2 }}>
       <Paper elevation={3} sx={{ display: 'flex', flex: 1, overflow: 'hidden', borderRadius: 2 }}>
         <ChatHistorySidebar
           activeChatId={activeChatId}

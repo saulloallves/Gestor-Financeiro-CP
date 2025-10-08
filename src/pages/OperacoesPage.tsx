@@ -81,7 +81,7 @@ export function OperacoesPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       <Typography variant="h4" component="h1" gutterBottom>Central de Operações e Sistema</Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Ferramentas administrativas para sincronização de dados, execução de processos manuais e manutenção do sistema.

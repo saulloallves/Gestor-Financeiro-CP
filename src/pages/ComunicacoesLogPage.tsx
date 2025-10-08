@@ -76,7 +76,7 @@ export function ComunicacoesLogPage() {
   ];
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
         <Typography variant="h4" component="h1">
           Histórico de Comunicações

@@ -272,7 +272,6 @@ export function FranqueadosPage() {
         width: "100%",
         maxWidth: "100%",
         overflow: "hidden",
-        padding: theme.spacing(3),
       }}
     >
       {/* Cabeçalho */}

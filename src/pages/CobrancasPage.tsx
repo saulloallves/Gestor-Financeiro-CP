@@ -463,7 +463,7 @@ export function CobrancasPage() {
   ];
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       <Box
         sx={{
           display: "flex",

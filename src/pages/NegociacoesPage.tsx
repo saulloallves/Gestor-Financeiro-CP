@@ -85,7 +85,7 @@ export function NegociacoesPage() {
   ];
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       <Typography variant="h4" component="h1" gutterBottom>
         Painel de Negociações da IA
       </Typography>
