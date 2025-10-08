@@ -78,8 +78,11 @@ export function MainLayout() {
             sx={{
               flexGrow: 1,
               bgcolor: "background.default",
-              padding: theme.spacing(3),
-              paddingTop: `calc(80px + ${theme.spacing(3)})`, // Header height + padding
+              // Ajuste no padding para aproximar o conteúdo do sidebar
+              paddingLeft: theme.spacing(2), // Reduzido de 3 para 2
+              paddingRight: theme.spacing(3),
+              paddingBottom: theme.spacing(3),
+              paddingTop: `calc(80px + ${theme.spacing(3)})`, // Mantém o espaçamento do topo
               overflow: "auto",
               width: "100%",
               minHeight: "100vh",
