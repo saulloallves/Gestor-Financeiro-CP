@@ -13,7 +13,8 @@ import { OperacoesPage } from "../pages/OperacoesPage";
 import { ChatIAPage } from "../pages/ChatIAPage";
 import { TemplatesPage } from "../pages/TemplatesPage";
 import { ComunicacoesLogPage } from "../pages/ComunicacoesLogPage";
-import { PermissoesPage } from "../pages/PermissoesPage"; // Importa a nova página
+import { PermissoesPage } from "../pages/PermissoesPage";
+import { NegociacoesPage } from "../pages/NegociacoesPage"; // Nova importação
 import { MainLayout } from "../components/layout/MainLayout";
 import {
   ProtectedRoute,
@@ -46,6 +47,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredType="interno">
             <CobrancasPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "negociacoes", // Nova rota
+        element: (
+          <ProtectedRoute requiredType="interno">
+            <NegociacoesPage />
           </ProtectedRoute>
         ),
       },
@@ -138,7 +147,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "permissoes", // Nova rota
+        path: "permissoes",
         element: (
           <ProtectedRoute requiredType="interno" requiredProfile="admin">
             <PermissoesPage />

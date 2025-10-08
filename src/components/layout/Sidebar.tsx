@@ -31,12 +31,14 @@ import {
   FileText,
   History,
   SlidersHorizontal,
-  Key, // Ícone para permissões
+  Key,
+  Handshake, // Novo ícone
+  List as ListIcon, // Renomeando para evitar conflito
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@mui/material/styles";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Can } from '../auth'; // Importa o componente Can
+import { Can } from '../auth';
 import logoImage from "../../assets/logo cresci-header.png";
 import cabecaIcon from "../../assets/cabeca.png";
 
@@ -59,11 +61,9 @@ interface SidebarProps {
   isPinned?: boolean;
 }
 
-// Larguras do sidebar
 const SIDEBAR_WIDTH_COLLAPSED = 75;
 const SIDEBAR_WIDTH_EXPANDED = 280;
 
-// Configuração dos itens do menu
 const menuItems: MenuItem[] = [
   {
     id: "dashboard",
@@ -72,10 +72,24 @@ const menuItems: MenuItem[] = [
     path: "/dashboard",
   },
   {
-    id: "cobrancas",
+    id: "cobrancas-group",
     title: "Cobranças",
     icon: CreditCard,
-    path: "/cobrancas",
+    path: "/cobrancas-group",
+    children: [
+      {
+        id: "cobrancas",
+        title: "Listagem",
+        icon: ListIcon,
+        path: "/cobrancas",
+      },
+      {
+        id: "negociacoes",
+        title: "Negociações IA",
+        icon: Handshake,
+        path: "/negociacoes",
+      },
+    ],
   },
   {
     id: "consultas",
@@ -156,7 +170,7 @@ const menuItems: MenuItem[] = [
         path: "/usuarios-internos",
       },
       {
-        id: "permissoes", // Novo item de menu
+        id: "permissoes",
         title: "Permissões de Acesso",
         icon: Key,
         path: "/permissoes",
@@ -188,22 +202,18 @@ export function Sidebar({
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<string[]>([""]);
 
-  // Estados para controle do sidebar
   const [isHovered, setIsHovered] = useState(false);
   const hoverTimeoutRef = useRef<number | null>(null);
 
-  // O sidebar está expandido quando está com hover OU fixo
   const isExpanded = isHovered || isPinned;
   const currentWidth = isExpanded
     ? SIDEBAR_WIDTH_EXPANDED
     : SIDEBAR_WIDTH_COLLAPSED;
 
-  // Notifica mudanças de estado
   useEffect(() => {
     onExpandedChange?.(isExpanded);
   }, [isExpanded, onExpandedChange]);
 
-  // Limpa o temporizador se o componente for desmontado
   useEffect(() => {
     return () => {
       if (hoverTimeoutRef.current) {
@@ -214,14 +224,12 @@ export function Sidebar({
 
   const handleItemClick = (item: MenuItem) => {
     if (item.children) {
-      // Se tem filhos, expande/colapsa
       setExpandedItems((prev) =>
         prev.includes(item.id)
           ? prev.filter((id) => id !== item.id)
           : [...prev, item.id]
       );
     } else {
-      // Se não tem filhos, navega
       navigate(item.path);
       onClose?.();
     }
@@ -239,7 +247,7 @@ export function Sidebar({
       }
       hoverTimeoutRef.current = window.setTimeout(() => {
         setIsHovered(true);
-      }, 300); // Atraso de 0.3 segundos
+      }, 300);
     }
   };
 
@@ -270,7 +278,6 @@ export function Sidebar({
     const isActive = isItemActive(item.path);
     const isParentActiveItem = isParentActive(item);
 
-    // No modo recolhido, só mostra itens de nível 0
     if (!isExpanded && level > 0) {
       return null;
     }
@@ -455,28 +462,6 @@ export function Sidebar({
           </Typography>
         </Box>
       )}
-    </Box>
-  );
-
-  return (
-    <Box
-      component="aside"
-      sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        height: '100vh',
-        width: currentWidth,
-        zIndex: theme.zIndex.drawer,
-        transition: theme.transitions.create('width', {
-          easing: theme.transitions.easing.sharp,
-          duration: theme.transitions.duration.enteringScreen,
-        }),
-        overflowX: 'hidden',
-        borderRight: `1px solid ${theme.palette.divider}`,
-      }}
-    >
-      {drawerContent}
     </Box>
   );
 }
