@@ -1,0 +1,7 @@
+{
+  "tasks": {},
+  "deploy": {
+    "include": ["index.ts"],
+    "exclude": ["**/*.test.ts"]
+  }
+}
