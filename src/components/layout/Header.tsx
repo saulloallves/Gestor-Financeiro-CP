@@ -74,7 +74,7 @@ export function Header({ sidebarWidth }: HeaderProps) {
         height: 80,
         left: `${sidebarWidth}px`,
         paddingTop: theme.spacing(1),
-        zIndex: theme.zIndex.drawer - 1,
+        zIndex: theme.zIndex.drawer + 1, // Ajustado para ficar sobre o sidebar
         transition: theme.transitions.create(['width', 'left'], {
           easing: theme.transitions.easing.easeInOut,
           duration: theme.transitions.duration.standard,
@@ -83,6 +83,7 @@ export function Header({ sidebarWidth }: HeaderProps) {
         color: 'text.primary',
         boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.12)',
         borderBottom: `1px solid ${theme.palette.divider}`,
+        willChange: 'width, left', // Otimização para a animação
       }}
     >
       <Toolbar

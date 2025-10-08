@@ -482,6 +482,7 @@ export function Sidebar({
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
+          willChange: 'width', // Otimização para a animação
         },
       }}
     >

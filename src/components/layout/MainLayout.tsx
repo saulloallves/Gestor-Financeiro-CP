@@ -60,9 +60,9 @@ export function MainLayout() {
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            // REMOVIDO: marginLeft e maxWidth para deixar o Drawer controlar o layout
             minHeight: "100vh",
             overflow: "hidden",
+            // A largura e posição são gerenciadas pelo Header e pelo conteúdo principal
           }}
         >
           {/* Header */}
@@ -74,12 +74,17 @@ export function MainLayout() {
             sx={{
               flexGrow: 1,
               bgcolor: "background.default",
-              // Padding centralizado para consistência em todas as telas
               padding: theme.spacing(3),
-              paddingTop: `calc(80px + ${theme.spacing(3)})`, // Mantém o espaçamento do topo para o Header
+              paddingTop: `calc(80px + ${theme.spacing(3)})`,
               overflow: "auto",
               width: "100%",
               minHeight: "100vh",
+              marginLeft: `${currentSidebarWidth}px`,
+              transition: theme.transitions.create(["margin-left"], {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+              willChange: 'margin-left', // Otimização para a animação
             }}
           >
             <Outlet />
